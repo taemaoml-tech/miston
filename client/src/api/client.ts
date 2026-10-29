@@ -1,10 +1,12 @@
 const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+/** Без абсолютного VITE_API_URL клієнт стукає у власний origin — на Pages це завідомо тупік. */
+const API_IS_ABSOLUTE = /^https?:/i.test(API_URL);
 const BASE_PATH = import.meta.env.BASE_URL || '/';
 const TOKEN_KEY = 'relay.token';
 const REFRESH_KEY = 'relay.refreshToken';
 
 /** Абсолютний origin API — потрібний для сокета та файлів користувачів. */
-export const API_ORIGIN = API_URL.startsWith('http') ? new URL(API_URL).origin : '';
+export const API_ORIGIN = API_IS_ABSOLUTE ? new URL(API_URL).origin : '';
 
 export class ApiError extends Error {
   constructor(message: string, public status: number, public details?: unknown) {
@@ -93,7 +95,10 @@ export async function request<T>(path: string, options: RequestOptions = {}, can
         || (typeof data.error === 'string' ? data.error : data.error?.message)
         || message;
     } catch {
-      // Non-JSON errors still get a useful HTTP status message.
+      // Статус-код без JSON — на GitHub Pages без VITE_API_URL це 405 від самого Pages.
+      if (!API_IS_ABSOLUTE && (response.status === 404 || response.status === 405)) {
+        message = 'Сервер Miston ще не під\'єднано. Запит надходить на сторінку замість API.';
+      }
     }
     throw new ApiError(message, response.status, details);
   }
