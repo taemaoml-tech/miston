@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Сарай"><path d="M 92 244 q 68 46 136 0 q 14 46 -68 48 q -82 -2 -68 -48 z" fill="#BEF264" stroke="#25213A" stroke-width="6"/><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#BEF264" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#BEF264" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#BEF264" stroke="#25213A" stroke-width="8"/>
+      
+      <path d="M 111 154 q 17 22 34 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 175 154 q 17 22 34 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      
+      <circle cx="160" cy="206" r="11" fill="#8C3A46" stroke="#25213A" stroke-width="6"/>
+    </g><text x="226" y="92" font-family="Verdana,sans-serif" font-size="34" font-weight="bold" fill="#25213A">z</text><text x="254" y="64" font-family="Verdana,sans-serif" font-size="26" font-weight="bold" fill="#25213A">z</text><text x="276" y="42" font-family="Verdana,sans-serif" font-size="18" font-weight="bold" fill="#25213A">z</text></svg>

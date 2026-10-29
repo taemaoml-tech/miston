@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="description" content="Miston — твій сучасний месенджер. Чати, групи, канали, дзвінки, стікери та Star в одному простому інтерфейсі." />
+    <meta property="og:title" content="Miston — твій сучасний месенджер" />
+    <meta property="og:description" content="Спілкування з друзями, командами та спільнотами: миттєві чати, дзвінки й демонстрація екрана." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="uk_UA" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="apple-touch-icon" href="%BASE_URL%favicon.svg" />
+    <title>Miston</title>
+    <style>
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: #f8fafc;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #0f172a;
+      }
+      @media (prefers-color-scheme: dark) {
+        #boot-splash { background: #020617; color: #f1f5f9; }
+      }
+      #boot-splash svg { animation: boot-float 2.6s ease-in-out infinite; border-radius: 22px; }
+      #boot-splash .boot-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+      #boot-splash .boot-slogan { margin-top: -14px; font-size: 13px; color: #64748b; }
+      #boot-splash .boot-track { width: 156px; height: 4px; border-radius: 9999px; background: #e2e8f0; overflow: hidden; }
+      #boot-splash .boot-bar { display: block; width: 50%; height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #6366f1, #a855f7); animation: boot-sweep 1.5s cubic-bezier(.65,0,.35,1) infinite; }
+      @keyframes boot-float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(-2deg); } }
+      @keyframes boot-sweep { from { transform: translateX(-110%); } to { transform: translateX(230%); } }
+      @media (prefers-reduced-motion: reduce) { #boot-splash svg, #boot-splash .boot-bar { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="boot-splash">
+      <svg width="76" height="76" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="boot-mark" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#6366f1" /><stop offset=".55" stop-color="#7c3aed" /><stop offset="1" stop-color="#a855f7" />
+          </linearGradient>
+        </defs>
+        <rect width="64" height="64" rx="18" fill="url(#boot-mark)" />
+        <path d="M14 20a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v16a6 6 0 0 1-6 6H32l-8 6v-6h-4a6 6 0 0 1-6-6V20Z" fill="#fff" />
+        <path d="M23 35V23l9 7 9-7v12" fill="none" stroke="#6d28d9" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <p class="boot-title">Miston</p>
+      <p class="boot-slogan">твій сучасний месенджер</p>
+      <span class="boot-track"><span class="boot-bar" /></span>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

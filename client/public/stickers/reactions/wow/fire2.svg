@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Вогонь"><style>@keyframes miston{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#FDE68A" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#FDE68A" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#FDE68A" stroke="#25213A" stroke-width="8"/>
+      
+      <path d="M 111 148 l 34 10 -34 12 z" fill="#F97316" stroke="#B45309" stroke-width="4" stroke-linejoin="round"/><path d="M 175 148 l 34 10 -34 12 z" fill="#F97316" stroke="#B45309" stroke-width="4" stroke-linejoin="round"/>
+      
+      <path d="M 134 198 q 26 36 52 0 z" fill="#8C3A46" stroke="#25213A" stroke-width="6" stroke-linejoin="round"/><path d="M 146 202 l 6 13 6 -13 z M 170 202 l 6 13 6 -13 z" fill="#FFFFFF"/>
+    </g><path d="M 126 274 q 10 -36 34 -46 q -4 26 18 34 q 16 -10 14 -36 q 24 26 12 56 q -10 22 -40 22 q -34 -2 -38 -30 z" fill="#FB923C" stroke="#C2410C" stroke-width="5" stroke-linejoin="round"/></g></svg>

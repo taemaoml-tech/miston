@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Щит"><style>@keyframes miston{0%,100%{transform:translateY(-7px)}50%{transform:translateY(7px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><ellipse cx="122" cy="272" rx="27" ry="19" fill="#C4B5FD" stroke="#25213A" stroke-width="6"/><ellipse cx="198" cy="272" rx="27" ry="19" fill="#C4B5FD" stroke="#25213A" stroke-width="6"/><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#C4B5FD" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#C4B5FD" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#C4B5FD" stroke="#25213A" stroke-width="8"/>
+      
+      <path d="M 113 158 h 30" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 177 158 h 30" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      
+      <path d="M 126 192 q 34 48 68 0 z" fill="#FFFFFF" stroke="#25213A" stroke-width="7" stroke-linejoin="round"/><path d="M 140 196 q 6 12 4 22 M 160 198 v 24 M 180 196 q -6 12 -4 22" fill="none" stroke="#25213A" stroke-width="4"/>
+    </g><path d="M 230 104 l 22 24 38 -46" fill="none" stroke="#22C55E" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g></svg>

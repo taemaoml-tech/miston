@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Мілі"><style>@keyframes miston{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#F5D0FE" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#F5D0FE" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#F5D0FE" stroke="#25213A" stroke-width="8"/>
+      
+      <g transform="translate(128 158) scale(2.4)"><path d="M 0 7 C -12 -3 -5 -13 0 -3 C 5 -13 12 -3 0 7 Z" fill="#EF4444" stroke="#25213A" stroke-width="3" stroke-linejoin="round"/></g><g transform="translate(192 158) scale(2.4)"><path d="M 0 7 C -12 -3 -5 -13 0 -3 C 5 -13 12 -3 0 7 Z" fill="#EF4444" stroke="#25213A" stroke-width="3" stroke-linejoin="round"/></g>
+      
+      <path d="M 124 192 q 36 56 72 0 z" fill="#8C3A46" stroke="#25213A" stroke-width="7" stroke-linejoin="round"/><path d="M 146 226 q 14 14 28 -2 q -12 -8 -28 2 z" fill="#F472B6" stroke="#25213A" stroke-width="4"/>
+    </g><g transform="translate(232 92) scale(2.6)"><path d="M 0 7 C -12 -3 -5 -13 0 -3 C 5 -13 12 -3 0 7 Z" fill="#EF4444" stroke="#25213A" stroke-width="3" stroke-linejoin="round"/></g><g transform="translate(160 54) scale(1.8)"><path d="M 0 7 C -12 -3 -5 -13 0 -3 C 5 -13 12 -3 0 7 Z" fill="#FB7185" stroke="#25213A" stroke-width="3" stroke-linejoin="round"/></g><g transform="translate(90 96) scale(1.4)"><path d="M 0 7 C -12 -3 -5 -13 0 -3 C 5 -13 12 -3 0 7 Z" fill="#FDA4AF" stroke="#25213A" stroke-width="3" stroke-linejoin="round"/></g></g></svg>

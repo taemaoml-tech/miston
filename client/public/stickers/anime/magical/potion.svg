@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Зілля"><style>@keyframes miston{0%,100%{transform:translateY(-7px)}50%{transform:translateY(7px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#C4B5FD" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#C4B5FD" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#C4B5FD" stroke="#25213A" stroke-width="8"/>
+      <path d="M 108 132 q 18 -12 36 -4" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/><path d="M 212 128 q 18 -8 36 4" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="128" cy="158" r="16" fill="#FFFFFF" stroke="#25213A" stroke-width="5"/><path d="M 128 158 m 0 -10 a 10 10 0 1 1 -10 10" fill="none" stroke="#25213A" stroke-width="5" stroke-linecap="round"/><circle cx="192" cy="158" r="16" fill="#FFFFFF" stroke="#25213A" stroke-width="5"/><path d="M 192 158 m 0 -10 a 10 10 0 1 1 -10 10" fill="none" stroke="#25213A" stroke-width="5" stroke-linecap="round"/>
+      
+      <path d="M 136 208 q 12 -12 24 0 q 12 12 24 0" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+    </g><rect x="218" y="92" width="56" height="26" rx="13" transform="rotate(-18 246 105)" fill="#FCA5A5" stroke="#25213A" stroke-width="5"/><rect x="218" y="132" width="56" height="26" rx="13" transform="rotate(14 246 145)" fill="#BAE6FD" stroke="#25213A" stroke-width="5"/></g></svg>

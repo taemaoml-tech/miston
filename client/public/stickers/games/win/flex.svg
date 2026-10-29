@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Флекс"><style>@keyframes miston{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><path d="M 92 244 q 68 46 136 0 q 14 46 -68 48 q -82 -2 -68 -48 z" fill="#FDE047" stroke="#25213A" stroke-width="6"/><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#FDE047" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#FDE047" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#FDE047" stroke="#25213A" stroke-width="8"/>
+      <path d="M 111 126 q 17 -14 34 0" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/><path d="M 175 126 q 17 -14 34 0" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="128" cy="158" r="15" fill="#FFFFFF" stroke="#25213A" stroke-width="6"/><circle cx="120" cy="161" r="7" fill="#25213A"/><circle cx="192" cy="158" r="15" fill="#FFFFFF" stroke="#25213A" stroke-width="6"/><circle cx="200" cy="161" r="7" fill="#25213A"/>
+      
+      <path d="M 140 200 q 10 16 20 2 q 10 14 20 -2" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+    </g><path d="M 246 66 Q 251.72 86.28 272 92 Q 251.72 97.72 246 118 Q 240.28 97.72 220 92 Q 240.28 86.28 246 66 Z" fill="#FDE047" stroke="#CA8A04" stroke-width="4"/><path d="M 84 104 Q 87.52 116.48 100 120 Q 87.52 123.52 84 136 Q 80.48 123.52 68 120 Q 80.48 116.48 84 104 Z" fill="#FDE047" stroke="#CA8A04" stroke-width="4"/><path d="M 228 210 Q 231.08 220.92 242 224 Q 231.08 227.08 228 238 Q 224.92 227.08 214 224 Q 224.92 220.92 228 210 Z" fill="#FFF" stroke="#CA8A04" stroke-width="4"/></g></svg>

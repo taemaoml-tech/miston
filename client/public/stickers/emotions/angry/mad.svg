@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Злість"><style>@keyframes miston{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#FCA5A5" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#FCA5A5" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#FCA5A5" stroke="#25213A" stroke-width="8"/>
+      <path d="M 106 126 l 40 14" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 214 126 l -40 14" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      <path d="M 113 158 h 30" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 177 158 h 30" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      
+      <path d="M 140 208 h 40" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+    </g></g></svg>

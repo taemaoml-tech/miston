@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Тренер"><style>@keyframes miston{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#86EFAC" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#86EFAC" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#86EFAC" stroke="#25213A" stroke-width="8"/>
+      <path d="M 106 126 l 40 14" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 214 126 l -40 14" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="128" cy="158" r="7" fill="#25213A"/><circle cx="192" cy="158" r="7" fill="#25213A"/>
+      
+      <path d="M 138 208 q 22 18 44 -2" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><rect x="148" y="196" width="24" height="14" rx="5" fill="#FFFFFF" stroke="#25213A" stroke-width="4"/>
+    </g><path d="M 236 150 v -58 l 36 -12 v 58" fill="none" stroke="#25213A" stroke-width="7" stroke-linecap="round"/><ellipse cx="228" cy="154" rx="17" ry="13" fill="#25213A"/><ellipse cx="264" cy="144" rx="17" ry="13" fill="#25213A"/></g></svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Перепрошую"><g transform="rotate(8 160 170)">
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#FBCFE8" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#FBCFE8" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#FBCFE8" stroke="#25213A" stroke-width="8"/>
+      <path d="M 108 132 q 18 -12 36 -4" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/><path d="M 212 128 q 18 -8 36 4" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 111 154 q 17 22 34 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 175 154 q 17 22 34 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      
+      <circle cx="160" cy="206" r="11" fill="#8C3A46" stroke="#25213A" stroke-width="6"/>
+    </g></svg>

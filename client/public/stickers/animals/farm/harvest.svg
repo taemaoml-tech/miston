@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Урожай"><ellipse cx="122" cy="272" rx="27" ry="19" fill="#BEF264" stroke="#25213A" stroke-width="6"/><ellipse cx="198" cy="272" rx="27" ry="19" fill="#BEF264" stroke="#25213A" stroke-width="6"/><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#BEF264" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#BEF264" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#BEF264" stroke="#25213A" stroke-width="8"/>
+      
+      <path d="M 111 162 q 17 -24 34 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 175 162 q 17 -24 34 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      
+      <path d="M 124 192 q 36 56 72 0 z" fill="#8C3A46" stroke="#25213A" stroke-width="7" stroke-linejoin="round"/><path d="M 146 226 q 14 14 28 -2 q -12 -8 -28 2 z" fill="#F472B6" stroke="#25213A" stroke-width="4"/>
+    </g><rect x="212" y="86" width="70" height="56" rx="10" fill="#F472B6" stroke="#25213A" stroke-width="5"/><path d="M 247 86 v 56 M 212 110 h 70" stroke="#25213A" stroke-width="5"/><path d="M 247 86 q -24 -24 -36 -6 M 247 86 q 24 -24 36 -6" fill="none" stroke="#FDE047" stroke-width="8"/></svg>

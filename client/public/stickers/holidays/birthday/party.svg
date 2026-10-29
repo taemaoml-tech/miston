@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Вечірка"><style>@keyframes miston{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><path d="M 72 232 q -30 -22 -18 -52" fill="none" stroke="#25213A" stroke-width="11" stroke-linecap="round"/><path d="M 248 232 q 30 -22 18 -52" fill="none" stroke="#25213A" stroke-width="11" stroke-linecap="round"/><ellipse cx="126" cy="278" rx="25" ry="17" fill="#FBCFE8" stroke="#25213A" stroke-width="6"/><ellipse cx="194" cy="278" rx="25" ry="17" fill="#FBCFE8" stroke="#25213A" stroke-width="6"/><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#FBCFE8" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#FBCFE8" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#FBCFE8" stroke="#25213A" stroke-width="8"/>
+      
+      <path d="M 128 138 L 133.29 150.72 L 147.02 151.82 L 136.56 160.78 L 139.76 174.18 L 128 167 L 116.24 174.18 L 119.44 160.78 L 108.98 151.82 L 122.71 150.72 Z" fill="#FACC15" stroke="#25213A" stroke-width="5" stroke-linejoin="round"/><path d="M 192 138 L 197.29 150.72 L 211.02 151.82 L 200.56 160.78 L 203.76 174.18 L 192 167 L 180.24 174.18 L 183.44 160.78 L 172.98 151.82 L 186.71 150.72 Z" fill="#FACC15" stroke="#25213A" stroke-width="5" stroke-linejoin="round"/>
+      
+      <path d="M 126 192 q 34 48 68 0 z" fill="#FFFFFF" stroke="#25213A" stroke-width="7" stroke-linejoin="round"/><path d="M 140 196 q 6 12 4 22 M 160 198 v 24 M 180 196 q -6 12 -4 22" fill="none" stroke="#25213A" stroke-width="4"/>
+    </g><path d="M 160 20 l 46 76 h -92 z" fill="#F472B6" stroke="#25213A" stroke-width="6" stroke-linejoin="round"/><circle cx="160" cy="18" r="12" fill="#FACC15" stroke="#25213A" stroke-width="5"/></g></svg>

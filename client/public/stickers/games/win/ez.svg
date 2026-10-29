@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Ізі"><style>@keyframes miston{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g transform="rotate(6 160 170)">
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#FDE047" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#FDE047" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#FDE047" stroke="#25213A" stroke-width="8"/>
+      <path d="M 112 128 h 32" stroke="#25213A" stroke-width="8" stroke-linecap="round"/><path d="M 176 128 h 32" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 113 158 h 30" stroke="#25213A" stroke-width="9" stroke-linecap="round"/><path d="M 177 158 h 30" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+      
+      <path d="M 138 200 q 22 24 44 0" fill="none" stroke="#25213A" stroke-width="9" stroke-linecap="round"/>
+    </g><g fill="#F472B6" stroke="#25213A" stroke-width="4"><ellipse cx="246" cy="116" rx="14" ry="16"/><circle cx="226" cy="94" r="8"/><circle cx="246" cy="88" r="8"/><circle cx="266" cy="94" r="8"/></g></g></svg>

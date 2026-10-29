@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Збудження"><path d="M 72 232 q -30 -22 -18 -52" fill="none" stroke="#25213A" stroke-width="11" stroke-linecap="round"/><path d="M 248 232 q 30 -22 18 -52" fill="none" stroke="#25213A" stroke-width="11" stroke-linecap="round"/><ellipse cx="126" cy="278" rx="25" ry="17" fill="#BAE6FD" stroke="#25213A" stroke-width="6"/><ellipse cx="194" cy="278" rx="25" ry="17" fill="#BAE6FD" stroke="#25213A" stroke-width="6"/><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#BAE6FD" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#BAE6FD" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#BAE6FD" stroke="#25213A" stroke-width="8"/>
+      <path d="M 111 126 q 17 -14 34 0" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/><path d="M 175 126 q 17 -14 34 0" fill="none" stroke="#25213A" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 128 138 L 133.29 150.72 L 147.02 151.82 L 136.56 160.78 L 139.76 174.18 L 128 167 L 116.24 174.18 L 119.44 160.78 L 108.98 151.82 L 122.71 150.72 Z" fill="#FACC15" stroke="#25213A" stroke-width="5" stroke-linejoin="round"/><path d="M 192 138 L 197.29 150.72 L 211.02 151.82 L 200.56 160.78 L 203.76 174.18 L 192 167 L 180.24 174.18 L 183.44 160.78 L 172.98 151.82 L 186.71 150.72 Z" fill="#FACC15" stroke="#25213A" stroke-width="5" stroke-linejoin="round"/>
+      
+      <ellipse cx="160" cy="208" rx="20" ry="17" fill="#8C3A46" stroke="#25213A" stroke-width="6"/>
+    </g><path d="M 246 66 Q 251.72 86.28 272 92 Q 251.72 97.72 246 118 Q 240.28 97.72 220 92 Q 240.28 86.28 246 66 Z" fill="#FDE047" stroke="#CA8A04" stroke-width="4"/><path d="M 84 104 Q 87.52 116.48 100 120 Q 87.52 123.52 84 136 Q 80.48 123.52 68 120 Q 80.48 116.48 84 104 Z" fill="#FDE047" stroke="#CA8A04" stroke-width="4"/><path d="M 228 210 Q 231.08 220.92 242 224 Q 231.08 227.08 228 238 Q 224.92 227.08 214 224 Q 224.92 220.92 228 210 Z" fill="#FFF" stroke="#CA8A04" stroke-width="4"/></svg>

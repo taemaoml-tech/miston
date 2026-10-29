@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Miston — переспрямовуємо…</title>
+    <script>
+      // GitHub Pages не робить серверних rewrite, тому будь-який невідомий шлях
+      // всередині /miston/ повертаємо до SPA і відновлюємо сторінку через hash-роутер.
+      (function () {
+        var segments = location.pathname.split('/').filter(Boolean);
+        var pages = segments[0] === 'miston' ? segments.slice(1) : segments;
+        location.replace('/miston/' + (pages.length ? '#/' + pages.join('/') : ''));
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Miston — твій сучасний месенджер. Переспрямовування…</p>
+  </body>
+</html>

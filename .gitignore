@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.local
+# Завантажені користувачами файли live у server/uploads — у репозиторій лише заглушка каталогу
+**/uploads/*
+!**/uploads/.gitkeep
+coverage/
+.devdb/
+.dev-check.log
+.DS_Store

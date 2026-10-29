@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Бу!"><style>@keyframes miston{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}.m{animation:miston 1.4s ease-in-out infinite;transform-origin:160px 170px}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style><g class="m"><g>
+      <path d="M 84 106 L 92 34 L 148 76 Z" fill="#D8B4FE" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 236 106 L 228 34 L 172 76 Z" fill="#D8B4FE" stroke="#25213A" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M 96 94 L 100 52 L 132 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <path d="M 224 94 L 220 52 L 188 74 Z" fill="#F9A8D4" opacity="0.7"/>
+      <rect x="58" y="78" width="204" height="184" rx="88" fill="#D8B4FE" stroke="#25213A" stroke-width="8"/>
+      
+      <path d="M 128 136 Q 132.84 153.16 150 158 Q 132.84 162.84 128 180 Q 123.16 162.84 106 158 Q 123.16 153.16 128 136 Z" fill="#FFFFFF" stroke="#25213A" stroke-width="5" stroke-linejoin="round"/><path d="M 192 136 Q 196.84 153.16 214 158 Q 196.84 162.84 192 180 Q 187.16 162.84 170 158 Q 187.16 153.16 192 136 Z" fill="#FFFFFF" stroke="#25213A" stroke-width="5" stroke-linejoin="round"/>
+      
+      <ellipse cx="160" cy="208" rx="20" ry="17" fill="#8C3A46" stroke="#25213A" stroke-width="6"/>
+    </g><path d="M 62 216 q -8 -74 44 -80 q 52 -6 44 80 v 20 q -12 -13 -24 0 q -12 -13 -24 0 q -12 -13 -24 0 z" fill="#E2E8F0" stroke="#25213A" stroke-width="5"/><circle cx="90" cy="176" r="7" fill="#25213A"/><circle cx="118" cy="176" r="7" fill="#25213A"/></g></svg>
