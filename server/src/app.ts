@@ -18,6 +18,7 @@ import notificationRoutes from './routes/notifications';
 import starRoutes from './routes/star';
 import stickerRoutes from './routes/stickers';
 import supportRoutes from './routes/support';
+import { AppError } from './utils/errors';
 import { asyncHandler } from './utils/http';
 
 export function createApp(): express.Express {
@@ -32,7 +33,8 @@ export function createApp(): express.Express {
       if (!origin || config.CORS_ORIGINS.includes('*') || config.CORS_ORIGINS.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Origin not allowed by CORS'));
+        // AppError, а не Error: інакше політична відмова виглядає як 500.
+        callback(new AppError(403, 'ORIGIN_NOT_ALLOWED', 'Цьому origin не дозволено звертатися до API'));
       }
     },
   }));
