@@ -6,7 +6,9 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TYPE user_role AS ENUM ('user', 'owner', 'moderator');
 CREATE TYPE conversation_kind AS ENUM ('direct', 'group', 'channel');
 CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
-CREATE TYPE message_kind AS ENUM ('text', 'image', 'video', 'video_note', 'document', 'voice', 'sticker');
+-- Порядок значень збігається з порядком після міграцій 003 і 006, щоб свіжа база
+-- структурно не відрізнялася від наних, які нарощувалися міграціями.
+CREATE TYPE message_kind AS ENUM ('text', 'image', 'video', 'document', 'voice', 'video_note', 'sticker');
 
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

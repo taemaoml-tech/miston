@@ -3,7 +3,18 @@
 -- Крок 1: перейменувати застаріле значення 'admin' на 'owner'.
 -- Значення enum у PostgreSQL не можна додавати й використовувати в тому ж транзакційному
 -- блоці, тому міграцію застосовують по одному оператору (див. scripts/dev-db).
-ALTER TYPE user_role RENAME VALUE 'admin' TO 'owner';
+-- Умова потрібна, щоб міграцію можна було прогнати і на чистій базі: schema.sql
+-- описує вже після-008 стан enum, де значення 'admin' більше немає.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_type t JOIN pg_enum e ON e.enumtypid = t.oid
+     WHERE t.typname = 'user_role' AND e.enumlabel = 'admin'
+  ) THEN
+    ALTER TYPE user_role RENAME VALUE 'admin' TO 'owner';
+  END IF;
+END
+$$;
 
 -- Крок 2: додати роль модератора.
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'moderator';

@@ -104,7 +104,7 @@ miston/
 │  ├─ src/
 │  │  ├─ auth/                  # реєстрація, RBAC-матриця прав, журнал дій
 │  │  ├─ config/                # валідація змінних середовища
-│  │  ├─ db/                    # пул з'єднань і SQL-запити
+│  │  ├─ db/                    # пул з'єднань, SQL-запити, застосувач міграцій (migrate.ts)
 │  │  ├─ middleware/            # auth, RBAC, membership, uploads, errors
 │  │  ├─ moderation/            # скарги, звернення до підтримки, блокування, верифікація, Star від адміністрації, сповіщення
 │  │  ├─ routes/                # REST-маршрути (включно з ICE-конфігурацією)
@@ -123,6 +123,7 @@ miston/
 │  ├─ generate-stickers.mjs     # каталог стікер-паків → SVG + 007_sticker_seed.sql
 │  └─ sticker-art.mjs           # параметричний SVG-генератор облич, форм і анімацій
 ├─ docker-compose.yml
+├─ render.yaml                  # інфраструктура API для Render (Blueprint)
 ├─ .github/
 │  ├─ workflows/ci.yml             # typecheck + збірка обох пакетів на кожен push/PR
 │  └─ workflows/deploy-pages.yml   # збірка клієнта та публікація на GitHub Pages
@@ -195,6 +196,27 @@ done
 ```bash
 docker compose up -d db
 ```
+
+### Міграції скриптом (без `psql`)
+
+`npm run migrate -w server` послідовно застосовує `database/schema.sql` і всі
+`database/migrations/*.sql`, які ще не застосовані, та веде журнал у таблиці
+`schema_migrations`. Кожен файл — в окремій транзакції, тож невдалий файл
+відкочується повністю й решта бази не псується.
+
+```bash
+npm run migrate -w server              # застосувати чергу
+npm run migrate -w server -- --baseline # база вже заповнена вручну: лише позначити файли застосованими
+```
+
+Повторний запуск нічого не робить («міграцій застосовувати не потрібно»). Якщо в базі
+вже є таблиця `users`, але журналу немає, скрипт зупиниться й попросить `--baseline` —
+так він не спробує вдруге виконати `schema.sql`.
+
+> Обмеження: скрип виконує файл одним запитом у межах транзакції. На **старих** базах,
+> де `ALTER TYPE … ADD VALUE` у `003`/`006` дійсно додає нове значення, яке той самий
+> файл далі використовує, потрібен `psql -f` по операторах (див. вище). Для свіжих баз
+> це неактуально: `schema.sql` уже описує кінцевий стан enum.
 
 ### 3. Змінні середовища сервера
 
@@ -298,15 +320,40 @@ GitHub Pages не виконує JavaScript на сервері, тому баз
 | `UPLOAD_DIR` | шлях на **постійному** томі; інакше аватари й медіа зникнуть після redeploy |
 | `WEBRTC_TURN_URL` / `_USERNAME` / `_CREDENTIAL` | потрібні для дзвінків за симетричного NAT (Turnserver, Metered, Xirsys) |
 
-Схему застосуйте одноразово:
+Схему застосуйте одноразово — `psql` або скриптом з журналом міграцій:
 
 ```bash
-psql "$DATABASE_URL" -f database/schema.sql
+psql "$DATABASE_URL" -f database/schema.sql   # якщо psql під рукою
+npm run migrate -w server                     # або те саме без psql
 ```
 
 Застарілу базу оновлюють міграції `database/migrations/*.sql` — по порядку, без загальної транзакції.
 
 Перевірка: `GET <api>/health` повертає `{ "status": "ok" }`; якщо PostgreSQL недоступний — HTTP 503 і `{ "status": "unavailable" }`.
+
+#### Найшвидший шлях: Render (API) + Neon (PostgreSQL)
+
+Обидва сервіси мають безкоштовний тариф, репозиторій уже містить [render.yaml](render.yaml).
+
+1. **Neon** — створіть проєкт і базу, візьміть **pooled** connection string (хост із `-pooler`
+   в кінці, рядком `?sslmode=require`). Саме pooled, а не direct: безкоштовна лімітка
+   на одночасні з'єднання рахується десятками.
+2. **Render** — New → **Blueprint** → репо `taemaoml-tech/miston`. План `free`, регіон
+   `frankfurt`, збірка й запуск беруться з `render.yaml`:
+   `npm ci --include=dev && npm run build -w server && node server/dist/db/migrate.js`,
+   старт — `node server/dist/index.js`. Міграції проходять теж під час збірки.
+3. У формі імпорту Render попросить значення для `DATABASE_URL` (`sync: false`) —
+   вставте URL із Neon. `JWT_SECRET` генерується сам (`generateValue`).
+4. Скопіюйте домен сервісу (на кшталт `https://miston-api.onrender.com`) і внесіть його
+   у змінні GitHub Actions — див. наступний підрозділ.
+
+Чим платний тариф відрізняється по суті:
+
+| Ограничення free | Наслідок |
+| --- | --- |
+| Сервіс засинає після 15 хв без трафіку | перший запит — холодний старт 30–60 с; Socket.io розривається, клієнт перепід'єднується сам |
+| Файлова система ефемерна | `UPLOAD_DIR` переживає перезапуск, але **не** redeploy: аватари та медіа зникають. Потрібен persistent disk (платний) або S3-сумісне сховище |
+| Немає власного вихідної IP і TURN | дзвінки за симетричного NAT не пройдуть, доки не додасте `WEBRTC_TURN_*` |
 
 ### 2. Клієнт на GitHub Pages
 
@@ -340,9 +387,9 @@ npm run build -w client
 VITE_BASE_PATH=/miston/ npm run preview -w client   # http://localhost:4173/miston/
 ```
 
-### 6. Створення репозиторію
+### 6. Репозиторій і перший пуш
 
-Проєкт не містить `.git` — перший випуск ініціалізує його вручну:
+Репо `taemaoml-tech/miston` уже створене й наповнене; для нового проєкту послідовність така:
 
 ```bash
 git init -b main
@@ -352,17 +399,25 @@ git remote add origin https://github.com/taemaoml-tech/miston.git
 git push -u origin main
 ```
 
-`.gitignore` уже прибирає `node_modules/`, `dist/`, `.env`, `.devdb/` і `uploads/*` — жодних секретів чи локальної бази в історії не опиняється. Перевірте це перед перним пушем:
+`.gitignore` уже прибирає `node_modules/`, `dist/`, `.env`, `.devdb/` і `**/uploads/*` — жодних секретів чи локальної бази в історії не опиняється. Перевірте це перед перним пушем:
 
 ```bash
 git status --ignored | grep -E "\.env|uploads"
 ```
 
+Пуш за HTTPS автентифікується через Git Credential Manager: він відкриває власне вікно
+на робочому столі, тому команду має запускати людина, а не невидимий автоматичний сеанс.
+
+> `npm ci` у CI падає з `Missing: @miston/client@1.0.0 from lock file`, якщо кореневий
+> `package-lock.json` не описує workspaces. Так трапляється, коли в `client/` чи `server/`
+> з'являється власний лок-файл після `npm install` усередині підкаталогу — його видаляють, а кореневий лок-файл
+> перебудовують командою `npm install` у корені проєкту.
+
 ### Чекліт перед публічним запуском
 
 - [ ] `npm run typecheck` і `npm run build` проходять без помилок.
 - [ ] `DATABASE_URL`, `JWT_SECRET` (32+ символів) і `CLIENT_URL` задані; `CLIENT_URL` містить точний origin Pages.
-- [ ] `GET /health` повертає `ok`, схема та всі міграції `001–010` застосовані.
+- [ ] `GET /health` повертає `ok`, у базі є таблиця `schema_migrations` із 11 записами (`schema.sql` + 001–010).
 - [ ] `UPLOAD_DIR` вказує на постійний том, `TRUST_PROXY=true` за проксі.
 - [ ] `VITE_API_URL` і `VITE_SOCKET_URL` задані як змінні середовища Workflow.
 - [ ] Реєстрація, вхід, відновлення сесії та вихід працюють на прод-збірці.
@@ -937,6 +992,7 @@ users N ── N system_notifications (system_notification_reads — прочи�
 | `npm run dev` | Сервер (`tsx watch`) і клієнт (Vite) одночасно |
 | `npm run build` | Продакшен-збірка сервера й клієнта |
 | `npm run typecheck` | Перевірка TypeScript в обох пакетах |
+| `npm run migrate -w server` | Застосувати `schema.sql` і міграції з журналом `schema_migrations` |
 | `npm test` | `node --test` у пакеті `server` (тестових файлів у репозиторії ще немає — скрипт зарезервовано) |
 | `npm run start -w server` | Запуск зібраного API (`server/dist`) |
 | `npm run preview -w client` | Перегляд зібраного клієнта |

@@ -1,0 +1,32 @@
+# Інфраструктура як код для Render. Імпорт: Render → New → Blueprint → обрати репо.
+# Клієнт живе окремо на GitHub Pages (.github/workflows/deploy-pages.yml) — тут лише API.
+services:
+  - type: web
+    name: miston-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build -w server && node server/dist/db/migrate.js
+    startCommand: node server/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Pooled URL із Neon (хост зазвичай закінчується на -pooler). sync: false —
+      # значення вводить людина в інтерфейсі Render після імпорту blueprint.
+      - key: DATABASE_URL
+        sync: false
+      # Render генерує стійкий випадковий секрет; без нього JWT_SECRET узагалі
+      # не має опинитися в репозиторії.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        value: https://taemaoml-tech.github.io
+      - key: TRUST_PROXY
+        value: "true"
+      # Безкоштовний Neon рахунок має малий ліміт одночасних з'єднань.
+      - key: DB_POOL_MAX
+        value: "5"
+      # На free-тарифі диск ефемерний: файли переживають перезапуск, але не redeploy.
+      - key: UPLOAD_DIR
+        value: /opt/render/project/src/uploads
