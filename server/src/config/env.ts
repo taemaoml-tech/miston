@@ -21,6 +21,10 @@ const schema = z.object({
   MAX_STICKER_SIZE: z.coerce.number().int().positive().max(16 * 1024 * 1024).default(1024 * 1024),
   TRUST_PROXY: booleanValue.default(false),
   DB_POOL_MAX: z.coerce.number().int().min(1).max(100).default(20),
+  // Render підставляє власний рядок підключення без sslmode, тому перемикач
+  // окремий від URL: auto — слідувати за sslmode=require, require — TLS без
+  // перевірки сертифіката, verify — TLS із перевіркою, disable — без TLS.
+  DB_SSL: z.enum(['auto', 'disable', 'require', 'verify']).default('auto'),
   WEBRTC_STUN_URLS: z.string().default('stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302'),
   WEBRTC_TURN_URL: z.string().optional(),
   WEBRTC_TURN_USERNAME: z.string().optional(),

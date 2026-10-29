@@ -1,10 +1,18 @@
 # Інфраструктура як код для Render. Імпорт: Render → New → Blueprint → обрати репо.
-# Клієнт живе окремо на GitHub Pages (.github/workflows/deploy-pages.yml) — тут лише API.
+# Клієнт живе окремо на GitHub Pages (.github/workflows/deploy-pages.yml) — тут API і база.
+# Один імпорт створює обидва ресурси й сам передає рядок підключення сервісу,
+# тож у формі Render не треба вставляти жодного секрета.
+databases:
+  - name: miston-db
+    databaseName: miston
+    plan: free            # Безкоштовна база живе 30 днів від створення, потім 14 днів на виживання.
+    region: frankfurt     # Має збігатися з регіоном сервісу — інакше приватної мережі не буде.
+
 services:
   - type: web
     name: miston-api
     runtime: node
-    plan: free
+    plan: free            # Безкоштовний сервіс присипає після 15 хвилин без запитів.
     region: frankfurt
     buildCommand: npm ci --include=dev && npm run build -w server && node server/dist/db/migrate.js
     startCommand: node server/dist/index.js
@@ -12,10 +20,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Pooled URL із Neon (хост зазвичай закінчується на -pooler). sync: false —
-      # значення вводить людина в інтерфейсі Render після імпорту blueprint.
+      # Render підставляє приватний мережевий рядок miston-db сам, тому пароль
+      # бази не потрапляє ані в репозиторій, ані в руки людини.
+      # Щоб перебазуватися на Neon: прибери fromDatabase і постав sync: false.
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: miston-db
+          property: connectionString
       # Render генерує стійкий випадковий секрет; без нього JWT_SECRET узагалі
       # не має опинитися в репозиторії.
       - key: JWT_SECRET
@@ -24,7 +35,11 @@ services:
         value: https://taemaoml-tech.github.io
       - key: TRUST_PROXY
         value: "true"
-      # Безкоштовний Neon рахунок має малий ліміт одночасних з'єднань.
+      # Рядок від fromDatabase не містить sslmode, а Render розмовляє TLS із
+      # самопідписаним сертифікатом — увімкнути TLS явно.
+      - key: DB_SSL
+        value: require
+      # Безкоштовна база має малий ліміт одночасних з'єднань.
       - key: DB_POOL_MAX
         value: "5"
       # На free-тарифі диск ефемерний: файли переживають перезапуск, але не redeploy.

@@ -312,10 +312,11 @@ GitHub Pages не виконує JavaScript на сервері, тому баз
 | Змінна | Для чого |
 | --- | --- |
 | `NODE_ENV=production` | вимикає stack trace в помилках |
-| `DATABASE_URL` | PostgreSQL 14+; за TLS додайте `?sslmode=require` |
+| `DATABASE_URL` | PostgreSQL 14+; у продакшені з'єднання завжди йде через TLS (самопідписаний сертифікат допускається). Вимкнути TLS — лише з `?sslmode=disable` |
 | `JWT_SECRET` | випадкові 32+ символи |
 | `CLIENT_URL` | **обовʼязково** `https://taemaoml-tech.github.io` — без цього браузер відхилить відповіді через CORS |
 | `TRUST_PROXY=true` | Render/Railway/nginx: інакше IP і rate limit працюють неправильно |
+| `DB_SSL=require` | TLS без перевірки сертифіката; потрібен, коли платформа дає рядок підключення без `sslmode` (приватна мережа Render) |
 | `PORT` | порт, який слухає платформа (за замовчуванням 4000) |
 | `UPLOAD_DIR` | шлях на **постійному** томі; інакше аватари й медіа зникнуть після redeploy |
 | `WEBRTC_TURN_URL` / `_USERNAME` / `_CREDENTIAL` | потрібні для дзвінків за симетричного NAT (Turnserver, Metered, Xirsys) |
@@ -331,29 +332,32 @@ npm run migrate -w server                     # або те саме без psql
 
 Перевірка: `GET <api>/health` повертає `{ "status": "ok" }`; якщо PostgreSQL недоступний — HTTP 503 і `{ "status": "unavailable" }`.
 
-#### Найшвидший шлях: Render (API) + Neon (PostgreSQL)
+#### Найшвидший шлях: один акаунт Render (API і PostgreSQL разом)
 
-Обидва сервіси мають безкоштовний тариф, репозиторій уже містить [render.yaml](render.yaml).
+[render.yaml](render.yaml) описує обидва ресурси — сервіс `miston-api` і базу `miston-db`.
+Реєстрація на Render — єдине, що робить людина: створення акаунта вимагає вашого
+email-підтвердження та пароля, і вони не мають проходити крізь жоден інструмент.
 
-1. **Neon** — створіть проєкт і базу, візьміть **pooled** connection string (хост із `-pooler`
-   в кінці, рядком `?sslmode=require`). Саме pooled, а не direct: безкоштовна лімітка
-   на одночасні з'єднання рахується десятками.
-2. **Render** — New → **Blueprint** → репо `taemaoml-tech/miston`. План `free`, регіон
-   `frankfurt`, збірка й запуск беруться з `render.yaml`:
-   `npm ci --include=dev && npm run build -w server && node server/dist/db/migrate.js`,
-   старт — `node server/dist/index.js`. Міграції проходять теж під час збірки.
-3. У формі імпорту Render попросить значення для `DATABASE_URL` (`sync: false`) —
-   вставте URL із Neon. `JWT_SECRET` генерується сам (`generateValue`).
-4. Скопіюйте домен сервісу (на кшталт `https://miston-api.onrender.com`) і внесіть його
-   у змінні GitHub Actions — див. наступний підрозділ.
+1. **render.com** → Sign up (email або GitHub) → **New + → Blueprint** → репо `taemaoml-tech/miston`.
+2. Render показує передперегляд плану з двома ресурсами (`miston-api` і `miston-db`, обидва
+   `free`, регіон `frankfurt`). Тисніть **Apply** — вставляти нічого не треба: рядок
+   підключення сервіс отримує через `fromDatabase`, а `JWT_SECRET` генерує сам.
+3. Перший білд проганяє збірку і міграції (`npm ci --include=dev && npm run build -w server &&
+   node server/dist/db/migrate.js`) — `psql` теж не потрібен.
+4. Відкрийте `https://<домен-сервісу>/health` → має бути `{ "status": "ok" }`. Далі — змінні
+   GitHub Actions із наступного підрозділу, і помилка «Сервер Miston ще не під'єднано» зникне.
 
-Чим платний тариф відрізняється по суті:
-
-| Ограничення free | Наслідок |
+| Обмеження free | Наслідок |
 | --- | --- |
+| **Безкоштовна база живе 30 днів** від створення (потім 14 днів на перенесення) | для справжнього запуску заздалегідь перемикайтесь на Neon або платний план Render |
 | Сервіс засинає після 15 хв без трафіку | перший запит — холодний старт 30–60 с; Socket.io розривається, клієнт перепід'єднується сам |
 | Файлова система ефемерна | `UPLOAD_DIR` переживає перезапуск, але **не** redeploy: аватари та медіа зникають. Потрібен persistent disk (платний) або S3-сумісне сховище |
-| Немає власного вихідної IP і TURN | дзвінки за симетричного NAT не пройдуть, доки не додасте `WEBRTC_TURN_*` |
+| Немає власної вихідної IP і TURN | дзвінки за симетричного NAT не пройдуть, доки не додасте `WEBRTC_TURN_*` |
+
+Коли безкоштовна база вичерпається: створіть проєкт на **neon.tech** (без строку, є
+безкоштовний тариф), візьміть **pooled** connection string (хост із `-pooler`, рядком
+`?sslmode=require`) і в `render.yaml` замініть у `DATABASE_URL` блок `fromDatabase` на
+`sync: false` — тоді Render попросить вставити URL один раз. Решта коду не змінюється.
 
 ### 2. Клієнт на GitHub Pages
 
@@ -365,6 +369,11 @@ npm run migrate -w server                     # або те саме без psql
 | --- | --- | --- |
 | `VITE_API_URL` | `https://miston-api.onrender.com/api` | абсолютний URL API; без нього клієнт шукатиме `/api` на github.io |
 | `VITE_SOCKET_URL` | `https://miston-api.onrender.com` | origin Socket.io; за same-origin хостингу можна не задавати |
+
+Значення «запікаються» у збірку, тому після додавання змінних деплой треба перезапустити
+(Actions → Деплой на GitHub Pages → Run workflow). Поки змінних немає, інтерфейс на вході й
+реєстрації показує «Сервер Miston ще не під'єднано. Запит надходить на сторінку замість API.» —
+це не вада коду, а чесна сигналізація, що клієнт не дізнався адресу сервера.
 
 Після `git push origin main` праця `.github/workflows/deploy-pages.yml` робить `npm ci` → `typecheck` → `build -w client` → публікацію `client/dist`. `.github/workflows/ci.yml` паралельно перевіряє збірку обох пакетів у кожному PR.
 
@@ -446,6 +455,7 @@ git status --ignored | grep -E "\.env|uploads"
 | `MAX_STICKER_SIZE` | `1048576` | Максимальний розмір файлу власного стікера (1 МіБ; до 16 МіБ) |
 | `TRUST_PROXY` | `false` | Увімкніть `true` за reverse proxy, щоб коректно працював rate limit |
 | `DB_POOL_MAX` | `20` | Максимум з'єднань у пулі на один процес |
+| `DB_SSL` | `auto` | TLS до PostgreSQL: `auto` — як у URL (`sslmode=require`), `require` — TLS без перевірки сертифіката, `verify` — TLS із перевіркою, `disable` — без TLS |
 | `WEBRTC_STUN_URLS` | `stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302` | STUN-сервери для ICE, через кому |
 | `WEBRTC_TURN_URL` | — | TURN-сервер (потрібен за симетричного NAT/фаєрвола) |
 | `WEBRTC_TURN_USERNAME` | — | Ім'я користувача TURN |
@@ -453,7 +463,11 @@ git status --ignored | grep -E "\.env|uploads"
 | `CALL_RING_TIMEOUT_MS` | `45000` | Скільки мілісекунд виклик лунає, перш ніж завершитися (5–180 с) |
 | `MAX_CALL_PARTICIPANTS` | `6` | Максимум учасників одного дзвінка (2–20) |
 
-Якщо `NODE_ENV=production` і `DATABASE_URL` містить `sslmode=require`, підключення до PostgreSQL використовує TLS.
+Типово TLS увімкнено, лише якщо `DATABASE_URL` містить `sslmode=require`. Керується це
+змінною `DB_SSL`: на Render рядок підключення приходить із приватної мережі й без
+`sslmode`, тому в `render.yaml` стоїть `DB_SSL=require` (сервер і база в одному регіоні,
+сертифікат самопідписаний — звідси `rejectUnauthorized: false`). Локальна база без TLS
+незмінно працює з `auto`.
 
 ### Клієнт (`client/.env`, необов'язково)
 
