@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { infoHref } from '../../router/infoRoute';
 import { errorMessage } from '../../utils/format';
 import { INFO_LINKS } from '../info/infoLinks';
+import { AppDownload } from '../common/AppDownload';
 import { Logo } from '../common/Logo';
 import { Spinner } from '../common/Spinner';
 
@@ -113,7 +114,8 @@ export function AuthPage() {
               <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>{loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Miston' : 'Створити акаунт'}<ArrowRight size={17} /></>}</button>
             </form>
             <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400"><LockKeyhole size={13} /> Ваша сесія безпечно зберігається на цьому пристрої</div>
-            <nav className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t pt-5 text-xs dark:border-slate-800" aria-label="Сторінки проєкту">
+            <AppDownload />
+            <nav className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs" aria-label="Сторінки проєкту">
               {INFO_LINKS.map((link) => (
                 <a key={link.route} href={infoHref(link.route)} className="flex items-center gap-1.5 text-slate-500 transition hover:text-accent-600 dark:text-slate-400 dark:hover:text-accent-400">
                   <link.icon size={13} /> {link.label}

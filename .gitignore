@@ -9,3 +9,7 @@ coverage/
 .devdb/
 .dev-check.log
 .DS_Store
+# Поки що не потрібно, щоб експеримент із Android потрапляв у репозиторій і в
+# історію git разом із Gradle-кешем. Коли вирішимо зберігати проєкт — приберемо
+# цей рядок і ігноруватимемо лише android/.gradle та android/app/build.
+client/android/
