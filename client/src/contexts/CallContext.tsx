@@ -2,13 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
 import { api } from '../api';
-import { publicAsset } from '../api/client';
 import type {
   CallEndReason, CallInfo, CallKind, CallParticipant, CallPhase, MessageSender,
 } from '../types/models';
 import { useAuth } from './AuthContext';
 import { useMessenger } from './MessengerContext';
 import { useSocket } from './SocketContext';
+import { dismissBackgroundNotification, isNativeApp, notifyInBackground } from '../utils/notifications';
+
+const CALL_NOTIFICATION_GROUP = 'calls:incoming';
 
 interface CallAck {
   ok: boolean;
@@ -384,6 +386,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const teardown = useCallback(() => {
     sessionTokenRef.current += 1;
     stopRingtone();
+    void dismissBackgroundNotification({ kind: 'calls', group: CALL_NOTIFICATION_GROUP });
     for (const remoteUserId of [...peersRef.current.keys()]) closePeer(remoteUserId);
     peerCreationsRef.current.clear();
     pendingCandidatesRef.current.clear();
@@ -658,8 +661,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
         ? (incoming.kind === 'video' ? 'Вхідний відеодзвінок' : 'Вхідний аудіодзвінок')
         : 'Вхідний груповий дзвінок';
       showToast(title, body);
-      if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body, icon: publicAsset('favicon.svg') });
+      if (isNativeApp() || document.hidden) {
+        void notifyInBackground({
+          title: `Вхідний дзвінок · ${title}`,
+          body,
+          kind: 'calls',
+          group: CALL_NOTIFICATION_GROUP,
+          conversationId: incoming.conversation.id,
+        });
       }
     };
 

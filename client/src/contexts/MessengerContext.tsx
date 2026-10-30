@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '../api';
-import { publicAsset } from '../api/client';
 import type { AppNotification, Channel, CleanupScope, CommunityServer, Conversation, Message, PresenceEvent, SystemNotification } from '../types/models';
 import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
+import { isNativeApp, notifyInBackground, OPEN_CONVERSATION_EVENT, requestNotificationPermission } from '../utils/notifications';
 
 interface MessengerContextValue {
   conversations: Conversation[];
@@ -48,7 +48,14 @@ interface MessengerContextValue {
 
 const MessengerContext = createContext<MessengerContextValue | null>(null);
 
-const attachmentLabels: Record<string, string> = { image: 'фото', video: 'відео', document: 'документ', voice: 'голосове повідомлення' };
+const attachmentLabels: Record<string, string> = {
+  image: 'фото',
+  video: 'відео',
+  document: 'документ',
+  voice: 'голосове повідомлення',
+  video_note: 'відеокружечок',
+  sticker: 'стікер',
+};
 
 export function MessengerProvider({ children }: { children: ReactNode }) {
   const { user, endSession } = useAuth();
@@ -69,6 +76,8 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
   activeIdRef.current = activeConversationId;
   const conversationsRef = useRef<Conversation[]>([]);
   conversationsRef.current = conversations;
+  const serversRef = useRef<CommunityServer[]>([]);
+  serversRef.current = servers;
 
   const activeServer = servers.find((server) => server.id === activeServerId) || null;
   const activeChannel = activeServer?.channels.find((channel) => channel.id === activeConversationId);
@@ -149,6 +158,19 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
     if (serverResult.status === 'fulfilled') setServers(serverResult.value.servers);
   }, []);
 
+  const conversationTitle = useCallback((conversationId: string): string | null => {
+    const conversation = conversationsRef.current.find((item) => item.id === conversationId);
+    if (conversation) {
+      // В особистому чаті ім'я відправника і є назвою розмови, тому не дублюємо його.
+      return conversation.kind === 'direct' || conversation.kind === 'saved' ? null : conversation.title || 'Група';
+    }
+    for (const server of serversRef.current) {
+      const channel = server.channels.find((item) => item.id === conversationId);
+      if (channel) return `#${channel.title}`;
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     if (!socket || !user) return;
     const onMessage = (payload: Message | { message: Message }) => {
@@ -167,11 +189,19 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
       });
       setServers((current) => current.map((server) => ({ ...server, channels: server.channels.map((channel) => channel.id === message.conversationId ? { ...channel, unreadCount: message.senderId !== user.id && !isActive ? (channel.unreadCount || 0) + 1 : channel.unreadCount } : channel) })));
       if (message.senderId !== user.id && !isActive) {
-        const title = message.sender?.displayName || 'Нове повідомлення';
-        const body = message.content || (message.kind === 'text' ? 'Нове повідомлення' : `Надіслано: ${attachmentLabels[message.kind] || 'вкладення'}`);
-        notify(title, body, message.conversationId);
-        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-          new Notification(title, { body, icon: publicAsset('favicon.svg') });
+        const senderName = message.sender?.displayName || message.sender?.username || 'Користувач';
+        const preview = message.content || (message.kind === 'text' ? 'Нове повідомлення' : `Надіслано: ${attachmentLabels[message.kind] || 'вкладення'}`);
+        const source = conversationTitle(message.conversationId);
+        notify(senderName, preview, message.conversationId);
+        // WebView не підтримує Web Notification, тому в застосунку шлях лише
+        // нативний; у браузері сповіщаємо, тільки коли вкладку не видно.
+        if (isNativeApp() || document.hidden) {
+          void notifyInBackground({
+            title: source ? `${senderName} · ${source}` : senderName,
+            body: preview,
+            group: `messages:${message.conversationId}`,
+            conversationId: message.conversationId,
+          });
         }
       }
     };
@@ -309,6 +339,36 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
     setMobileChatOpen(true);
   }, []);
   const closeMobileChat = useCallback(() => setMobileChatOpen(false), []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (isNativeApp()) {
+      void requestNotificationPermission();
+      return;
+    }
+    // Браузери ігнорують запит без дії користувача, тому питаємо при першому дотику.
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    const ask = () => { void requestNotificationPermission(); };
+    window.addEventListener('pointerdown', ask, { once: true });
+    return () => window.removeEventListener('pointerdown', ask);
+  }, [user]);
+
+  useEffect(() => {
+    const openFromNotification = (event: Event) => {
+      const conversationId = (event as CustomEvent<{ conversationId?: string }>).detail?.conversationId;
+      if (!conversationId) return;
+      for (const server of serversRef.current) {
+        const channel = server.channels.find((item) => item.id === conversationId);
+        if (channel) {
+          selectChannel(server.id, channel);
+          return;
+        }
+      }
+      selectConversation(conversationId);
+    };
+    window.addEventListener(OPEN_CONVERSATION_EVENT, openFromNotification);
+    return () => window.removeEventListener(OPEN_CONVERSATION_EVENT, openFromNotification);
+  }, [selectChannel, selectConversation]);
 
   const createDirect = useCallback(async (userId: string) => {
     const { conversation } = await api.conversations.create({ kind: 'direct', userId });
