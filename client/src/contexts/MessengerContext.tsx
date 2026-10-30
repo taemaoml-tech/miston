@@ -33,6 +33,10 @@ interface MessengerContextValue {
   deleteConversation: (conversationId: string, scope: CleanupScope) => Promise<void>;
   createDirect: (userId: string) => Promise<void>;
   createGroup: (title: string, memberIds: string[]) => Promise<void>;
+  savedNotes: Conversation | null;
+  /** Нотатки існують у єдиному екземплярі на людину, тому «власні» = «або створи». */
+  ensureSavedNotes: () => Promise<Conversation>;
+  openSavedNotes: () => Promise<void>;
   createServer: (name: string) => Promise<void>;
   createChannel: (name: string) => Promise<void>;
   addServerMember: (userId: string) => Promise<void>;
@@ -316,6 +320,20 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
     setConversations((current) => [conversation, ...current]);
     selectConversation(conversation.id);
   }, [selectConversation]);
+
+  const savedNotes = useMemo(
+    () => conversations.find((conversation) => conversation.kind === 'saved') ?? null,
+    [conversations],
+  );
+  const ensureSavedNotes = useCallback(async () => {
+    const { conversation } = await api.conversations.create({ kind: 'saved' });
+    setConversations((current) => [conversation, ...current.filter((item) => item.id !== conversation.id)]);
+    return conversation;
+  }, []);
+  const openSavedNotes = useCallback(async () => {
+    const conversation = await ensureSavedNotes();
+    selectConversation(conversation.id);
+  }, [ensureSavedNotes, selectConversation]);
   const createServer = useCallback(async (name: string) => {
     const { server } = await api.servers.create(name);
     setServers((current) => [...current, server]);
@@ -365,8 +383,9 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
     selectHome, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken,
     clearHistory, deleteConversation,
     createDirect, createGroup, createServer, createChannel, addServerMember, markReadLocal, dismissNotification,
+    savedNotes, ensureSavedNotes, openSavedNotes,
     openNotification, notify: (title, body) => notify(title, body),
-  }), [conversations, servers, activeConversation, activeServer, activeServerId, loading, error, mobileChatOpen, presence, notifications, systemNotifications, systemUnread, refreshInbox, markSystemRead, markAllSystemRead, selectHome, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken, clearHistory, deleteConversation, createDirect, createGroup, createServer, createChannel, addServerMember, dismissNotification, openNotification, notify]);
+  }), [conversations, servers, activeConversation, activeServer, activeServerId, loading, error, mobileChatOpen, presence, notifications, systemNotifications, systemUnread, refreshInbox, markSystemRead, markAllSystemRead, selectHome, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken, clearHistory, deleteConversation, createDirect, createGroup, createServer, createChannel, addServerMember, dismissNotification, savedNotes, ensureSavedNotes, openSavedNotes, openNotification, notify]);
 
   return <MessengerContext.Provider value={value}>{children}</MessengerContext.Provider>;
 }

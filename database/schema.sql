@@ -4,7 +4,8 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Порядок значень збігається з порядком після міграції 008 ('admin' було перейменовано на 'owner').
 CREATE TYPE user_role AS ENUM ('user', 'owner', 'moderator');
-CREATE TYPE conversation_kind AS ENUM ('direct', 'group', 'channel');
+-- 'saved' останнім: так само його додає міграція 011, щоб наних і свіжі бази збігалися порядком.
+CREATE TYPE conversation_kind AS ENUM ('direct', 'group', 'channel', 'saved');
 CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
 -- Порядок значень збігається з порядком після міграцій 003 і 006, щоб свіжа база
 -- структурно не відрізнялася від наних, які нарощувалися міграціями.
@@ -58,6 +59,7 @@ CREATE TABLE conversations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT direct_shape CHECK (
     (kind = 'direct' AND direct_key IS NOT NULL AND server_id IS NULL AND title IS NULL)
+    OR (kind = 'saved' AND direct_key IS NOT NULL AND server_id IS NULL AND title IS NULL)
     OR (kind = 'group' AND direct_key IS NULL AND server_id IS NULL AND title IS NOT NULL)
     OR (kind = 'channel' AND direct_key IS NULL AND server_id IS NOT NULL AND title IS NOT NULL)
   )

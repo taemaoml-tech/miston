@@ -1,4 +1,4 @@
-import { Bell, Eraser, Flag, LogOut, MessageSquarePlus, MoreVertical, Search, Trash2, Users, X } from 'lucide-react';
+import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, MessageSquarePlus, MoreVertical, Search, Trash2, Users, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,12 +34,19 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
   onReportUser: (userId: string) => void;
 }) {
   const { user } = useAuth();
-  const { conversations, activeConversation, selectConversation, loading, error, reload, presence, systemUnread } = useMessenger();
+  const { conversations, activeConversation, selectConversation, loading, error, reload, presence, systemUnread, savedNotes, openSavedNotes } = useMessenger();
   const { incomingCount } = useFriends();
   const [tab, setTab] = useState<'chats' | 'friends'>('chats');
   const [inboxOpen, setInboxOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<RowMenu | null>(null);
+  const [openingNotes, setOpeningNotes] = useState(false);
+
+  async function openNotes() {
+    if (savedNotes) { selectConversation(savedNotes.id); return; }
+    setOpeningNotes(true);
+    try { await openSavedNotes(); } finally { setOpeningNotes(false); }
+  }
 
   function openMenu(conversation: Conversation, x: number, y: number) {
     setMenu({ conversation, x: Math.max(8, Math.min(x, window.innerWidth - MENU_WIDTH - 8)), y: Math.max(8, Math.min(y, window.innerHeight - MENU_HEIGHT - 8)) });
@@ -48,8 +55,9 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
   function closeMenu() {
     setMenu(null);
   }
+  // Нотатки живуть окремим закріпленим рядком угорі, а не в спільному списку.
   const directConversations = useMemo(
-    () => conversations.filter((conversation) => conversation.kind !== 'channel'),
+    () => conversations.filter((conversation) => conversation.kind !== 'channel' && conversation.kind !== 'saved'),
     [conversations],
   );
   const filtered = useMemo(() => directConversations.filter((conversation) => `${conversation.title} ${conversation.lastMessage?.content || ''}`.toLowerCase().includes(query.toLowerCase())), [directConversations, query]);
@@ -78,6 +86,18 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
         <>
           <div className="px-3 pb-3"><label className="relative block"><Search size={16} className="absolute left-3.5 top-3 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input border-transparent bg-slate-100 py-2.5 pl-10 pr-9 focus:border-accent-500 dark:bg-slate-800" placeholder="Пошук розмов" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>
           <div className="flex items-center justify-between px-4 pb-2"><h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Повідомлення</h2><span className="text-xs text-slate-400">{directConversations.length}</span></div>
+          <div className="group relative px-2 pb-1">
+            <button type="button" onClick={() => void openNotes()} disabled={openingNotes} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition disabled:opacity-70 ${savedNotes && activeConversation?.id === savedNotes.id ? 'bg-accent-50 dark:bg-accent-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'}`} aria-current={savedNotes && activeConversation?.id === savedNotes.id ? 'page' : undefined}>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-500/15 text-accent-600 dark:text-accent-400">{openingNotes ? <LoaderCircle size={17} className="animate-spin" /> : <Bookmark size={18} />}</span>
+              <span className="min-w-0 flex-1 pr-5">
+                <span className="block truncate text-sm font-semibold">Збережені нотатки</span>
+                <span className="block truncate text-xs text-slate-400">{savedNotes?.lastMessage
+                  ? savedNotes.lastMessage.content || kindLabels[savedNotes.lastMessage.kind] || 'Повідомлення'
+                  : 'Тут лишається лише ваше — ніхто не побачить'}</span>
+              </span>
+            </button>
+            {savedNotes && <button type="button" onClick={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); openMenu(savedNotes, bounds.right - MENU_WIDTH, bounds.bottom + 4); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 opacity-100 transition hover:bg-slate-200/80 hover:text-slate-700 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 dark:hover:bg-slate-700 dark:hover:text-slate-200" aria-label="Дії з нотатками"><MoreVertical size={15} /></button>}
+          </div>
           <div className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-2">
             {loading ? <Spinner label="Завантаження розмов…" className="py-12" /> : error ? <EmptyState icon={Users} title="Не вдалося підключитися" description={error} action={<button type="button" className="secondary-btn" onClick={() => void reload()}>Спробувати ще раз</button>} /> : filtered.length === 0 ? <EmptyState icon={MessageSquarePlus} title={query ? 'Немає збігів' : 'Розмов ще немає'} description={query ? 'Спробуйте інше ім\'я або ключове слово.' : 'Знайдіть знайому людину й почніть нову розмову.'} action={!query ? <button type="button" className="primary-btn" onClick={onNewChat}>Почати чат</button> : undefined} /> : <ul className="space-y-0.5">{filtered.map((conversation) => {
               const active = activeConversation?.id === conversation.id;
@@ -104,14 +124,15 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
       {menu && (() => {
         const role = menu.conversation.members.find((member) => member.id === user?.id)?.role;
         const isGroup = menu.conversation.kind === 'group';
+        const isSaved = menu.conversation.kind === 'saved';
         const canDeleteForAll = isGroup && (role === 'owner' || role === 'admin');
         const otherMember = menu.conversation.kind === 'direct' ? menu.conversation.members.find((member) => member.id !== user?.id) : undefined;
         return (
           <>
             <div className="fixed inset-0 z-40" onClick={closeMenu} onContextMenu={(event) => { event.preventDefault(); closeMenu(); }} aria-hidden="true" />
             <div className="fixed z-50 w-56 overflow-hidden rounded-2xl border bg-white p-1 shadow-xl animate-fade-in dark:border-slate-700 dark:bg-slate-800" style={{ left: menu.x, top: menu.y }} role="menu" aria-label={`Дії з розмовою «${menu.conversation.title}»`}>
-              <Menuitem icon={Eraser} label="Очистити історію" onSelect={() => { closeMenu(); onAction(menu.conversation, 'clear'); }} />
-              <Menuitem icon={isGroup && !canDeleteForAll ? LogOut : Trash2} label={isGroup ? (canDeleteForAll ? 'Видалити гру' : 'Покинути гру') : 'Видалити чат'} danger onSelect={() => { closeMenu(); onAction(menu.conversation, 'delete'); }} />
+              <Menuitem icon={Eraser} label={isSaved ? 'Очистити нотатки' : 'Очистити історію'} onSelect={() => { closeMenu(); onAction(menu.conversation, 'clear'); }} />
+              <Menuitem icon={isGroup && !canDeleteForAll ? LogOut : Trash2} label={isGroup ? (canDeleteForAll ? 'Видалити гру' : 'Покинути гру') : isSaved ? 'Видалити нотатки' : 'Видалити чат'} danger onSelect={() => { closeMenu(); onAction(menu.conversation, 'delete'); }} />
               {otherMember && <Menuitem icon={Flag} label="Скаржитися на співрозмовника" onSelect={() => { closeMenu(); onReportUser(otherMember.id); }} />}
             </div>
           </>

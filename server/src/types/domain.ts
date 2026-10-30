@@ -1,5 +1,5 @@
 export type UserRole = 'user' | 'moderator' | 'owner';
-export type ConversationKind = 'direct' | 'group' | 'channel';
+export type ConversationKind = 'direct' | 'saved' | 'group' | 'channel';
 export type MessageKind = 'text' | 'image' | 'video' | 'video_note' | 'document' | 'voice' | 'sticker';
 export type FriendshipState = 'self' | 'none' | 'incoming' | 'outgoing' | 'friends';
 export type FriendshipEventType = 'request' | 'accepted' | 'declined' | 'cancelled' | 'removed';

@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { withTransaction } from '../db/pool';
+import { query, withTransaction } from '../db/pool';
 import { listConversations } from '../db/conversations';
 import { clearHistory, deleteConversation } from '../conversations/cleanup';
+import { savedConversationKey } from '../conversations/saved';
 import { requireAuth } from '../middleware/auth';
 import { requireConversationMembership } from '../middleware/membership';
 import { emitConversationCreated } from '../sockets/emitter';
@@ -15,6 +16,7 @@ router.use(requireAuth);
 
 const createSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('direct'), userId: uuid }),
+  z.object({ kind: z.literal('saved') }),
   z.object({
     kind: z.literal('group'),
     title: z.string().trim().min(1).max(100),
@@ -44,6 +46,46 @@ router.delete('/:id', requireConversationMembership, asyncHandler(async (req, re
 router.post('/', asyncHandler(async (req, res) => {
   const input = createSchema.parse(req.body);
   const userId = req.auth!.userId;
+
+  if (input.kind === 'saved') {
+    const savedKey = savedConversationKey(userId);
+    let created = false;
+
+    const conversationId = await withTransaction(async (client) => {
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [savedKey]);
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO conversations (kind, direct_key, created_by)
+         VALUES ('saved', $1, $2) ON CONFLICT (direct_key) DO NOTHING RETURNING id`,
+        [savedKey, userId],
+      );
+      if (inserted.rows[0]) {
+        created = true;
+        await client.query(
+          `INSERT INTO conversation_members (conversation_id, user_id, role)
+           VALUES ($1, $2, 'owner')`,
+          [inserted.rows[0].id, userId],
+        );
+        return inserted.rows[0].id;
+      }
+      const existing = await client.query<{ id: string }>(
+        'SELECT id FROM conversations WHERE direct_key = $1', [savedKey],
+      );
+      if (!existing.rows[0]) throw notFound('Розмову не знайдено');
+      return existing.rows[0].id;
+    });
+
+    // «Видалити чат» для себе ховає розмову зі списку, і без цього скидання
+    // повторне відкриття нотаток дало б 404 на вже існуючому чаті.
+    await query(
+      'UPDATE conversation_members SET hidden_at = NULL WHERE conversation_id = $1 AND user_id = $2',
+      [conversationId, userId],
+    );
+    const conversation = (await listConversations(userId, conversationId))[0];
+    if (!conversation) throw notFound('Розмову не знайдено');
+    // Ні емісії, ні інфо-повідомлення: в цій розмові більше немає кому.
+    res.status(created ? 201 : 200).json({ conversation });
+    return;
+  }
 
   if (input.kind === 'direct') {
     if (input.userId === userId) {

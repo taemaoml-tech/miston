@@ -33,7 +33,7 @@ export const api = {
   },
   conversations: {
     list: () => request<{ conversations: Conversation[] }>('/conversations'),
-    create: (data: { kind: 'direct'; userId: string } | { kind: 'group'; title: string; memberIds: string[] }) => request<{ conversation: Conversation }>('/conversations', { method: 'POST', body: data }),
+    create: (data: { kind: 'direct'; userId: string } | { kind: 'saved' } | { kind: 'group'; title: string; memberIds: string[] }) => request<{ conversation: Conversation }>('/conversations', { method: 'POST', body: data }),
     messages: (id: string, before?: string, limit = 40) => {
       const params = new URLSearchParams({ limit: String(limit) });
       if (before) params.set('before', before);

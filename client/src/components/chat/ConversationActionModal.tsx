@@ -27,6 +27,7 @@ export function ConversationActionModal({ target, onClose }: { target: Conversat
   const { conversation, action } = target;
   const myRole = conversation.members.find((member) => member.id === user?.id)?.role;
   const isGroup = conversation.kind === 'group';
+  const isSaved = conversation.kind === 'saved';
   const isManager = isGroup && (myRole === 'owner' || myRole === 'admin');
   // Власник не може просто «вийти» з власної групи — сервер дозволяє лише повне видалення.
   const forcedShare = action === 'delete' && isGroup && myRole === 'owner';
@@ -38,7 +39,12 @@ export function ConversationActionModal({ target, onClose }: { target: Conversat
     if (action === 'clear') {
       return scope === 'everyone'
         ? { title: 'Очистити історію для всіх', description: `Усі повідомлення в «${title}» буде видалено в кожного учасника, а вкладення зникнуть з сервера. Дію не можна скасувати.`, confirm: 'Очистити для всіх' }
-        : { title: 'Очистити історію', description: `Старі повідомлення зникнуть з вашого екрана в «${title}». В інших учасників історія залишиться.`, confirm: 'Очистити' };
+        : isSaved
+          ? { title: 'Очистити нотатки', description: `Усі ваші нотатки буде видалено разом з вкладеннями. Дію не можна скасувати.`, confirm: 'Очистити' }
+          : { title: 'Очистити історію', description: `Старі повідомлення зникнуть з вашого екрана в «${title}». В інших учасників історія залишиться.`, confirm: 'Очистити' };
+    }
+    if (isSaved) {
+      return { title: 'Видалити нотатки', description: `«${title}» зникне з вашого списку, але повідомлення залишаться, доки ви не очистите чи не видалите їх остаточно.`, confirm: 'Видалити нотатки' };
     }
     if (conversation.kind === 'group') {
       return scope === 'everyone'
@@ -75,7 +81,7 @@ export function ConversationActionModal({ target, onClose }: { target: Conversat
         </label>
       )}
       {forcedShare && <p className="mb-4 rounded-2xl bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Ви власник групи — залишити її можна лише разом з повним видаленням.</p>}
-      {!canShare && action === 'delete' && <p className="mb-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">Групу повністю видаляє лише її власник або адміністратор.</p>}
+      {!canShare && !isSaved && action === 'delete' && <p className="mb-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">Групу повністю видаляє лише її власник або адміністратор.</p>}
       {error && <p role="alert" className="mb-4 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{error}</p>}
       <div className="flex justify-end gap-2">
         <button type="button" className="secondary-btn" onClick={onClose} disabled={busy}>Скасувати</button>

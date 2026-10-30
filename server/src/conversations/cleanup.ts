@@ -3,12 +3,13 @@ import { removeUpload } from '../middleware/uploads';
 import { emitConversationCleared, emitConversationDeleted } from '../sockets/emitter';
 import { withTransaction } from '../db/pool';
 import { forbidden, notFound } from '../utils/errors';
-import type { AuthContext } from '../types/domain';
+import { isSoloConversation } from './saved';
+import type { AuthContext, ConversationKind } from '../types/domain';
 
 export type CleanupScope = 'me' | 'everyone';
 
 interface ConversationContext {
-  kind: 'direct' | 'group' | 'channel';
+  kind: ConversationKind;
   myRole: string;
   memberIds: string[];
 }
@@ -72,7 +73,7 @@ export async function clearHistory(
     if (context.kind === 'channel') {
       throw forbidden('Історію каналу очищає лише власник сервера');
     }
-    if (context.kind !== 'direct' && !isManager(context)) {
+    if (!isSoloConversation(context.kind) && !isManager(context)) {
       throw forbidden('Історію для всіх учасників очищає власник або адміністратор групи');
     }
     const uploads = await collectOrphanFiles(client, conversationId);
@@ -105,7 +106,7 @@ export async function deleteConversation(
       if (context.kind === 'channel') {
         throw forbidden('Канал не можна покинути — він належить серверу. Очистіть історію для себе.');
       }
-      if (context.kind === 'direct') {
+      if (isSoloConversation(context.kind)) {
         await setWatermark(client, conversationId, actor.userId, true);
         return { context, left: false, files: [] as string[] };
       }
@@ -117,7 +118,7 @@ export async function deleteConversation(
     }
 
     if (context.kind === 'channel') throw forbidden('Канал видалює лише власник сервера');
-    if (context.kind !== 'direct' && !isManager(context)) {
+    if (!isSoloConversation(context.kind) && !isManager(context)) {
       throw forbidden('Групу повністю видаляє її власник або адміністратор');
     }
     const files = await collectOrphanFiles(client, conversationId);

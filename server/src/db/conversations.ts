@@ -1,8 +1,9 @@
 import type { PoolClient } from 'pg';
 import { query } from './pool';
+import { SAVED_CONVERSATION_TITLE } from '../conversations/saved';
 import { serializeMessage, serializeSender } from '../utils/serializers';
 import { isUserOnline } from '../sockets/presence';
-import type { Message } from '../types/domain';
+import type { ConversationKind, Message } from '../types/domain';
 
 export interface ConversationMember {
   id: string;
@@ -19,7 +20,7 @@ export interface ConversationMember {
 
 export interface ConversationSummary {
   id: string;
-  kind: 'direct' | 'group' | 'channel';
+  kind: ConversationKind;
   title: string | null;
   avatarUrl: string | null;
   serverId: string | null;
@@ -118,7 +119,10 @@ export async function listConversations(userId: string, onlyId?: string): Promis
     return {
       id,
       kind: row.kind as ConversationSummary['kind'],
-      title: otherMember ? (otherMember.alias || otherMember.displayName) : (row.title == null ? null : String(row.title)),
+      // У нотаток назви в БД немає — форма 'saved' вимагає title IS NULL.
+      title: otherMember
+        ? (otherMember.alias || otherMember.displayName)
+        : row.kind === 'saved' ? SAVED_CONVERSATION_TITLE : (row.title == null ? null : String(row.title)),
       avatarUrl: otherMember?.avatarUrl ?? (row.avatar_url == null ? null : String(row.avatar_url)),
       serverId: row.server_id == null ? null : String(row.server_id),
       members,

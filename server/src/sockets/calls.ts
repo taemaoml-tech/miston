@@ -226,6 +226,10 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
     reply(ack, { ok: false, code: 'UNSUPPORTED', message: 'У каналах дзвінки недоступні' });
     return;
   }
+  if (loaded.conversation.kind === 'saved') {
+    reply(ack, { ok: false, code: 'UNSUPPORTED', message: 'У нотатках дзвінки недоступні' });
+    return;
+  }
 
   const others = loaded.memberIds.filter((id) => id !== userId);
   if (others.length === 0) {

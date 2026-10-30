@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { query, withTransaction } from '../db/pool';
 import { getMessageById, messageProjection } from '../db/messages';
 import { unhideConversationMembers } from '../db/conversations';
+import { isSoloConversation } from '../conversations/saved';
 import { getUsableSticker, recordStickerUse } from '../db/stickers';
 import { requireAuth } from '../middleware/auth';
 import { requireConversationMembership } from '../middleware/membership';
@@ -15,7 +16,7 @@ import { AppError, forbidden, notFound } from '../utils/errors';
 import { REACTION_EMOJIS } from '../utils/reactions';
 import { serializeMessage } from '../utils/serializers';
 import { messageId, uuid } from '../utils/validation';
-import type { MessageKind } from '../types/domain';
+import type { ConversationKind, MessageKind } from '../types/domain';
 
 const router = Router({ mergeParams: true });
 router.use(requireAuth);
@@ -74,7 +75,7 @@ interface MessageContextRow {
   kind: MessageKind;
   deleted_at: Date | null;
   pinned_at: Date | null;
-  conversation_kind: 'direct' | 'group' | 'channel';
+  conversation_kind: ConversationKind;
   role: 'owner' | 'admin' | 'member' | null;
 }
 
@@ -94,12 +95,21 @@ async function loadMessageContext(conversationId: string, id: string, userId: st
   return row;
 }
 
+async function loadConversationKind(conversationId: string): Promise<ConversationKind> {
+  const result = await query<{ kind: ConversationKind }>(
+    'SELECT kind FROM conversations WHERE id = $1', [conversationId],
+  );
+  const row = result.rows[0];
+  if (!row) throw notFound('Розмову не знайдено');
+  return row.kind;
+}
+
 function isConversationManager(row: MessageContextRow): boolean {
-  return row.conversation_kind !== 'direct' && (row.role === 'owner' || row.role === 'admin');
+  return !isSoloConversation(row.conversation_kind) && (row.role === 'owner' || row.role === 'admin');
 }
 
 function canPin(row: MessageContextRow): boolean {
-  return row.conversation_kind === 'direct' || isConversationManager(row);
+  return isSoloConversation(row.conversation_kind) || isConversationManager(row);
 }
 
 async function loadUpdatedMessage(id: string): Promise<ReturnType<typeof serializeMessage>> {
@@ -130,6 +140,7 @@ router.get('/:id/messages', asyncHandler(async (req, res) => {
 
 router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res) => {
   const { id } = paramsSchema.parse(req.params);
+  const conversationKind = await loadConversationKind(id);
   const input = messageBody.parse(req.body);
   const kind = input.kind ?? (req.file ? kindForMime(req.file.mimetype) : 'text');
 
@@ -196,7 +207,8 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
     emitMessageNew(message, recipients);
     emitMention(message, mentioned);
     // Star rewards are best-effort: a wallet hiccup must never lose the message.
-    const star = await recordMessageReward(req.auth!.userId).catch((error) => {
+    // Нотатки не рахуються: інакше ⭐ і рівень фармляться одним пакетом «на собі».
+    const star = conversationKind === 'saved' ? null : await recordMessageReward(req.auth!.userId).catch((error) => {
       console.error('Failed to record Star activity', error);
       return null;
     });
@@ -212,6 +224,7 @@ router.post('/:id/stickers', asyncHandler(async (req, res) => {
   const { id } = paramsSchema.parse(req.params);
   const { stickerId, replyToId } = stickerBody.parse(req.body);
   const userId = req.auth!.userId;
+  const conversationKind = await loadConversationKind(id);
   const sticker = await getUsableSticker(stickerId.toString(), userId);
   if (!sticker) throw notFound('Стікер недоступний');
 
@@ -245,7 +258,7 @@ router.post('/:id/stickers', asyncHandler(async (req, res) => {
 
   await recordStickerUse(userId, sticker.id);
   emitMessageNew(message, recipients);
-  const star = await recordMessageReward(userId).catch((error) => {
+  const star = conversationKind === 'saved' ? null : await recordMessageReward(userId).catch((error) => {
     console.error('Failed to record Star activity', error);
     return null;
   });

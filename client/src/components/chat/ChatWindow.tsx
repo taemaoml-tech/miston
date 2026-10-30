@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronDown, Flag, Hash, Info, LoaderCircle, MessageSquareText, Phone, Pin, PinOff, Users, Video, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, ChevronDown, Flag, Hash, Info, LoaderCircle, MessageSquareText, Phone, Pin, PinOff, Users, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { api } from '../../api';
@@ -23,13 +23,14 @@ import { MessageBubble } from './MessageBubble';
 
 export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id: string) => void; onReport: (target: { userId?: string; messageId?: string }) => void; onAction: (conversation: Conversation, action: ConversationAction) => void }) {
   const { user } = useAuth();
-  const { activeConversation, closeMobileChat, markReadLocal, presence, activeServer, notify, conversations, reloadToken } = useMessenger();
+  const { activeConversation, closeMobileChat, markReadLocal, presence, activeServer, notify, conversations, reloadToken, savedNotes, ensureSavedNotes } = useMessenger();
   const { socket, connected } = useSocket();
   const { phase: callPhase, startCall } = useCall();
   const { overview, messageEffect } = useStar();
   const [messages, setMessages] = useState<Message[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingNotes, setCreatingNotes] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [error, setError] = useState('');
   const [typing, setTyping] = useState<Record<string, string>>({});
@@ -230,29 +231,42 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
     else notify('Повідомлення поза завантаженою історією', 'Прокрутіть історію вище, щоб знайти його.');
   }
 
-  async function forwardMessage(targetId: string) {
+  async function forwardMessage(targetId: string, targetLabel?: string) {
     if (!id || !forwarding || forwardingTo) return;
     setForwardingTo(targetId);
     try {
       const result = await api.conversations.forward(id, forwarding.id, targetId);
       if (targetId === id) appendMessage(result.message);
-      const target = conversations.find((conversation) => conversation.id === targetId);
-      notify('Переслано', target ? `Повідомлення надіслано в «${target.title}»` : undefined);
+      const title = targetLabel ?? conversations.find((conversation) => conversation.id === targetId)?.title;
+      notify('Переслано', title ? `Повідомлення надіслано в «${title}»` : undefined);
       setForwarding(null);
     } catch (cause) { notify('Не вдалося переслати повідомлення', errorMessage(cause)); }
     finally { setForwardingTo(''); }
   }
 
+  async function forwardToNotes() {
+    if (creatingNotes || forwardingTo) return;
+    setCreatingNotes(true);
+    try {
+      const notes = savedNotes ?? await ensureSavedNotes();
+      await forwardMessage(notes.id, notes.title);
+    } catch (cause) { notify('Не вдалося переслати повідомлення', errorMessage(cause)); }
+    finally { setCreatingNotes(false); }
+  }
+
   if (!activeConversation) return null;
+  const isSaved = activeConversation.kind === 'saved';
   const other = activeConversation.kind === 'direct' ? activeConversation.members.find((member) => member.id !== user?.id) : undefined;
   const online = other ? (presence[other.id] ?? other.online) : undefined;
   const typingNames = Object.values(typing);
   const myRole = activeConversation.members.find((member) => member.id === user?.id)?.role;
-  const isManager = activeConversation.kind !== 'direct' && (myRole === 'owner' || myRole === 'admin');
-  const canPinHere = activeConversation.kind === 'direct' || isManager;
-  const deleteLabel = activeConversation.kind === 'group' ? (isManager ? 'Видалити гру' : 'Покинути гру') : 'Видалити чат';
-  const subtitle = typingNames.length ? `${typingNames.join(', ')} ${typingNames.length === 1 ? 'друкує' : 'друкують'}…` : activeConversation.kind === 'direct' ? (online ? 'Онлайн' : 'Офлайн') : `${activeConversation.members.length || activeServer?.memberCount || 0} учасників`;
+  const isManager = !isSaved && activeConversation.kind !== 'direct' && (myRole === 'owner' || myRole === 'admin');
+  const canPinHere = activeConversation.kind === 'direct' || isSaved || isManager;
+  const deleteLabel = activeConversation.kind === 'group' ? (isManager ? 'Видалити гру' : 'Покинути гру') : isSaved ? 'Видалити нотатки' : 'Видалити чат';
+  const subtitle = typingNames.length ? `${typingNames.join(', ')} ${typingNames.length === 1 ? 'друкує' : 'друкують'}…` : isSaved ? 'Лише ви' : activeConversation.kind === 'direct' ? (online ? 'Онлайн' : 'Офлайн') : `${activeConversation.members.length || activeServer?.memberCount || 0} учасників`;
   const chatBackground = overview?.equipped?.chat_background;
+  // Нотатки мають окремий рядок угорі діалогу, бо їх ще може не існувати.
+  const forwardTargets = conversations.filter((conversation) => conversation.kind !== 'channel' && conversation.kind !== 'saved');
   const chatBackgroundStyle = chatBackground ? {
     '--chat-image-light': configString(chatBackground.config, 'light'),
     '--chat-image-dark': configString(chatBackground.config, 'dark'),
@@ -263,13 +277,13 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
     <section className="relative flex h-full min-w-0 flex-1 flex-col" aria-label={`Розмова з ${activeConversation.title}`}>
       <header className="z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white/90 px-2 backdrop-blur-xl dark:bg-slate-900/90 sm:px-4">
         <button type="button" className="icon-btn md:hidden" onClick={closeMobileChat} aria-label="Назад до розмов"><ArrowLeft size={21} /></button>
-        <Avatar name={activeConversation.title} src={activeConversation.avatarUrl} online={online} square={activeConversation.kind !== 'direct'} cosmetics={directCosmetics} />
+        <Avatar name={activeConversation.title} src={activeConversation.avatarUrl} online={online} square={!isSaved && activeConversation.kind !== 'direct'} cosmetics={directCosmetics} />
         <button type="button" className="min-w-0 flex-1 rounded-lg py-1 text-left" onClick={() => setShowInfo((value) => !value)}>
           <h1 className="flex items-center gap-1.5 truncate text-sm font-semibold sm:text-[15px]">{activeConversation.kind === 'channel' && <Hash size={15} className="shrink-0 text-slate-400" />}{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h1>
           <p className={`mt-0.5 truncate text-xs ${typingNames.length || online ? 'text-accent-600 dark:text-accent-400' : 'text-slate-400'}`}>{subtitle}</p>
         </button>
         {!connected && <span className="hidden rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 sm:block">Підключення…</span>}
-        {activeConversation.kind !== 'channel' && (
+        {!isSaved && activeConversation.kind !== 'channel' && (
           <>
             <button
               type="button"
@@ -317,7 +331,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
             {!messages.length ? <EmptyState icon={MessageSquareText} title="Почніть розмову" description={`Надішліть повідомлення в ${activeConversation.title}. Повідомлення та вкладення з'являться тут у реальному часі.`} /> : messages.map((message, index) => {
               const previous = messages[index - 1];
               const newDay = !previous || new Date(previous.createdAt).toDateString() !== new Date(message.createdAt).toDateString();
-              const showSender = activeConversation.kind !== 'direct' && (!previous || previous.senderId !== message.senderId || newDay);
+              const showSender = !isSaved && activeConversation.kind !== 'direct' && (!previous || previous.senderId !== message.senderId || newDay);
               return <div key={message.id}>{newDay && <div className="sticky top-1 z-[5] my-3 flex justify-center"><span className="rounded-full bg-slate-200/90 px-3 py-1 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur dark:bg-slate-800/90 dark:text-slate-300">{formatDay(message.createdAt)}</span></div>}<MessageBubble
                 message={message}
                 showSender={showSender}
@@ -340,9 +354,9 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
           </div>
         )}
       </div>
-      <Composer conversationId={activeConversation.id} onSent={(message) => { appendMessage(message); if (message.senderId === user?.id) setEffectBurst((value) => value + 1); }} editing={editing} onCancelEdit={() => setEditing(null)} onEdited={applyMessage} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} members={activeConversation.members} />
+      <Composer conversationId={activeConversation.id} onSent={(message) => { appendMessage(message); if (message.senderId === user?.id) setEffectBurst((value) => value + 1); }} editing={editing} onCancelEdit={() => setEditing(null)} onEdited={applyMessage} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} members={isSaved ? [] : activeConversation.members} />
 
-      {showInfo && <aside className="absolute bottom-0 right-0 top-16 z-20 w-80 max-w-[90%] overflow-y-auto border-l bg-white p-5 shadow-soft animate-fade-in dark:bg-slate-900"><div className="flex items-center justify-between"><h2 className="font-semibold">Деталі розмови</h2><button type="button" className="icon-btn h-8 w-8" onClick={() => setShowInfo(false)} aria-label="Закрити деталі"><X size={18} /></button></div><div className="flex flex-col items-center border-b py-6 text-center"><Avatar name={activeConversation.title} src={activeConversation.avatarUrl} size="xl" online={online} square={activeConversation.kind !== 'direct'} cosmetics={directCosmetics} /><h3 className="mt-3 font-semibold">{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h3><p className="mt-1 text-sm text-slate-500">{subtitle}</p>{other?.bio && <p className="mt-3 text-sm leading-6 text-slate-500">{other.bio}</p>}{other && <button type="button" className="secondary-btn mt-4" onClick={() => { setShowInfo(false); onOpenUser(other.id); }}>Переглянути профіль</button>}<div className="mt-4 grid w-full gap-2"><button type="button" className="secondary-btn" onClick={() => onAction(activeConversation, 'clear')}>Очистити історію</button>{activeConversation.kind !== 'channel' && <button type="button" className="secondary-btn text-rose-600 hover:text-rose-700 dark:text-rose-400" onClick={() => onAction(activeConversation, 'delete')}>{deleteLabel}</button>}{other && <button type="button" className="secondary-btn flex items-center justify-center gap-2" onClick={() => { setShowInfo(false); onReport({ userId: other.id }); }}><Flag size={15} /> Скаржитися на співрозмовника</button>}</div></div>{activeConversation.kind !== 'direct' && <div className="pt-5"><h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><Users size={14} /> Учасники</h3>{activeConversation.members.length ? <ul className="space-y-1">{activeConversation.members.map((member) => <li key={member.id}><button type="button" disabled={member.id === user?.id} onClick={() => { setShowInfo(false); onOpenUser(member.id); }} className="flex w-full items-center gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-slate-800"><Avatar name={member.displayName} src={member.avatarUrl} size="sm" online={presence[member.id] ?? member.online} cosmetics={member.cosmetics} /><div className="min-w-0"><p className="truncate text-sm font-medium"><StarDisplayName name={member.displayName} cosmetics={member.cosmetics} verified={member.isVerified} /></p><p className="truncate text-xs text-slate-400">@{member.username}</p></div></button></li>)}</ul> : <p className="text-sm text-slate-400">Деталі учасників недоступні.</p>}</div>}</aside>}
+      {showInfo && <aside className="absolute bottom-0 right-0 top-16 z-20 w-80 max-w-[90%] overflow-y-auto border-l bg-white p-5 shadow-soft animate-fade-in dark:bg-slate-900"><div className="flex items-center justify-between"><h2 className="font-semibold">Деталі розмови</h2><button type="button" className="icon-btn h-8 w-8" onClick={() => setShowInfo(false)} aria-label="Закрити деталі"><X size={18} /></button></div><div className="flex flex-col items-center border-b py-6 text-center"><Avatar name={activeConversation.title} src={activeConversation.avatarUrl} size="xl" online={online} square={!isSaved && activeConversation.kind !== 'direct'} cosmetics={directCosmetics} /><h3 className="mt-3 font-semibold">{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h3><p className="mt-1 text-sm text-slate-500">{subtitle}</p>{other?.bio && <p className="mt-3 text-sm leading-6 text-slate-500">{other.bio}</p>}{other && <button type="button" className="secondary-btn mt-4" onClick={() => { setShowInfo(false); onOpenUser(other.id); }}>Переглянути профіль</button>}<div className="mt-4 grid w-full gap-2"><button type="button" className="secondary-btn" onClick={() => onAction(activeConversation, 'clear')}>{isSaved ? 'Очистити нотатки' : 'Очистити історію'}</button>{activeConversation.kind !== 'channel' && <button type="button" className="secondary-btn text-rose-600 hover:text-rose-700 dark:text-rose-400" onClick={() => onAction(activeConversation, 'delete')}>{deleteLabel}</button>}{other && <button type="button" className="secondary-btn flex items-center justify-center gap-2" onClick={() => { setShowInfo(false); onReport({ userId: other.id }); }}><Flag size={15} /> Скаржитися на співрозмовника</button>}</div></div>{!isSaved && activeConversation.kind !== 'direct' && <div className="pt-5"><h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><Users size={14} /> Учасники</h3>{activeConversation.members.length ? <ul className="space-y-1">{activeConversation.members.map((member) => <li key={member.id}><button type="button" disabled={member.id === user?.id} onClick={() => { setShowInfo(false); onOpenUser(member.id); }} className="flex w-full items-center gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-slate-800"><Avatar name={member.displayName} src={member.avatarUrl} size="sm" online={presence[member.id] ?? member.online} cosmetics={member.cosmetics} /><div className="min-w-0"><p className="truncate text-sm font-medium"><StarDisplayName name={member.displayName} cosmetics={member.cosmetics} verified={member.isVerified} /></p><p className="truncate text-xs text-slate-400">@{member.username}</p></div></button></li>)}</ul> : <p className="text-sm text-slate-400">Деталі учасників недоступні.</p>}</div>}</aside>}
 
       <Modal open={pinsOpen} onClose={() => setPinsOpen(false)} title="Закріплені повідомлення" description={pins.length ? `У цій розмові закріплено: ${pins.length}` : 'Тут зберігаються важливі повідомлення розмови.'} wide>
         {pinsLoading ? <Spinner label="Завантаження закріплених…" /> : pins.length === 0 ? (
@@ -372,11 +386,28 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
       </Modal>
 
       <Modal open={Boolean(forwarding)} onClose={() => { if (!forwardingTo) setForwarding(null); }} title="Переслати повідомлення" description={forwarding ? `Оберіть розмову для «${forwarding.content || 'вкладення'}»` : undefined} wide>
-        {conversations.filter((conversation) => conversation.kind !== 'channel').length === 0 ? (
+        {isSaved && forwardTargets.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">Немає розмов для пересилання.</p>
         ) : (
           <ul className="space-y-1">
-            {conversations.filter((conversation) => conversation.kind !== 'channel').map((conversation) => (
+            {!isSaved && (
+              <li>
+                <button
+                  type="button"
+                  disabled={Boolean(forwardingTo) || creatingNotes}
+                  onClick={() => void forwardToNotes()}
+                  className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-slate-50 disabled:opacity-60 dark:hover:bg-slate-800"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-500/15 text-accent-600 dark:text-accent-400"><Bookmark size={16} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">Збережені нотатки</span>
+                    <span className="block text-xs text-slate-400">Лише ви</span>
+                  </span>
+                  {creatingNotes && <LoaderCircle size={16} className="animate-spin text-accent-500" />}
+                </button>
+              </li>
+            )}
+            {forwardTargets.map((conversation) => (
               <li key={conversation.id}>
                 <button
                   type="button"
