@@ -7,6 +7,7 @@ import {
 } from '../db/stickers';
 import { requireAuth } from '../middleware/auth';
 import { assetFilename, removeUpload, safeOriginalName, stickerUpload } from '../middleware/uploads';
+import { uploadFile } from '../services/storage';
 import { asyncHandler } from '../utils/http';
 import { AppError, notFound } from '../utils/errors';
 import { uuid } from '../utils/validation';
@@ -76,16 +77,16 @@ router.post('/packs/:packId/stickers', stickerUpload.single('file'), asyncHandle
   if (!req.file) throw new AppError(400, 'STICKER_FILE_REQUIRED', 'Додайте файл стікера (PNG, WebP або GIF)');
   const { label } = stickerBody.parse(req.body);
   try {
+    const assetUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype);
     const sticker = await addStickerToPack(req.auth!.userId, packId, {
       label: label || fallbackLabel(req.file.originalname),
-      asset: `/uploads/${req.file.filename}`,
+      asset: assetUrl,
       // The browser animates GIFs on its own; the flag tells the client not to
       // apply the SVG keyframe treatment.
       animation: req.file.mimetype.split(';', 1)[0] === 'image/gif' ? 'raster' : '',
     });
     res.status(201).json({ sticker });
   } catch (error) {
-    await removeUpload(req.file.filename);
     throw error;
   }
 }));

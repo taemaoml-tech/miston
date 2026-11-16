@@ -72,6 +72,10 @@ const schema = z.object({
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().trim().optional(),
   // Лише для розробки/тестів.
   SMS_DEBUG_SHOW_CODE: booleanValue.default(false),
+  // Cloudinary (хмарне сховище медіа).
+  CLOUDINARY_CLOUD_NAME: z.string().trim().optional(),
+  CLOUDINARY_API_KEY: z.string().trim().optional(),
+  CLOUDINARY_API_SECRET: z.string().trim().optional(),
 });
 
 const env = schema.parse(process.env);

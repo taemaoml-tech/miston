@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query } from '../db/pool';
 import { requireAuth } from '../middleware/auth';
 import { avatarUpload, removeUpload } from '../middleware/uploads';
+import { uploadFile, isRemoteUrl } from '../services/storage';
 import { asyncHandler } from '../utils/http';
 import { AppError, notFound } from '../utils/errors';
 import { serializeProfile, serializeUser } from '../utils/serializers';
@@ -111,7 +112,8 @@ router.post('/me/avatar', avatarUpload.single('avatar'), asyncHandler(async (req
     );
     if (previous.rowCount === 0) throw notFound('Користувача не знайдено');
 
-    const avatarUrl = `/uploads/${req.file.filename}`;
+    const avatarUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype);
+
     const result = await query<Record<string, unknown>>(
       'UPDATE users SET avatar_url = $2, updated_at = now() WHERE id = $1 RETURNING *',
       [req.auth!.userId, avatarUrl],
@@ -120,12 +122,11 @@ router.post('/me/avatar', avatarUpload.single('avatar'), asyncHandler(async (req
     if (!user) throw notFound('Користувача не знайдено');
 
     const previousUrl = previous.rows[0]?.avatar_url;
-    if (previousUrl?.startsWith('/uploads/')) {
+    if (previousUrl && !isRemoteUrl(previousUrl) && previousUrl.startsWith('/uploads/')) {
       await removeUpload(previousUrl.slice('/uploads/'.length));
     }
     res.json({ user: serializeUser(user) });
   } catch (error) {
-    await removeUpload(req.file.filename);
     throw error;
   }
 }));

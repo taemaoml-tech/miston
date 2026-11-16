@@ -9,6 +9,7 @@ import { getUsableSticker, recordStickerUse } from '../db/stickers';
 import { requireAuth } from '../middleware/auth';
 import { requireConversationMembership } from '../middleware/membership';
 import { kindForMime, mimeMatchesKind, removeUpload, safeOriginalName, upload } from '../middleware/uploads';
+import { uploadFile } from '../services/storage';
 import { emitMessageDeleted, emitMessageNew, emitMessageReactions, emitMessageRead, emitMessageUpdated, emitMention, emitStarUpdate } from '../sockets/emitter';
 import { recordMessageReward } from '../star/service';
 import { notifyRecipientsBySms, notifyRecipientsByPush } from '../services/messageSms';
@@ -162,6 +163,10 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
     throw new AppError(400, 'VIDEO_NOTE_TOO_LONG', 'Відеокружечок не може бути довшим за 60 секунд');
   }
 
+  const attachmentUrl = req.file
+    ? await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype)
+    : null;
+
   try {
     const { message, recipients, mentioned } = await withTransaction(async (client) => {
       const replyToId = input.replyToId?.toString() ?? null;
@@ -185,7 +190,7 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
         await client.query(
           `INSERT INTO attachments (message_id, storage_path, original_name, mime_type, size_bytes)
            VALUES ($1, $2, $3, $4, $5)`,
-          [newId, `/uploads/${req.file.filename}`, safeOriginalName(req.file.originalname), req.file.mimetype, req.file.size],
+          [newId, attachmentUrl, safeOriginalName(req.file.originalname), req.file.mimetype, req.file.size],
         );
       }
       const mentioned = await resolveMentionedMembers(client, id, input.content, req.auth!.userId);

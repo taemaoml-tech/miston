@@ -40,12 +40,7 @@ function baseMime(value: string): string {
   return value.split(';', 1)[0]!.trim().toLowerCase();
 }
 
-const storage = multer.diskStorage({
-  destination: config.UPLOAD_DIR,
-  filename: (_req, file, callback) => {
-    callback(null, `${crypto.randomUUID()}${extensions[baseMime(file.mimetype)] ?? ''}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 function fileFilter(allowed: (mime: string) => boolean): NonNullable<multer.Options['fileFilter']> {
   return (_req, file, callback) => {
