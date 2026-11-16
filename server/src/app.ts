@@ -89,6 +89,7 @@ export function createApp(): express.Express {
   app.use('/api/complaints', complaintRoutes);
   app.use('/api/support', supportRoutes);
   app.use('/api', botRoutes);
+  app.use('/api/notifications', notificationRoutes);
   app.use('/api/push', pushRoutes);
   app.use('/api/admin', adminRoutes);
 
