@@ -9,6 +9,7 @@ import { configStringArray } from '../../utils/star';
 import { Avatar } from '../common/Avatar';
 import { INFO_LINKS } from '../info/infoLinks';
 import { Modal } from '../common/Modal';
+import { NotificationSettings } from './NotificationSettings';
 import { StarDisplayName } from '../star/StarDisplayName';
 
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -89,6 +90,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             ))}
           </div>
         </nav>
+        <NotificationSettings />
         <div className="mt-6 flex items-center justify-between gap-3 border-t pt-5">
           <button type="button" className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30" onClick={() => void logout()}><LogOut size={17} /> Вийти</button>
           <button type="submit" className="primary-btn" disabled={saving || !form.displayName.trim() || !form.username.trim()}>{saving ? 'Збереження…' : 'Зберегти зміни'}</button>

@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'node:path';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -26,7 +27,20 @@ export function createApp(): express.Express {
   app.disable('x-powered-by');
   if (config.TRUST_PROXY) app.set('trust proxy', 1);
 
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        'script-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'media-src': ["'self'", 'data:', 'blob:'],
+        'font-src': ["'self'", 'data:'],
+        'connect-src': ["'self'", 'ws:', 'wss:'],
+      },
+    },
+  }));
   app.use(cors({
     credentials: true,
     origin(origin, callback) {
@@ -74,6 +88,14 @@ export function createApp(): express.Express {
   app.use('/api/support', supportRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/admin', adminRoutes);
+
+  if (config.CLIENT_DIR) {
+    const clientDir = path.resolve(config.CLIENT_DIR);
+    app.use(express.static(clientDir, { index: false, maxAge: '1h' }));
+    app.get(/^\/(?!api(?:\/|$)|uploads(?:\/|$)|socket\.io(?:\/|$)|health(?:\/|$)).*/, (_req, res) => {
+      res.sendFile(path.join(clientDir, 'index.html'));
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

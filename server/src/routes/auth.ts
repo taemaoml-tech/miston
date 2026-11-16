@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { query, withTransaction } from '../db/pool';
@@ -9,6 +10,8 @@ import { serializeUser } from '../utils/serializers';
 import { createRefreshToken, hashRefreshToken, signAccessToken } from '../utils/tokens';
 import { password } from '../utils/validation';
 import { AppError, unauthorized } from '../utils/errors';
+import { normalizePhone } from '../utils/phone';
+import { sendSms, smsConfigured } from '../services/sms';
 
 const router = Router();
 const DUMMY_HASH = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
@@ -18,12 +21,74 @@ const registerSchema = z.object({
   username: z.string().trim().regex(/^[A-Za-z0-9_]{3,30}$/),
   displayName: z.string().trim().min(1).max(80),
   password,
+  phone: z.string().trim().min(5).max(30).optional(),
 });
 const loginSchema = z.object({
   identifier: z.string().trim().min(1).max(254),
   password: z.string().min(1).max(128),
 });
 const refreshSchema = z.object({ refreshToken: z.string().min(32).max(512) });
+const phoneRequestSchema = z.object({ phone: z.string().trim().min(5).max(30) });
+const phoneVerifySchema = z.object({ code: z.string().trim().regex(/^\d{8}$/) });
+
+function hashCode(userId: string, code: string): string {
+  return crypto.createHmac('sha256', config.JWT_SECRET).update(`${userId}:${code}`).digest('hex');
+}
+
+interface IssuedPhoneCode {
+  expiresAt: Date;
+  debugCode?: string;
+}
+
+/**
+ * Creates a fresh 8-digit SMS code for the user, stores only its HMAC and the
+ * phone number, then sends the SMS through Twilio. In local development codes
+ * can be returned to the client when SMS_DEBUG_SHOW_CODE=true.
+ */
+async function issuePhoneCode(userId: string, phone: string): Promise<IssuedPhoneCode> {
+  const twilioReady = smsConfigured();
+  if (!twilioReady && !config.SMS_DEBUG_SHOW_CODE) {
+    throw new AppError(
+      503,
+      'SMS_NOT_CONFIGURED',
+      'Відправка SMS ще не налаштована. Додайте ZAVU_API_KEY (або дані Twilio) в налаштуваннях сервера.',
+    );
+  }
+
+  const ttl = config.PHONE_CODE_TTL_MINUTES;
+  const code = String(crypto.randomInt(0, 100_000_000)).padStart(8, '0');
+
+  await query(
+    'UPDATE phone_verification_codes SET consumed_at = now() WHERE user_id = $1 AND consumed_at IS NULL',
+    [userId],
+  );
+  const inserted = await query<{ id: string; expires_at: Date }>(
+    `INSERT INTO phone_verification_codes (user_id, phone_number, code_hash, expires_at)
+     VALUES ($1, $2, $3, now() + make_interval(mins => $4))
+     RETURNING id, expires_at`,
+    [userId, phone, hashCode(userId, code), ttl],
+  );
+  // Номер зберігається в users лише після підтвердження, щоб не «резервувати»
+  // чужі номери, якщо людина так і не ввела код.
+
+  if (twilioReady) {
+    try {
+      await sendSms(phone, `Miston: ваш код підтвердження ${code}. Діє ${ttl} хв.`);
+    } catch (error) {
+      // Невдала відправка не повинна «з'їдати» спробу: код стає недійсним.
+      await query(
+        'UPDATE phone_verification_codes SET consumed_at = now() WHERE id = $1',
+        [inserted.rows[0]?.id ?? null],
+      );
+      throw error;
+    }
+  }
+
+  return {
+    expiresAt: inserted.rows[0]?.expires_at ?? new Date(Date.now() + ttl * 60_000),
+    ...(twilioReady ? {} : { debugCode: code }),
+  };
+}
 
 function authPayload(user: Record<string, unknown>, refreshToken: string) {
   const serialized = serializeUser(user);
@@ -53,11 +118,21 @@ function assertNotBlocked(row: Record<string, unknown>): void {
 
 router.post('/register', asyncHandler(async (req, res) => {
   const input = registerSchema.parse(req.body);
+  const phone = input.phone ? normalizePhone(input.phone) : null;
+  if (input.phone && !phone) {
+    throw new AppError(400, 'INVALID_PHONE', 'Вкажіть коректний номер телефону, наприклад +380501234567.');
+  }
   const passwordHash = await bcrypt.hash(input.password, config.BCRYPT_ROUNDS);
 
   const payload = await withTransaction(async (client) => {
     // Briefly serializes registration so first-user promotion is race-safe.
     await client.query("SELECT pg_advisory_xact_lock(hashtext('relay:first-user'))");
+    if (phone) {
+      const taken = await client.query('SELECT 1 FROM users WHERE phone_number = $1', [phone]);
+      if (taken.rowCount) {
+        throw new AppError(409, 'PHONE_TAKEN', 'Цей номер телефону вже прив’язаний до іншого акаунта.');
+      }
+    }
     const existing = await client.query<{ has_users: boolean }>('SELECT EXISTS (SELECT 1 FROM users) AS has_users');
     const role = existing.rows[0]?.has_users ? 'user' : 'owner';
     const inserted = await client.query<Record<string, unknown>>(
@@ -76,7 +151,23 @@ router.post('/register', asyncHandler(async (req, res) => {
     return authPayload(user, refresh.token);
   });
 
-  res.status(201).json(payload);
+  let phoneVerificationSent = false;
+  let phoneDebugCode: string | undefined;
+  if (phone) {
+    try {
+      const issued = await issuePhoneCode(payload.user.id, phone);
+      phoneVerificationSent = true;
+      phoneDebugCode = issued.debugCode;
+    } catch (error) {
+      console.error('Failed to send the registration SMS', error instanceof Error ? error.message : error);
+    }
+  }
+
+  res.status(201).json({
+    ...payload,
+    ...(phone ? { user: { ...payload.user, phoneNumber: phone, phoneVerified: false }, phoneVerificationSent } : {}),
+    ...(phoneDebugCode ? { phoneDebugCode } : {}),
+  });
 }));
 
 router.post('/login', asyncHandler(async (req, res) => {
@@ -139,6 +230,131 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   const result = await query<Record<string, unknown>>('SELECT * FROM users WHERE id = $1', [req.auth!.userId]);
   if (!result.rows[0]) throw unauthorized('Користувача більше не існує');
   res.json({ user: serializeUser(result.rows[0]) });
+}));
+
+router.get('/phone', requireAuth, asyncHandler(async (req, res) => {
+  const result = await query<Record<string, unknown>>('SELECT * FROM users WHERE id = $1', [req.auth!.userId]);
+  const user = result.rows[0];
+  if (!user) throw unauthorized();
+  const pending = await query<{ phone_number: string; expires_at: Date }>(
+    `SELECT phone_number, expires_at FROM phone_verification_codes
+     WHERE user_id = $1 AND consumed_at IS NULL AND expires_at > now()
+     ORDER BY created_at DESC LIMIT 1`,
+    [req.auth!.userId],
+  );
+  res.json({
+    phoneNumber: user.phone_number == null ? null : String(user.phone_number),
+    phoneVerified: user.phone_verified_at != null,
+    smsNotificationsEnabled: user.sms_notifications_enabled !== false,
+    pendingPhone: pending.rows[0]?.phone_number ?? null,
+    pendingExpiresAt: pending.rows[0]?.expires_at ?? null,
+    smsConfigured: smsConfigured() || config.SMS_DEBUG_SHOW_CODE,
+  });
+}));
+
+router.patch('/phone/notifications', requireAuth, asyncHandler(async (req, res) => {
+  const { enabled } = z.object({ enabled: z.boolean() }).parse(req.body);
+  const result = await query<Record<string, unknown>>(
+    'UPDATE users SET sms_notifications_enabled = $2, updated_at = now() WHERE id = $1 RETURNING *',
+    [req.auth!.userId, enabled],
+  );
+  const user = result.rows[0];
+  if (!user) throw unauthorized();
+  res.json({ user: serializeUser(user), smsNotificationsEnabled: user.sms_notifications_enabled !== false });
+}));
+
+router.post('/phone/request', requireAuth, asyncHandler(async (req, res) => {
+  const input = phoneRequestSchema.parse(req.body);
+  const phone = normalizePhone(input.phone);
+  if (!phone) {
+    throw new AppError(400, 'INVALID_PHONE', 'Вкажіть коректний номер телефону, наприклад +380501234567.');
+  }
+
+  const taken = await query('SELECT 1 FROM users WHERE phone_number = $1 AND id <> $2', [phone, req.auth!.userId]);
+  if (taken.rowCount) {
+    throw new AppError(409, 'PHONE_TAKEN', 'Цей номер телефону вже прив’язаний до іншого акаунта.');
+  }
+
+  const cooldown = await query<{ seconds_left: number }>(
+    `SELECT GREATEST(0, CEIL(EXTRACT(EPOCH FROM (created_at + make_interval(secs => $2) - now()))))::int AS seconds_left
+     FROM phone_verification_codes
+     WHERE user_id = $1 AND consumed_at IS NULL
+     ORDER BY created_at DESC LIMIT 1`,
+    [req.auth!.userId, config.PHONE_SMS_COOLDOWN_SECONDS],
+  );
+  const secondsLeft = cooldown.rows[0]?.seconds_left ?? 0;
+  if (secondsLeft > 0) {
+    throw new AppError(
+      429,
+      'PHONE_CODE_COOLDOWN',
+      `Повторно надіслати код можна через ${secondsLeft} с.`,
+      { retryAfter: secondsLeft },
+    );
+  }
+
+  const issued = await issuePhoneCode(req.auth!.userId, phone);
+  res.json({
+    sent: true,
+    phoneNumber: phone,
+    expiresAt: issued.expiresAt,
+    ...(issued.debugCode ? { debugCode: issued.debugCode } : {}),
+  });
+}));
+
+router.post('/phone/verify', requireAuth, asyncHandler(async (req, res) => {
+  const { code } = phoneVerifySchema.parse(req.body);
+
+  const updated = await withTransaction(async (client) => {
+    const pending = await client.query<Record<string, unknown>>(
+      `SELECT * FROM phone_verification_codes
+       WHERE user_id = $1 AND consumed_at IS NULL
+       ORDER BY created_at DESC LIMIT 1
+       FOR UPDATE`,
+      [req.auth!.userId],
+    );
+    const row = pending.rows[0];
+    if (!row) {
+      throw new AppError(400, 'PHONE_CODE_NOT_FOUND', 'Спочатку запросіть код підтвердження.');
+    }
+    if (new Date(row.expires_at as string).getTime() <= Date.now()) {
+      throw new AppError(400, 'PHONE_CODE_EXPIRED', 'Термін дії коду минув. Запросіть новий код.');
+    }
+    if (Number(row.attempts) >= config.PHONE_CODE_MAX_ATTEMPTS) {
+      throw new AppError(429, 'PHONE_CODE_ATTEMPTS', 'Забагато невдалих спроб. Запросіть новий код.');
+    }
+
+    const expected = String(row.code_hash);
+    const actual = hashCode(req.auth!.userId, code);
+    const matches = expected.length === actual.length
+      && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
+
+    await client.query('UPDATE phone_verification_codes SET attempts = attempts + 1 WHERE id = $1', [row.id]);
+
+    if (!matches) {
+      const attemptsLeft = Math.max(0, config.PHONE_CODE_MAX_ATTEMPTS - Number(row.attempts) - 1);
+      throw new AppError(400, 'PHONE_CODE_INVALID', 'Невірний код. Спробуйте ще раз.', { attemptsLeft });
+    }
+
+    await client.query('UPDATE phone_verification_codes SET consumed_at = now() WHERE id = $1', [row.id]);
+    let user: Record<string, unknown> | undefined;
+    try {
+      const userResult = await client.query<Record<string, unknown>>(
+        'UPDATE users SET phone_number = $2, phone_verified_at = now() WHERE id = $1 RETURNING *',
+        [req.auth!.userId, String(row.phone_number)],
+      );
+      user = userResult.rows[0];
+    } catch (error) {
+      // Унікальний індекс users.phone_number: номер уже підтверджено іншим акаунтом.
+      if ((error as { code?: string }).code === '23505') {
+        throw new AppError(409, 'PHONE_TAKEN', 'Цей номер телефону вже прив’язаний до іншого акаунта.');
+      }
+      throw error;
+    }
+    if (!user) throw unauthorized();
+    return user;
+  });
+
+  res.json({ user: serializeUser(updated), verified: true });
 }));
 
 export default router;

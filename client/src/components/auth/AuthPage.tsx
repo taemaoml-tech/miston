@@ -24,7 +24,7 @@ export function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ identifier: '', email: '', username: '', displayName: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ identifier: '', email: '', username: '', displayName: '', phone: '', password: '', confirm: '' });
 
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const switchMode = (next: 'login' | 'register') => { setMode(next); setError(''); };
@@ -37,7 +37,7 @@ export function AuthPage() {
     setLoading(true);
     try {
       if (mode === 'login') await login(form.identifier.trim(), form.password);
-      else await register(form.email.trim(), form.username.trim(), form.displayName.trim(), form.password);
+      else await register(form.email.trim(), form.username.trim(), form.displayName.trim(), form.password, form.phone.trim());
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -106,6 +106,7 @@ export function AuthPage() {
                     <label className="block"><span className="field-label">Ім'я користувача</span><input className="text-input" autoComplete="username" required minLength={3} pattern="[a-zA-Z0-9_]+" value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="olena" /></label>
                     <label className="block"><span className="field-label">Електронна пошта</span><input className="text-input" type="email" autoComplete="email" required value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="olena@mail.com" /></label>
                   </div>
+                  <label className="block"><span className="field-label">Номер телефону</span><input className="text-input" type="tel" autoComplete="tel" required minLength={8} maxLength={30} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+380 50 123 45 67" /><span className="mt-1 block text-[11px] text-slate-400">Надішлемо 8-значний код підтвердження через SMS.</span></label>
                 </>
               )}
               <label className="block"><span className="field-label">Пароль</span><span className="relative block"><input className="text-input pr-11" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={8} value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Щонайменше 8 символів" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span></label>

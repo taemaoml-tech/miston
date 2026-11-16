@@ -189,6 +189,7 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
       });
       setServers((current) => current.map((server) => ({ ...server, channels: server.channels.map((channel) => channel.id === message.conversationId ? { ...channel, unreadCount: message.senderId !== user.id && !isActive ? (channel.unreadCount || 0) + 1 : channel.unreadCount } : channel) })));
       if (message.senderId !== user.id && !isActive) {
+        console.warn('[notif] branch', { isActive, native: isNativeApp(), hidden: document.hidden, kind: message.kind, sender: message.sender?.displayName });
         const senderName = message.sender?.displayName || message.sender?.username || 'Користувач';
         const preview = message.content || (message.kind === 'text' ? 'Нове повідомлення' : `Надіслано: ${attachmentLabels[message.kind] || 'вкладення'}`);
         const source = conversationTitle(message.conversationId);

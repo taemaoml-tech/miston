@@ -125,6 +125,9 @@ export interface User {
   bio?: string | null;
   role: UserRole;
   isVerified?: boolean;
+  phoneNumber?: string | null;
+  phoneVerified?: boolean;
+  smsNotificationsEnabled?: boolean;
   cosmetics?: StarCosmetics;
   online?: boolean;
   lastSeenAt?: string | null;

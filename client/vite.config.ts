@@ -41,5 +41,14 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  preview: { port: 4173 },
+  preview: {
+    port: 4173,
+    // Прод-збірка перевіряється на тому ж origin, що й dev, — інакше запити
+    // до /api та сокету впираються в CORS ще до будь-якої тестової дії.
+    proxy: {
+      '/api': { target: 'http://localhost:4000', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:4000', changeOrigin: true },
+      '/socket.io': { target: 'http://localhost:4000', changeOrigin: true, ws: true },
+    },
+  },
 }));

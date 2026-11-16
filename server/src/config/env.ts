@@ -17,6 +17,8 @@ const schema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   CLIENT_URL: z.string().min(1).default('http://localhost:5173'),
   UPLOAD_DIR: z.string().min(1).default('uploads'),
+  // Необов'язкова тека зі зібраним клієнтом (використовується десктопною збіркою).
+  CLIENT_DIR: z.string().optional(),
   MAX_FILE_SIZE: z.coerce.number().int().positive().max(1024 * 1024 * 1024).default(25 * 1024 * 1024),
   MAX_STICKER_SIZE: z.coerce.number().int().positive().max(16 * 1024 * 1024).default(1024 * 1024),
   TRUST_PROXY: booleanValue.default(false),
@@ -31,6 +33,31 @@ const schema = z.object({
   WEBRTC_TURN_CREDENTIAL: z.string().optional(),
   CALL_RING_TIMEOUT_MS: z.coerce.number().int().min(5000).max(180000).default(45000),
   MAX_CALL_PARTICIPANTS: z.coerce.number().int().min(2).max(20).default(6),
+  // Twilio: підтвердження номера телефону 8-значним кодом з SMS.
+  TWILIO_ACCOUNT_SID: z.string().trim().optional(),
+  TWILIO_AUTH_TOKEN: z.string().trim().optional(),
+  TWILIO_FROM_NUMBER: z.string().trim().optional(),
+  // Zavu: уніфікований API для SMS/WhatsApp/e-mail (docs.zavu.dev).
+  ZAVU_API_KEY: z.string().trim().optional(),
+  // Канал відправки: sms (власний номер), sms_oneway (спільні номери).
+  // Якщо порожньо — Zavu сам обирає канал за номером отримувача.
+  ZAVU_CHANNEL: z.string().trim().optional(),
+  // Адреса відправника (E.164) — необов'язково, за замовчуванням береться дефолтний sender проєкту.
+  ZAVU_FROM_NUMBER: z.string().trim().optional(),
+  // База API (для локальних тестів можна вказати мок-сервер).
+  ZAVU_API_BASE_URL: z.string().trim().default('https://api.zavu.dev'),
+  PHONE_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(30).default(5),
+  PHONE_CODE_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
+  PHONE_SMS_COOLDOWN_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
+  // SMS-повідомлення про нові повідомлення в месенджері.
+  // Через скільки хвилин без відповіді в розмові вважатимемо, що людина "не читає".
+  SMS_NOTIFY_IDLE_MINUTES: z.coerce.number().int().min(0).max(240).default(5),
+  // Мінімальний інтервал між SMS в одну й ту саму розмову (хвилини).
+  SMS_NOTIFY_THROTTLE_MINUTES: z.coerce.number().int().min(0).max(1440).default(10),
+  // Максимум SMS на добу на користувача; 0 — без ліміту.
+  SMS_NOTIFY_MAX_PER_DAY: z.coerce.number().int().min(0).max(1000).default(0),
+  // Лише для розробки/тестів: повертає код у відповіді API, коли SMS-провайдер не налаштований.
+  SMS_DEBUG_SHOW_CODE: booleanValue.default(false),
 });
 
 const env = schema.parse(process.env);

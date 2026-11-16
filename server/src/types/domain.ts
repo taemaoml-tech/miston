@@ -112,6 +112,9 @@ export interface PublicUser {
   bio: string;
   role: UserRole;
   isVerified: boolean;
+  phoneNumber: string | null;
+  phoneVerified: boolean;
+  smsNotificationsEnabled: boolean;
   cosmetics: StarCosmetics;
   online?: boolean;
   lastSeenAt: string;

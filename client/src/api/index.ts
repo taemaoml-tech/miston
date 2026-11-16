@@ -4,9 +4,15 @@ import { request, tokenStore } from './client';
 export const api = {
   auth: {
     login: (identifier: string, password: string) => request<AuthResponse>('/auth/login', { method: 'POST', body: { identifier, password }, auth: false }),
-    register: (email: string, username: string, displayName: string, password: string) => request<AuthResponse>('/auth/register', { method: 'POST', body: { email, username, displayName, password }, auth: false }),
+    register: (email: string, username: string, displayName: string, password: string, phone?: string) => request<AuthResponse>('/auth/register', { method: 'POST', body: { email, username, displayName, password, ...(phone ? { phone } : {}) }, auth: false }),
     me: () => request<{ user: User }>('/auth/me'),
     logout: () => request<void>('/auth/logout', { method: 'POST', body: { refreshToken: tokenStore.refreshToken } }),
+    phone: {
+      status: () => request<{ phoneNumber: string | null; phoneVerified: boolean; smsNotificationsEnabled: boolean; pendingPhone: string | null; pendingExpiresAt: string | null; smsConfigured: boolean }>('/auth/phone'),
+      request: (phone: string) => request<{ sent: boolean; phoneNumber: string; expiresAt: string; debugCode?: string }>('/auth/phone/request', { method: 'POST', body: { phone } }),
+      verify: (code: string) => request<{ user: User; verified: boolean }>('/auth/phone/verify', { method: 'POST', body: { code } }),
+      setNotifications: (enabled: boolean) => request<{ user: User; smsNotificationsEnabled: boolean }>('/auth/phone/notifications', { method: 'PATCH', body: { enabled } }),
+    },
   },
   users: {
     search: (query: string) => request<{ users: UserProfile[] }>(`/users/search?q=${encodeURIComponent(query)}`),

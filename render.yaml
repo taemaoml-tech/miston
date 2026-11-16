@@ -45,3 +45,21 @@ services:
       # На free-тарифі диск ефемерний: файли переживають перезапуск, але не redeploy.
       - key: UPLOAD_DIR
         value: /opt/render/project/src/uploads
+      # Twilio (SMS-підтвердження номера). Значення задаються в Render Dashboard:
+      # Account SID, Auth Token і номер відправника у форматі +1...
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+      # Zavu (пріоритетний провайдер SMS). Ключ створюється в Zavu Dashboard:
+      # Settings -> API Keys -> Create API Key (zv_live_...).
+      - key: ZAVU_API_KEY
+        sync: false
+      # Канал відправки: sms (власний номер) або sms_oneway (спільні номери).
+      - key: ZAVU_CHANNEL
+        sync: false
+      # Адреса відправника у форматі +1... (необов'язково).
+      - key: ZAVU_FROM_NUMBER
+        sync: false
