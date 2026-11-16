@@ -8,8 +8,10 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   pendingLogin: LoginChallenge | null;
+  pendingTwoFactor: string | null;
   login: (identifier: string, password: string) => Promise<void>;
   confirmLogin: (code: string) => Promise<void>;
+  completeTwoFactor: (password: string) => Promise<void>;
   resendLogin: () => Promise<void>;
   requestLoginSms: () => Promise<void>;
   cancelLogin: () => void;
@@ -29,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   // Вхід, який очікує 8-значного коду. Токени ще не видані сервером.
   const [pendingLogin, setPendingLogin] = useState<LoginChallenge | null>(null);
+  // Короткоживучий токен другого етапу перевірки (якщо увімкнено 2FA).
+  const [pendingTwoFactor, setPendingTwoFactor] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -71,10 +75,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const confirmLogin = useCallback(async (code: string) => {
     if (!pendingLogin) throw new Error('Немає запиту на вхід');
-    const session = await api.auth.loginVerify(pendingLogin.challengeId, code);
-    saveSession(session);
+    const result = await api.auth.loginVerify(pendingLogin.challengeId, code);
+    if ('twoFactorRequired' in result) {
+      setPendingTwoFactor(result.twoFactorToken);
+      return;
+    }
+    saveSession(result);
     setPendingLogin(null);
   }, [pendingLogin, saveSession]);
+
+  const completeTwoFactor = useCallback(async (password: string) => {
+    if (!pendingTwoFactor) throw new Error('Немає запиту на другий етап');
+    const session = await api.auth.login2fa(pendingTwoFactor, password);
+    saveSession(session);
+    setPendingLogin(null);
+    setPendingTwoFactor(null);
+  }, [pendingTwoFactor, saveSession]);
 
   const resendLogin = useCallback(async () => {
     if (!pendingLogin) return;
@@ -86,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPendingLogin(await api.auth.loginSms(pendingLogin.challengeId));
   }, [pendingLogin]);
 
-  const cancelLogin = useCallback(() => setPendingLogin(null), []);
+  const cancelLogin = useCallback(() => { setPendingLogin(null); setPendingTwoFactor(null); }, []);
 
   const register = useCallback(async (email: string, username: string, displayName: string, password: string, phone?: string) => {
     saveSession(await api.auth.register(email, username, displayName, password, phone));
@@ -108,9 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, pendingLogin, login, confirmLogin, resendLogin, requestLoginSms, cancelLogin,
+    user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginSms, cancelLogin,
     register, logout, endSession, updateUser: setUser,
-  }), [user, loading, pendingLogin, login, confirmLogin, resendLogin, requestLoginSms, cancelLogin, register, logout, endSession]);
+  }), [user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginSms, cancelLogin, register, logout, endSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

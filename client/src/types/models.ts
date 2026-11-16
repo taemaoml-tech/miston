@@ -377,6 +377,13 @@ export interface AuthResponse {
 }
 
 /** Вхід підтверджується 8-значним кодом: у чаті Miston або SMS. */
+export type LoginResult = AuthResponse | LoginChallenge;
+
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  twoFactorToken: string;
+}
+
 export interface LoginChallenge {
   loginRequired: true;
   challengeId: string;
@@ -387,8 +394,6 @@ export interface LoginChallenge {
   deliveryError?: string;
   smsDebugCode?: string;
 }
-
-export type LoginResult = AuthResponse | LoginChallenge;
 
 export interface LoginSession {
   id: string;

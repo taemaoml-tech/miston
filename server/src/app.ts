@@ -18,6 +18,7 @@ import complaintRoutes from './routes/complaints';
 import notificationRoutes from './routes/notifications';
 import starRoutes from './routes/star';
 import stickerRoutes from './routes/stickers';
+import botRoutes from './routes/bots';
 import supportRoutes from './routes/support';
 import { AppError } from './utils/errors';
 import { asyncHandler } from './utils/http';
@@ -86,7 +87,7 @@ export function createApp(): express.Express {
   app.use('/api/stickers', stickerRoutes);
   app.use('/api/complaints', complaintRoutes);
   app.use('/api/support', supportRoutes);
-  app.use('/api/notifications', notificationRoutes);
+  app.use('/api', botRoutes);
   app.use('/api/admin', adminRoutes);
 
   if (config.CLIENT_DIR) {

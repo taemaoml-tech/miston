@@ -12,6 +12,7 @@ import { kindForMime, mimeMatchesKind, removeUpload, safeOriginalName, upload } 
 import { emitMessageDeleted, emitMessageNew, emitMessageReactions, emitMessageRead, emitMessageUpdated, emitMention, emitStarUpdate } from '../sockets/emitter';
 import { recordMessageReward } from '../star/service';
 import { notifyRecipientsBySms } from '../services/messageSms';
+import { handleBotInteraction } from '../services/bots';
 import { asyncHandler } from '../utils/http';
 import { AppError, forbidden, notFound } from '../utils/errors';
 import { REACTION_EMOJIS } from '../utils/reactions';
@@ -209,6 +210,7 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
     emitMention(message, mentioned);
     // SMS про нове повідомлення надсилається тим, хто офлайн (best-effort).
     void notifyRecipientsBySms(message, recipients);
+    void handleBotInteraction(message.conversationId, message, req.auth!.userId);
     // Star rewards are best-effort: a wallet hiccup must never lose the message.
     // Нотатки не рахуються: інакше ⭐ і рівень фармляться одним пакетом «на собі».
     const star = conversationKind === 'saved' ? null : await recordMessageReward(req.auth!.userId).catch((error) => {
@@ -262,6 +264,7 @@ router.post('/:id/stickers', asyncHandler(async (req, res) => {
   await recordStickerUse(userId, sticker.id);
   emitMessageNew(message, recipients);
   void notifyRecipientsBySms(message, recipients);
+    void handleBotInteraction(message.conversationId, message, req.auth!.userId);
   const star = conversationKind === 'saved' ? null : await recordMessageReward(userId).catch((error) => {
     console.error('Failed to record Star activity', error);
     return null;
@@ -321,6 +324,7 @@ router.post('/:id/messages/:messageId/forward', asyncHandler(async (req, res) =>
 
   emitMessageNew(message, recipients);
   void notifyRecipientsBySms(message, recipients);
+    void handleBotInteraction(message.conversationId, message, req.auth!.userId);
   res.status(201).json({ message });
 }));
 

@@ -13,6 +13,17 @@ import { password } from '../utils/validation';
 import { AppError, unauthorized } from '../utils/errors';
 import { normalizePhone } from '../utils/phone';
 import { isUserOnline } from '../sockets/presence';
+import {
+  consumeTwoFactorChallenge,
+  disableTwoFactor,
+  enableTwoFactor,
+  getTwoFactorHint,
+  isTwoFactorEnabled,
+  issueTwoFactorChallenge,
+  twoFactorToken,
+  verifyTwoFactorPassword,
+  verifyTwoFactorToken,
+} from '../services/twoFactor';
 import { sendSms, smsConfigured } from '../services/sms';
 import {
   issueLoginChallenge,
@@ -227,6 +238,13 @@ router.post('/login/verify', asyncHandler(async (req, res) => {
   if (!user) throw unauthorized('Користувача не знайдено');
   assertNotBlocked(user);
 
+  // Другий етап: якщо увімкнено двоетапну перевірку, спершу просимо пароль.
+  if (user.two_factor_enabled) {
+    const tfToken = twoFactorToken(String(user.id));
+    res.json({ twoFactorRequired: true, twoFactorToken: tfToken });
+    return;
+  }
+
   const device = deviceInfo(req);
   const refresh = createRefreshToken();
   await query(
@@ -242,9 +260,52 @@ router.post('/login/resend', asyncHandler(async (req, res) => {
   res.json(await resendLoginChallenge(challengeId));
 }));
 
-router.post('/login/sms', asyncHandler(async (req, res) => {
-  const { challengeId } = challengeSchema.parse(req.body);
-  res.json(await requestLoginSms(challengeId));
+router.post('/login/2fa', asyncHandler(async (req, res) => {
+  const { token: tfToken, password: tfPassword } = z.object({
+    token: z.string().min(10),
+    password: z.string().min(1).max(128),
+  }).parse(req.body);
+  const userId = verifyTwoFactorToken(tfToken);
+  await verifyTwoFactorPassword(userId, tfPassword);
+  const result = await query<Record<string, unknown>>('SELECT * FROM users WHERE id = $1', [userId]);
+  const user = result.rows[0];
+  if (!user) throw unauthorized('Користувача не знайдено');
+  assertNotBlocked(user);
+  const device = deviceInfo(req);
+  const refresh = createRefreshToken();
+  await query(
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, user_agent, ip_address)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [user.id, refresh.hash, refresh.expiresAt, device.userAgent, device.ip],
+  );
+  res.json(authPayload(user, refresh.token));
+}));
+
+/** Двоетапна перевірка. */
+router.get('/2fa', requireAuth, asyncHandler(async (req, res) => {
+  res.json({
+    enabled: await isTwoFactorEnabled(req.auth!.userId),
+    hint: await getTwoFactorHint(req.auth!.userId),
+  });
+}));
+
+router.post('/2fa/setup', requireAuth, asyncHandler(async (req, res) => {
+  const { currentPassword, password, hint } = z.object({
+    currentPassword: z.string().min(1).max(128),
+    password: z.string().min(6).max(128),
+    hint: z.string().trim().max(100).optional(),
+  }).parse(req.body);
+  await enableTwoFactor(req.auth!.userId, password, currentPassword);
+  if (hint) {
+    await query('UPDATE users SET two_factor_hint = $2, updated_at = now() WHERE id = $1', [req.auth!.userId, hint]);
+  }
+  res.json({ enabled: true });
+}));
+
+router.post('/2fa/disable', requireAuth, asyncHandler(async (req, res) => {
+  const { password } = z.object({ password: z.string().min(1).max(128) }).parse(req.body);
+  await disableTwoFactor(req.auth!.userId, password);
+  res.json({ enabled: false });
 }));
 
 /** Активні сесії для екрана «Пристрої». */

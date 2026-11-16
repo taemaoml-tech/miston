@@ -1,5 +1,5 @@
 import {
-  BatteryCharging, BellRing, Camera, CheckCircle2, ChevronLeft, ChevronRight, Database,
+  BatteryCharging, BellRing, Bot, Camera, CheckCircle2, ChevronLeft, ChevronRight, Copy, Database,
   Folder, Languages, LockKeyhole, LogOut, MessageSquare, MonitorSmartphone,
   ShieldCheck, Smartphone, UserRound,
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useMessenger } from '../../contexts/MessengerContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { infoHref } from '../../router/infoRoute';
 import { errorMessage } from '../../utils/format';
@@ -21,7 +22,7 @@ import { StarDisplayName } from '../star/StarDisplayName';
 
 type Section =
   | 'root' | 'account' | 'chats' | 'privacy' | 'notifications'
-  | 'data' | 'folders' | 'devices' | 'energy' | 'language';
+  | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots';
 
 const SECTION_TITLES: Record<Section, string> = {
   root: 'Налаштування',
@@ -34,6 +35,7 @@ const SECTION_TITLES: Record<Section, string> = {
   devices: 'Пристрої',
   energy: 'Економія енергії',
   language: 'Мова',
+  bots: 'Боти',
 };
 
 function maskPhone(phone: string): string {
@@ -96,6 +98,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
 
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, updateUser, logout } = useAuth();
+  const { selectConversation } = useMessenger();
   const { theme, toggleTheme } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [section, setSection] = useState<Section>('root');
@@ -107,8 +110,17 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   const [saved, setSaved] = useState(false);
   const [sessions, setSessions] = useState<LoginSession[] | null>(null);
   const [sessionsError, setSessionsError] = useState('');
-  const [energySaver, setEnergySaver] = useState(() => localStorage.getItem('miston.energySaver') === 'true');
   const [cache, setCache] = useState('');
+  const [myBots, setMyBots] = useState<Array<{ id: string; username: string; displayName: string; token: string; funMode: boolean }>>([]);
+  const [botsError, setBotsError] = useState('');
+  const [botsLoading, setBotsLoading] = useState(false);
+  const [tfStatus, setTfStatus] = useState<{ enabled: boolean; hint: string | null } | null>(null);
+  const [tfCurrent, setTfCurrent] = useState('');
+  const [tfNew, setTfNew] = useState('');
+  const [tfHint, setTfHint] = useState('');
+  const [tfDisablePass, setTfDisablePass] = useState('');
+  const [tfError, setTfError] = useState('');
+  const [tfBusy, setTfBusy] = useState(false);
 
   useEffect(() => {
     if (user && open) {
@@ -119,6 +131,15 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   useEffect(() => {
+    if (!open || section !== 'privacy') return;
+    let active = true;
+    setTfError('');
+    api.auth.twoFactor.status()
+      .then((result) => { if (active) setTfStatus(result); })
+      .catch((cause) => { if (active) setTfError(errorMessage(cause)); });
+    return () => { active = false; };
+  }, [open, section]);
+  useEffect(() => {
     if (!open || section !== 'devices') return;
     let active = true;
     setSessions(null);
@@ -126,6 +147,18 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
     api.auth.sessions()
       .then((result) => { if (active) setSessions(result.sessions); })
       .catch((cause) => { if (active) setSessionsError(errorMessage(cause)); });
+    return () => { active = false; };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== 'bots') return;
+    let active = true;
+    setBotsLoading(true);
+    setBotsError('');
+    api.bots.mine()
+      .then((result) => { if (active) setMyBots(result.bots); })
+      .catch((cause) => { if (active) setBotsError(errorMessage(cause)); })
+      .finally(() => { if (active) setBotsLoading(false); });
     return () => { active = false; };
   }, [open, section]);
 
@@ -202,6 +235,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             <SettingsRow icon={<Database size={19} />} color="bg-indigo-500" title="Дані та сховище" subtitle="Кеш застосунку та медіа" onClick={() => setSection('data')} />
             <SettingsRow icon={<Folder size={19} />} color="bg-blue-500" title="Папки для чатів" subtitle="Сортування чатів по папках" onClick={() => setSection('folders')} />
             <SettingsRow icon={<MonitorSmartphone size={19} />} color="bg-cyan-500" title="Пристрої" subtitle="Керування під'єднаними сесіями" onClick={() => setSection('devices')} />
+            <SettingsRow icon={<Bot size={19} />} color="bg-purple-500" title="Боти" subtitle="Створення та керування ботами через BotFather" onClick={() => setSection('bots')} />
             <SettingsRow icon={<BatteryCharging size={19} />} color="bg-amber-500" title="Економія енергії" subtitle="Менше анімацій за низького заряду" onClick={() => setSection('energy')} />
             <SettingsRow icon={<Languages size={19} />} color="bg-violet-500" title="Мова" subtitle="Українська" onClick={() => setSection('language')} />
           </div>
@@ -311,6 +345,60 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                   Якщо доступу до застосунку немає, код приходить SMS на підтверджений номер.
                 </p>
               </div>
+
+              <div className="rounded-2xl border p-4 dark:border-slate-800">
+                <p className="flex items-center gap-2 text-sm font-semibold"><LockKeyhole size={16} /> Двоетапна перевірка</p>
+                {tfStatus?.enabled ? (
+                  <>
+                    <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">Увімкнено{tfStatus.hint ? ` · підказка: ${tfStatus.hint}` : ''}.</p>
+                    <p className="mt-1 text-xs text-slate-400">При вході з нового пристрою після SMS-коду потрібен цей пароль.</p>
+                    <label className="mt-3 block"><span className="field-label">Пароль двоетапної перевірки</span>
+                      <input type="password" className="text-input" value={tfDisablePass} onChange={(e) => setTfDisablePass(e.target.value)} placeholder="Введіть, щоб вимкнути" />
+                    </label>
+                    {tfError && <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{tfError}</p>}
+                    <button
+                      type="button"
+                      className="secondary-btn mt-3"
+                      disabled={tfBusy || !tfDisablePass}
+                      onClick={() => {
+                        setTfBusy(true); setTfError('');
+                        api.auth.twoFactor.disable(tfDisablePass)
+                          .then((r) => { setTfStatus({ enabled: r.enabled, hint: null }); setTfDisablePass(''); })
+                          .catch((cause) => setTfError(errorMessage(cause)))
+                          .finally(() => setTfBusy(false));
+                      }}
+                    >Вимкнути двоетапну перевірку</button>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      Додатковий пароль, який запитується при вході з нового пристрою після коду підтвердження.
+                    </p>
+                    <label className="mt-3 block"><span className="field-label">Поточний пароль акаунта</span>
+                      <input type="password" className="text-input" value={tfCurrent} onChange={(e) => setTfCurrent(e.target.value)} />
+                    </label>
+                    <label className="mt-3 block"><span className="field-label">Новий пароль двоетапної перевірки</span>
+                      <input type="password" className="text-input" value={tfNew} onChange={(e) => setTfNew(e.target.value)} placeholder="мінімум 6 символів" />
+                    </label>
+                    <label className="mt-3 block"><span className="field-label">Підказка (необов'язково)</span>
+                      <input className="text-input" value={tfHint} onChange={(e) => setTfHint(e.target.value)} placeholder="Напр. улюблене місто" />
+                    </label>
+                    {tfError && <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{tfError}</p>}
+                    <button
+                      type="button"
+                      className="primary-btn mt-3"
+                      disabled={tfBusy || !tfCurrent || tfNew.length < 6}
+                      onClick={() => {
+                        setTfBusy(true); setTfError('');
+                        api.auth.twoFactor.setup(tfCurrent, tfNew, tfHint || undefined)
+                          .then((r) => { setTfStatus({ enabled: r.enabled, hint: tfHint || null }); setTfCurrent(''); setTfNew(''); setTfHint(''); })
+                          .catch((cause) => setTfError(errorMessage(cause)))
+                          .finally(() => setTfBusy(false));
+                      }}
+                    >Увімкнути двоетапну перевірку</button>
+                  </>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setSection('devices')}
@@ -395,33 +483,60 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             </div>
           )}
 
-          {section === 'energy' && (
+          {false && (
             <div className="space-y-4">
-              <div className="flex items-start justify-between gap-4 rounded-2xl border p-4 dark:border-slate-800">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-semibold"><BatteryCharging size={16} /> Економія енергії</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    Вимикає важкі анімації та зменшує частоту оновлень, коли заряд низький.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={energySaver}
-                  onClick={() => {
-                    const next = !energySaver;
-                    setEnergySaver(next);
-                    localStorage.setItem('miston.energySaver', String(next));
-                    document.documentElement.classList.toggle('reduce-motion', next);
-                  }}
-                  className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition ${energySaver ? 'bg-accent-600' : 'bg-slate-300 dark:bg-slate-700'}`}
-                >
-                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${energySaver ? 'left-[22px]' : 'left-0.5'}`} />
-                </button>
-              </div>
+              <button
+                type="button"
+                className="primary-btn w-full"
+                onClick={() => {
+                  void api.bots.father().then((result) => {
+                    return api.conversations.create({ kind: 'direct', userId: result.user.id }).then((conv) => {
+                      selectConversation(conv.conversation.id);
+                      onClose();
+                    });
+                  }).catch((cause) => setBotsError(errorMessage(cause)));
+                }}
+              >
+                <Bot size={16} /> Відкрити BotFather
+              </button>
               <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-                Налаштування зберігається лише на цьому пристрої.
+                У чаті з BotFather створюйте ботів командою <span className="font-mono">/newbot Назва usernamebot</span>, отримуйте API-токени, вмикайте режим «Веселун» та керуйте ботами.
               </p>
+              {botsLoading && <p className="text-sm text-slate-400">Завантажуємо ботів…</p>}
+              {botsError && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{botsError}</p>}
+              {!botsLoading && myBots.length === 0 && (
+                <p className="text-sm text-slate-400">У вас ще немає ботів.</p>
+              )}
+              {myBots.map((bot) => (
+                <div key={bot.id} className="rounded-2xl border p-4 dark:border-slate-800">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">@{bot.username}</p>
+                      <p className="mt-0.5 truncate text-xs text-slate-400">{bot.displayName}{bot.funMode ? ' · 🎉 Веселун' : ''}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-rose-600 hover:underline dark:text-rose-400"
+                      onClick={() => {
+                        void api.bots.mine().then(() => setMyBots((current) => current.filter((item) => item.id !== bot.id)));
+                      }}
+                    >
+                      Видалити
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+                    <code className="min-w-0 flex-1 truncate text-xs text-slate-600 dark:text-slate-300">{bot.token}</code>
+                    <button
+                      type="button"
+                      className="shrink-0 text-slate-400 hover:text-accent-600"
+                      onClick={() => { void navigator.clipboard?.writeText(bot.token); }}
+                      aria-label="Скопіювати токен"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -457,3 +572,4 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
     </Modal>
   );
 }
+
