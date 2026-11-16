@@ -12,6 +12,7 @@ import { createRefreshToken, hashRefreshToken, signAccessToken } from '../utils/
 import { password } from '../utils/validation';
 import { AppError, unauthorized } from '../utils/errors';
 import { normalizePhone } from '../utils/phone';
+import { isUserOnline } from '../sockets/presence';
 import { sendSms, smsConfigured } from '../services/sms';
 import {
   issueLoginChallenge,
@@ -189,6 +190,23 @@ router.post('/login', asyncHandler(async (req, res) => {
   const matches = await bcrypt.compare(input.password, String(user?.password_hash ?? DUMMY_HASH));
   if (!user || !matches) throw unauthorized('Невірні дані для входу');
   assertNotBlocked(user);
+
+  // Акаунти без підтвердженого номера і без активної сесії Miston входять як раніше:
+  // інакше такі користувачі назавжди втратили б доступ. Після входу застосунок
+  // запропонує прив'язати номер телефону (екран підтвердження).
+  const hasPhone = Boolean(user.phone_number && user.phone_verified_at);
+  const online = isUserOnline(String(user.id));
+  if (!hasPhone && !online) {
+    const refresh = createRefreshToken();
+    const device = deviceInfo(req);
+    await query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, user_agent, ip_address)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [user.id, refresh.hash, refresh.expiresAt, device.userAgent, device.ip],
+    );
+    res.json(authPayload(user, refresh.token));
+    return;
+  }
 
   // Пароль правильний, але сесію ще не видаємо: спершу 8-значний код.
   // Він приходить у чат із ботом Miston, або SMS, якщо доступу до застосунку немає.
