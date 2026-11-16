@@ -22,8 +22,12 @@ export async function getFcmToken(): Promise<string | null> {
     const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;
+    const base = import.meta.env.BASE_URL || '/';
+    const swUrl = `${base}firebase-messaging-sw.js`.replace(/\/\//g, '/');
+    const scope = base;
+    const registration = await navigator.serviceWorker.register(swUrl, { scope });
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-    const token = await getToken(messaging, { vapidKey });
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
     return token || null;
   } catch (error) {
     console.warn('FCM token error', error);

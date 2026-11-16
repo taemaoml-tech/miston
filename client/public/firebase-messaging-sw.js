@@ -11,8 +11,9 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+const base = self.location.pathname.replace(/firebase-messaging-sw\.js$/, '');
 messaging.onBackgroundMessage((payload) => {
   const title = payload?.notification?.title || 'Miston';
   const body = payload?.notification?.body || 'Нове повідомлення';
-  self.registration.showNotification(title, { body, icon: '/icons/icon-192.png' });
+  self.registration.showNotification(title, { body, icon: base + 'icons/icon-192.png' });
 });
