@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { getApps, initializeApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
 
 const config = {
@@ -18,7 +18,7 @@ export async function getFcmToken(): Promise<string | null> {
   if (!firebaseConfigured()) return null;
   if (!(await isSupported())) return null;
   try {
-    const app = initializeApp(config);
+    const app = getApps().length ? getApps()[0]! : initializeApp(config);
     const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;

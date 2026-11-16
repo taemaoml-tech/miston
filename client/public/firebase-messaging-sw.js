@@ -2,10 +2,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: self.__FIREBASE_CONFIG__?.apiKey,
-  projectId: self.__FIREBASE_CONFIG__?.projectId,
-  messagingSenderId: self.__FIREBASE_CONFIG__?.messagingSenderId,
-  appId: self.__FIREBASE_CONFIG__?.appId,
+  apiKey: 'AIzaSyAYdu-gmVqERGEy1zCG-0euOW75GBTVrn0',
+  authDomain: 'miston-messenger.firebaseapp.com',
+  projectId: 'miston-messenger',
+  storageBucket: 'miston-messenger.firebasestorage.app',
+  messagingSenderId: '1037351652213',
+  appId: '1:1037351652213:web:e5a54e3d11c930d207e13c',
 });
 
 const messaging = firebase.messaging();
