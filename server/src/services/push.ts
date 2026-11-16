@@ -42,6 +42,11 @@ export async function unregisterPushToken(token: string): Promise<void> {
   await query('DELETE FROM push_tokens WHERE token = $1', [token]);
 }
 
+export async function pushTokenCount(userId: string): Promise<number> {
+  const result = await query<{ count: number }>('SELECT count(*)::int AS count FROM push_tokens WHERE user_id = $1', [userId]);
+  return result.rows[0]?.count ?? 0;
+}
+
 export async function sendPushToUser(userId: string, title: string, body: string): Promise<void> {
   const firebaseAdmin = await getAdmin();
   if (!firebaseAdmin) return;

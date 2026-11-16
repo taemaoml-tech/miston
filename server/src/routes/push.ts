@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/http';
-import { registerPushToken, unregisterPushToken } from '../services/push';
+import { registerPushToken, unregisterPushToken, sendPushToUser, pushConfigured, pushTokenCount } from '../services/push';
 
 const router = Router();
 router.use(requireAuth);
@@ -17,6 +17,16 @@ router.post('/unregister', asyncHandler(async (req, res) => {
   const { token } = z.object({ token: z.string().min(10) }).parse(req.body);
   await unregisterPushToken(token);
   res.status(204).send();
+}));
+
+router.get('/status', asyncHandler(async (req, res) => {
+  res.json({ tokens: await pushTokenCount(req.auth!.userId), configured: pushConfigured() });
+}));
+
+router.post('/test', asyncHandler(async (req, res) => {
+  const { title, body } = z.object({ title: z.string().default('Miston'), body: z.string().default('Тестове push-сповіщення') }).parse(req.body);
+  await sendPushToUser(req.auth!.userId, title, body);
+  res.json({ sent: true, tokens: await pushTokenCount(req.auth!.userId) });
 }));
 
 export default router;

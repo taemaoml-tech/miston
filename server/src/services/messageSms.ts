@@ -54,7 +54,7 @@ export function buildSmsText(message: Message, conversation: ConversationRow | n
  * Чи варто зараз надсилати SMS одному з отримувачів:
  * - користувач offline, або він онлайн, але не відповідав у розмові вже понад SMS_NOTIFY_IDLE_MINUTES.
  */
-async function shouldNotify(recipientId: string, conversationId: string): Promise<boolean> {
+export async function shouldNotify(recipientId: string, conversationId: string): Promise<boolean> {
   if (!isUserOnline(recipientId)) return true;
 
   const idleMinutes = config.SMS_NOTIFY_IDLE_MINUTES;
@@ -161,8 +161,7 @@ export async function notifyRecipientsByPush(message: Message, recipientIds: str
 
     for (const recipient of recipients.rows) {
       try {
-        // Не турбуємо, якщо користувач зараз онлайн у цій розмові.
-        if (isUserOnline(recipient.id)) continue;
+        if (!(await shouldNotify(recipient.id, message.conversationId))) continue;
         await sendPushToUser(recipient.id, title, text);
       } catch (error) {
         console.error('Failed to send push notification', error instanceof Error ? error.message : error);
