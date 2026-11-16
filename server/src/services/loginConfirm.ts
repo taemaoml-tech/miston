@@ -3,7 +3,7 @@ import { query } from '../db/pool';
 import { config } from '../config/env';
 import { AppError } from '../utils/errors';
 import { isUserOnline } from '../sockets/presence';
-import { sendSms, smsConfigured } from './sms';
+import { sendEmail, emailConfigured } from './email';
 import { replaceBotMessage, sendBotMessage } from './bot';
 
 /**
@@ -18,15 +18,15 @@ import { replaceBotMessage, sendBotMessage } from './bot';
  * Токени доступу видаються лише після підтвердження коду.
  */
 
-export type LoginDelivery = 'miston' | 'sms';
+export type LoginDelivery = 'miston' | 'email';
 
 export interface LoginChallengeView {
   loginRequired: true;
   challengeId: string;
   delivery: LoginDelivery;
   expiresAt: string;
-  canRequestSms: boolean;
-  phoneHint: string | null;
+  canRequestEmail: boolean;
+  emailHint: string | null;
   deliveryError?: string;
   smsDebugCode?: string;
 }
@@ -45,6 +45,7 @@ interface ChallengeRow {
 
 interface UserRow {
   id: string;
+  email: string;
   phone_number: string | null;
   phone_verified_at: Date | null;
   display_name: string;
@@ -58,9 +59,12 @@ function newCode(): string {
   return String(crypto.randomInt(0, 100_000_000)).padStart(8, '0');
 }
 
-function maskPhone(phone: string): string {
-  if (phone.length <= 6) return phone;
-  return `${phone.slice(0, 4)} ••• •• ${phone.slice(-2)}`;
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const safeLocal = local ?? '';
+  const maskedLocal = safeLocal.length <= 2 ? `${safeLocal[0] ?? ''}***` : `${safeLocal.slice(0, 2)}***`;
+  return `${maskedLocal}@${domain}`;
 }
 
 function challengeView(
@@ -73,8 +77,8 @@ function challengeView(
     challengeId: String(row.id),
     delivery: row.delivery,
     expiresAt: new Date(row.expires_at).toISOString(),
-    canRequestSms: Boolean(user.phone_number && user.phone_verified_at),
-    phoneHint: user.phone_number ? maskPhone(String(user.phone_number)) : null,
+    canRequestEmail: true,
+    emailHint: maskEmail(String(user.email)),
     ...extra,
   };
 }
@@ -93,7 +97,7 @@ function loginMessage(code: string): string {
 
 async function loadUser(userId: string): Promise<UserRow> {
   const result = await query<UserRow>(
-    'SELECT id, phone_number, phone_verified_at, display_name FROM users WHERE id = $1',
+    'SELECT id, email, phone_number, phone_verified_at, display_name FROM users WHERE id = $1',
     [userId],
   );
   const user = result.rows[0];
@@ -107,22 +111,12 @@ async function loadUser(userId: string): Promise<UserRow> {
  */
 export async function issueLoginChallenge(
   userId: string,
-  options: { forceSms?: boolean } = {},
+  options: { forceEmail?: boolean } = {},
 ): Promise<LoginChallengeView> {
   const user = await loadUser(userId);
 
-  const hasPhone = Boolean(user.phone_number && user.phone_verified_at);
-  if (options.forceSms && !hasPhone) {
-    throw new AppError(
-      400,
-      'PHONE_REQUIRED',
-      'До акаунта не прив’язано підтверджений номер телефону, тому SMS надіслати неможливо.',
-    );
-  }
-
-  // Онлайн-сесія означає, що людина може побачити код у Miston просто зараз.
   const online = isUserOnline(userId);
-  const delivery: LoginDelivery = options.forceSms ? 'sms' : (online || !hasPhone ? 'miston' : 'sms');
+  const delivery: LoginDelivery = options.forceEmail ? 'email' : (online ? 'miston' : 'email');
   const code = newCode();
   const ttl = config.LOGIN_CODE_TTL_MINUTES;
 
@@ -150,38 +144,27 @@ export async function issueLoginChallenge(
   let deliveryError: string | undefined;
   let smsDebugCode: string | undefined;
 
-  if (delivery === 'sms') {
-    if (!hasPhone) {
-      finalDelivery = 'miston';
-      deliveryError = 'Немає підтвердженого номера телефону — код залишено в чаті Miston.';
-    } else if (!smsConfigured() && !config.SMS_DEBUG_SHOW_CODE) {
-      finalDelivery = botSent ? 'miston' : 'sms';
-      deliveryError = 'SMS ще не налаштовані на сервері.';
-      if (!botSent) throw new AppError(503, 'SMS_NOT_CONFIGURED', 'Відправка SMS ще не налаштована.');
+  if (delivery === 'email') {
+    if (!emailConfigured() && !config.SMS_DEBUG_SHOW_CODE) {
+      finalDelivery = botSent ? 'miston' : 'email';
+      deliveryError = 'Email ще не налаштований на сервері.';
+      if (!botSent) throw new AppError(503, 'EMAIL_NOT_CONFIGURED', 'Відправка email ще не налаштована.');
     } else {
       try {
-        await sendSms(
-          String(user.phone_number),
-          `Miston: код підтвердження входу ${code}. Діє ${ttl} хв. Нікому його не повідомляйте.`,
+        await sendEmail(
+          String(user.email),
+          'Miston - код підтвердження входу',
+          'Ваш код підтвердження входу: ' + code + '\n\nКод діє ' + ttl + ' хв. Нікому його не повідомляйте.\nЯкщо це були не ви - змініть пароль.',
         );
       } catch (error) {
-        finalDelivery = botSent ? 'miston' : 'sms';
-        deliveryError = error instanceof Error ? error.message : 'Не вдалося надіслати SMS.';
+        finalDelivery = botSent ? 'miston' : 'email';
+        deliveryError = error instanceof Error ? error.message : 'Не вдалося надіслати email.';
         if (!botSent) throw error;
         if (config.SMS_DEBUG_SHOW_CODE) smsDebugCode = code;
       }
     }
   } else if (!botSent) {
-    // Чат недоступний — намагаємось урятувати вхід через SMS.
-    if (hasPhone && smsConfigured()) {
-      await sendSms(
-        String(user.phone_number),
-        `Miston: код підтвердження входу ${code}. Діє ${ttl} хв. Нікому його не повідомляйте.`,
-      );
-      finalDelivery = 'sms';
-    } else {
-      throw new AppError(503, 'LOGIN_CODE_UNAVAILABLE', 'Не вдалося доставити код підтвердження входу.');
-    }
+    throw new AppError(503, 'LOGIN_CODE_UNAVAILABLE', 'Не вдалося доставити код підтвердження входу.');
   }
 
   const updated = await query<ChallengeRow>(
@@ -221,27 +204,20 @@ export async function resendLoginChallenge(challengeId: string): Promise<LoginCh
       retryAfter: cooldown,
     });
   }
-  const forceSms = challenge.delivery === 'sms';
-  return issueLoginChallenge(String(challenge.user_id), { forceSms });
+  const forceEmail = challenge.delivery === 'email';
+  return issueLoginChallenge(String(challenge.user_id), { forceEmail });
 }
 
-/** Перемикання на SMS, коли немає доступу до Miston. */
-export async function requestLoginSms(challengeId: string): Promise<LoginChallengeView> {
+/** Перемикання на email, коли немає доступу до Miston. */
+export async function requestLoginEmail(challengeId: string): Promise<LoginChallengeView> {
   const { challenge, user } = await loadChallenge(challengeId);
-  if (!user.phone_number || !user.phone_verified_at) {
-    throw new AppError(
-      400,
-      'PHONE_REQUIRED',
-      'До акаунта не прив’язано підтверджений номер телефону. Скористайтеся кодом у чаті Miston.',
-    );
-  }
   const cooldown = cooldownSeconds(challenge);
   if (cooldown > 0) {
     throw new AppError(429, 'LOGIN_CODE_COOLDOWN', `Повторно надіслати код можна через ${cooldown} с.`, {
       retryAfter: cooldown,
     });
   }
-  return issueLoginChallenge(String(challenge.user_id), { forceSms: true });
+  return issueLoginChallenge(String(challenge.user_id), { forceEmail: true });
 }
 
 export interface VerifiedChallenge {

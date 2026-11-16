@@ -8,7 +8,7 @@ export const api = {
     loginVerify: (challengeId: string, code: string) => request<AuthResponse | TwoFactorChallenge>('/auth/login/verify', { method: 'POST', body: { challengeId, code }, auth: false }),
     login2fa: (token: string, password: string) => request<AuthResponse>('/auth/login/2fa', { method: 'POST', body: { token, password }, auth: false }),
     loginResend: (challengeId: string) => request<LoginChallenge>('/auth/login/resend', { method: 'POST', body: { challengeId }, auth: false }),
-    loginSms: (challengeId: string) => request<LoginChallenge>('/auth/login/sms', { method: 'POST', body: { challengeId }, auth: false }),
+    loginEmail: (challengeId: string) => request<LoginChallenge>('/auth/login/email', { method: 'POST', body: { challengeId }, auth: false }),
     twoFactor: {
       status: () => request<{ enabled: boolean; hint: string | null }>('/auth/2fa'),
       setup: (currentPassword: string, password: string, hint?: string) => request<{ enabled: boolean }>('/auth/2fa/setup', { method: 'POST', body: { currentPassword, password, hint } }),
@@ -51,6 +51,10 @@ export const api = {
   bots: {
     father: () => request<{ user: { id: string; username: string; displayName: string } }>('/bots/father'),
     mine: () => request<{ bots: Array<{ id: string; userId: string; ownerId: string; username: string; displayName: string; description: string; token: string; avatarUrl: string | null; funMode: boolean; isActive: boolean; createdAt: string }> }>('/bots/mine'),
+  },
+  push: {
+    register: (token: string, platform: string) => request<void>('/push/register', { method: 'POST', body: { token, platform } }),
+    unregister: (token: string) => request<void>('/push/unregister', { method: 'POST', body: { token } }),
   },
   conversations: {
     list: () => request<{ conversations: Conversation[] }>('/conversations'),

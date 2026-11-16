@@ -60,7 +60,17 @@ const schema = z.object({
   SMS_NOTIFY_THROTTLE_MINUTES: z.coerce.number().int().min(0).max(1440).default(10),
   // Максимум SMS на добу на користувача; 0 — без ліміту.
   SMS_NOTIFY_MAX_PER_DAY: z.coerce.number().int().min(0).max(1000).default(0),
-  // Лише для розробки/тестів: повертає код у відповіді API, коли SMS-провайдер не налаштований.
+  // Email (SMTP) для кодів підтвердження входу, коли немає доступу до Miston.
+  SMTP_HOST: z.string().trim().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_SECURE: booleanValue.default(false),
+  SMTP_USER: z.string().trim().optional(),
+  SMTP_PASS: z.string().trim().optional(),
+  SMTP_FROM: z.string().trim().optional(),
+  // Firebase Cloud Messaging (push-повідомлення про нові повідомлення).
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().trim().optional(),
+  FIREBASE_SERVICE_ACCOUNT_PATH: z.string().trim().optional(),
+  // Лише для розробки/тестів.
   SMS_DEBUG_SHOW_CODE: booleanValue.default(false),
 });
 

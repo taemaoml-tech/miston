@@ -15,7 +15,7 @@ function retryAfterSeconds(error: unknown): number {
 }
 
 export function LoginConfirmation() {
-  const { pendingLogin, pendingTwoFactor, confirmLogin, completeTwoFactor, resendLogin, requestLoginSms, cancelLogin } = useAuth();
+  const { pendingLogin, pendingTwoFactor, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin } = useAuth();
   const [code, setCode] = useState('');
   const [tfPassword, setTfPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,6 +32,7 @@ export function LoginConfirmation() {
   if (!pendingLogin) return null;
 
   const viaMiston = pendingLogin.delivery === 'miston';
+  const viaEmail = pendingLogin.delivery === 'email';
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -75,14 +76,14 @@ export function LoginConfirmation() {
     }
   }
 
-  async function toSms() {
+  async function toEmail() {
     setError('');
     setNotice('');
     setLoading(true);
     try {
-      await requestLoginSms();
+      await requestLoginEmail();
       setCooldown(60);
-      setNotice('Код надіслано SMS на підтверджений номер телефону.');
+      setNotice('Код надіслано на email.');
     } catch (cause) {
       setError(errorMessage(cause));
       setCooldown(retryAfterSeconds(cause));
@@ -115,7 +116,9 @@ export function LoginConfirmation() {
         <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
           {viaMiston
             ? 'Ми надіслали 8-значний код у Miston — у чат із ботом Miston. Відкрийте застосунок на іншому пристрої, щоб побачити його.'
-            : `Ми надіслали 8-значний код SMS на номер ${pendingLogin.phoneHint ?? 'телефону'}.`}
+            : viaEmail
+              ? `Ми надіслали 8-значний код на email ${pendingLogin.emailHint ?? ''}.`
+              : `Ми надіслали 8-значний код SMS на номер ${pendingLogin.emailHint ?? 'телефону'}.`}
         </p>
 
         {pendingLogin.deliveryError && (
@@ -192,14 +195,14 @@ export function LoginConfirmation() {
         )}
 
         <div className="mt-4 flex flex-col gap-2 text-center text-xs">
-          {!pendingTwoFactor && viaMiston && pendingLogin.canRequestSms && (
+          {viaMiston && pendingLogin.canRequestEmail && (
             <button
               type="button"
-              onClick={() => void toSms()}
+              onClick={() => void toEmail()}
               disabled={loading || cooldown > 0}
               className="font-semibold text-accent-600 transition hover:text-accent-500 disabled:text-slate-400 dark:text-accent-400"
             >
-              Немає доступу до Miston? Надіслати код у SMS
+              Немає доступу до Miston? Надіслати код на email
             </button>
           )}
           {!pendingTwoFactor && (
@@ -211,7 +214,7 @@ export function LoginConfirmation() {
             >
               {cooldown > 0
                 ? `Надіслати ще раз через ${cooldown} с`
-                : viaMiston ? 'Надіслати код у чат ще раз' : 'Надіслати SMS ще раз'}
+                : viaMiston ? 'Надіслати код у чат ще раз' : 'Надіслати email ще раз'}
             </button>
           )}
         </div>

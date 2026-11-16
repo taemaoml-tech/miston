@@ -387,10 +387,10 @@ export interface TwoFactorChallenge {
 export interface LoginChallenge {
   loginRequired: true;
   challengeId: string;
-  delivery: 'miston' | 'sms';
+  delivery: 'miston' | 'email';
   expiresAt: string;
-  canRequestSms: boolean;
-  phoneHint: string | null;
+  canRequestEmail: boolean;
+  emailHint: string | null;
   deliveryError?: string;
   smsDebugCode?: string;
 }

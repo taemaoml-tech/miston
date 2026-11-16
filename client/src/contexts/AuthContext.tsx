@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { AuthResponse, LoginChallenge, User } from '../types/models';
 import { api } from '../api';
 import { tokenStore } from '../api/client';
-import type { AuthResponse, LoginChallenge, User } from '../types/models';
+import { getFcmToken } from '../utils/firebase';
 
 interface AuthContextValue {
   user: User | null;
@@ -13,7 +14,7 @@ interface AuthContextValue {
   confirmLogin: (code: string) => Promise<void>;
   completeTwoFactor: (password: string) => Promise<void>;
   resendLogin: () => Promise<void>;
-  requestLoginSms: () => Promise<void>;
+  requestLoginEmail: () => Promise<void>;
   cancelLogin: () => void;
   register: (email: string, username: string, displayName: string, password: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -59,6 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    void getFcmToken().then((token) => {
+      if (token) void api.push.register(token, 'web').catch(() => undefined);
+    });
+  }, [user?.id]);
+
   const saveSession = useCallback((session: AuthResponse) => {
     tokenStore.set(session.token, session.refreshToken);
     setUser(session.user);
@@ -97,9 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPendingLogin(await api.auth.loginResend(pendingLogin.challengeId));
   }, [pendingLogin]);
 
-  const requestLoginSms = useCallback(async () => {
+  const requestLoginEmail = useCallback(async () => {
     if (!pendingLogin) return;
-    setPendingLogin(await api.auth.loginSms(pendingLogin.challengeId));
+    setPendingLogin(await api.auth.loginEmail(pendingLogin.challengeId));
   }, [pendingLogin]);
 
   const cancelLogin = useCallback(() => { setPendingLogin(null); setPendingTwoFactor(null); }, []);
@@ -124,9 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginSms, cancelLogin,
+    user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin,
     register, logout, endSession, updateUser: setUser,
-  }), [user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginSms, cancelLogin, register, logout, endSession]);
+  }), [user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin, register, logout, endSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

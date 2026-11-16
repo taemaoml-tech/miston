@@ -3,6 +3,7 @@ import { query } from '../db/pool';
 import { isUserOnline } from '../sockets/presence';
 import type { Message, MessageKind } from '../types/domain';
 import { sendSms } from './sms';
+import { sendPushToUser } from './push';
 
 /** Як людські читається тип повідомлення в SMS. */
 const KIND_LABELS: Record<MessageKind, string> = {
@@ -134,7 +135,40 @@ export async function notifyRecipientsBySms(message: Message, recipientIds: stri
         console.error('Failed to send the message SMS', error instanceof Error ? error.message : error);
       }
     }
+
   } catch (error) {
     console.error('Failed to prepare the message SMS', error instanceof Error ? error.message : error);
+  }
+}
+
+export async function notifyRecipientsByPush(message: Message, recipientIds: string[]): Promise<void> {
+  if (recipientIds.length === 0) return;
+  try {
+    const conversationResult = await query<{ kind: string; title: string | null }>(
+      'SELECT kind, title FROM conversations WHERE id = $1',
+      [message.conversationId],
+    );
+    const conversation = conversationResult.rows[0] ?? null;
+    if (conversation?.kind === 'saved') return;
+
+    const recipients = await query<{ id: string; sms_notifications_enabled: boolean }>(
+      'SELECT id FROM users WHERE id = ANY($1::uuid[])',
+      [recipientIds],
+    );
+
+    const text = buildSmsText(message, conversation).replace(/^Miston: /, '');
+    const title = 'Miston';
+
+    for (const recipient of recipients.rows) {
+      try {
+        // Не турбуємо, якщо користувач зараз онлайн у цій розмові.
+        if (isUserOnline(recipient.id)) continue;
+        await sendPushToUser(recipient.id, title, text);
+      } catch (error) {
+        console.error('Failed to send push notification', error instanceof Error ? error.message : error);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to prepare push notification', error instanceof Error ? error.message : error);
   }
 }

@@ -27,7 +27,7 @@ import {
 import { sendSms, smsConfigured } from '../services/sms';
 import {
   issueLoginChallenge,
-  requestLoginSms,
+  requestLoginEmail,
   resendLoginChallenge,
   verifyLoginChallenge,
 } from '../services/loginConfirm';
@@ -258,6 +258,11 @@ router.post('/login/verify', asyncHandler(async (req, res) => {
 router.post('/login/resend', asyncHandler(async (req, res) => {
   const { challengeId } = challengeSchema.parse(req.body);
   res.json(await resendLoginChallenge(challengeId));
+}));
+
+router.post('/login/email', asyncHandler(async (req, res) => {
+  const { challengeId } = challengeSchema.parse(req.body);
+  res.json(await requestLoginEmail(challengeId));
 }));
 
 router.post('/login/2fa', asyncHandler(async (req, res) => {
