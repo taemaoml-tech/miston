@@ -1,6 +1,5 @@
 import { AuthPage } from './components/auth/AuthPage';
 import { LoginConfirmation } from './components/auth/LoginConfirmation';
-import { PhoneVerification } from './components/auth/PhoneVerification';
 import { Splash } from './components/common/Splash';
 import { InfoRouter } from './components/info/InfoRouter';
 import { MessengerApp } from './components/layout/MessengerApp';
@@ -16,9 +15,6 @@ export default function App() {
   if (!user && pendingLogin) return <LoginConfirmation />;
 
   if (!user) return route ? <InfoRouter route={route} variant="public" /> : <AuthPage />;
-
-  // Старіші сервери не повертають phoneVerified — тоді екран не показуємо.
-  if (user.phoneVerified === false) return <PhoneVerification />;
 
   // Месенджер лишається змонтованим під інфосторінкою, щоб повернення до чатів було миттєвим.
   return (
