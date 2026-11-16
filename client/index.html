@@ -10,7 +10,10 @@
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="uk_UA" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
-    <link rel="apple-touch-icon" href="%BASE_URL%favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%BASE_URL%favicon-16.png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <title>Miston</title>
     <style>
       #boot-splash {
@@ -43,12 +46,21 @@
       <svg width="76" height="76" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
           <linearGradient id="boot-mark" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#6366f1" /><stop offset=".55" stop-color="#7c3aed" /><stop offset="1" stop-color="#a855f7" />
+            <stop offset="0" stop-color="#8b44d6" /><stop offset=".55" stop-color="#6b21a8" /><stop offset="1" stop-color="#2e0a56" />
           </linearGradient>
         </defs>
-        <rect width="64" height="64" rx="18" fill="url(#boot-mark)" />
-        <path d="M14 20a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v16a6 6 0 0 1-6 6H32l-8 6v-6h-4a6 6 0 0 1-6-6V20Z" fill="#fff" />
-        <path d="M23 35V23l9 7 9-7v12" fill="none" stroke="#6d28d9" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" />
+        <rect width="64" height="64" rx="15" fill="url(#boot-mark)" />
+        <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 39.6Q32 36.4 57 39.6" stroke-width="2.3" />
+          <path d="M7 35Q14 28 21 24" stroke-width="1.8" />
+          <path d="M57 35Q50 28 43 24" stroke-width="1.8" />
+          <path d="M21 24C24 15.5 40 15.5 43 24" stroke-width="1.8" />
+          <path d="M21 24C24 32.5 40 32.5 43 24" stroke-width="1.8" />
+          <path d="M21 24V49M25 24V49M39 24V49M43 24V49" stroke-width="1.9" />
+          <path d="M20 24H26M38 24H44M19.5 49H26.5M37.5 49H44.5" stroke-width="1.9" />
+          <path d="M21 27.5L25 32M25 27.5L21 32M21 33.5L25 38M25 33.5L21 38M39 27.5L43 32M43 27.5L39 32M39 33.5L43 38M43 33.5L39 38" stroke-width="1.4" />
+          <path d="M27 29.4V38.2M32 31.1V37.6M37 29.4V38.2" stroke-width="1.1" opacity=".9" />
+        </g>
       </svg>
       <p class="boot-title">Miston</p>
       <p class="boot-slogan">твій сучасний месенджер</p>

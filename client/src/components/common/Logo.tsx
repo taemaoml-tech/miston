@@ -11,15 +11,24 @@ export function Mark({ size = 36, className = 'shadow-glow' }: { size?: number; 
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" className={className} role="img" aria-hidden="true">
       <defs>
-        <linearGradient id="miston-mark" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#6366f1" />
-          <stop offset=".55" stopColor="#7c3aed" />
-          <stop offset="1" stopColor="#a855f7" />
+        <linearGradient id="miston-mark" x1="14" y1="4" x2="50" y2="62" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8b44d6" />
+          <stop offset=".45" stopColor="#6b21a8" />
+          <stop offset="1" stopColor="#2e0a56" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="18" fill="url(#miston-mark)" />
-      <path d="M14 20a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v16a6 6 0 0 1-6 6H32l-8 6v-6h-4a6 6 0 0 1-6-6V20Z" fill="#fff" />
-      <path d="M23 35V23l9 7 9-7v12" fill="none" stroke="#6d28d9" strokeWidth="4.6" strokeLinecap="round" strokeLinejoin="round" />
+      <rect width="64" height="64" rx="15" fill="url(#miston-mark)" />
+      <g fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 39.6Q32 36.4 57 39.6" strokeWidth="2.3" />
+        <path d="M7 35Q14 28 21 24" strokeWidth="1.8" />
+        <path d="M57 35Q50 28 43 24" strokeWidth="1.8" />
+        <path d="M21 24C24 15.5 40 15.5 43 24" strokeWidth="1.8" />
+        <path d="M21 24C24 32.5 40 32.5 43 24" strokeWidth="1.8" />
+        <path d="M21 24V49M25 24V49M39 24V49M43 24V49" strokeWidth="1.9" />
+        <path d="M20 24H26M38 24H44M19.5 49H26.5M37.5 49H44.5" strokeWidth="1.9" />
+        <path d="M21 27.5L25 32M25 27.5L21 32M21 33.5L25 38M25 33.5L21 38M39 27.5L43 32M43 27.5L39 32M39 33.5L43 38M43 33.5L39 38" strokeWidth="1.4" />
+        <path d="M27 29.4V38.2M32 31.1V37.6M37 29.4V38.2" strokeWidth="1.1" opacity=".9" />
+      </g>
     </svg>
   );
 }

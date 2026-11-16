@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Request } from 'express';
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -12,6 +13,12 @@ import { password } from '../utils/validation';
 import { AppError, unauthorized } from '../utils/errors';
 import { normalizePhone } from '../utils/phone';
 import { sendSms, smsConfigured } from '../services/sms';
+import {
+  issueLoginChallenge,
+  requestLoginSms,
+  resendLoginChallenge,
+  verifyLoginChallenge,
+} from '../services/loginConfirm';
 
 const router = Router();
 const DUMMY_HASH = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
@@ -28,6 +35,8 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 const refreshSchema = z.object({ refreshToken: z.string().min(32).max(512) });
+const challengeSchema = z.object({ challengeId: z.string().uuid() });
+const challengeConfirmSchema = challengeSchema.extend({ code: z.string().trim().regex(/^\d{8}$/) });
 const phoneRequestSchema = z.object({ phone: z.string().trim().min(5).max(30) });
 const phoneVerifySchema = z.object({ code: z.string().trim().regex(/^\d{8}$/) });
 
@@ -181,12 +190,73 @@ router.post('/login', asyncHandler(async (req, res) => {
   if (!user || !matches) throw unauthorized('Невірні дані для входу');
   assertNotBlocked(user);
 
+  // Пароль правильний, але сесію ще не видаємо: спершу 8-значний код.
+  // Він приходить у чат із ботом Miston, або SMS, якщо доступу до застосунку немає.
+  res.json(await issueLoginChallenge(String(user.id)));
+}));
+
+const deviceInfo = (req: Request) => ({
+  userAgent: String(req.headers['user-agent'] ?? '').slice(0, 300) || null,
+  ip: String(req.ip ?? '').slice(0, 64) || null,
+});
+
+/** Коди підтвердження входу: перевірка, повторна відправка, перехід на SMS. */
+router.post('/login/verify', asyncHandler(async (req, res) => {
+  const { challengeId, code } = challengeConfirmSchema.parse(req.body);
+  const { userId } = await verifyLoginChallenge(challengeId, code);
+  const result = await query<Record<string, unknown>>('SELECT * FROM users WHERE id = $1', [userId]);
+  const user = result.rows[0];
+  if (!user) throw unauthorized('Користувача не знайдено');
+  assertNotBlocked(user);
+
+  const device = deviceInfo(req);
   const refresh = createRefreshToken();
   await query(
-    'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
-    [user.id, refresh.hash, refresh.expiresAt],
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, user_agent, ip_address)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [user.id, refresh.hash, refresh.expiresAt, device.userAgent, device.ip],
   );
   res.json(authPayload(user, refresh.token));
+}));
+
+router.post('/login/resend', asyncHandler(async (req, res) => {
+  const { challengeId } = challengeSchema.parse(req.body);
+  res.json(await resendLoginChallenge(challengeId));
+}));
+
+router.post('/login/sms', asyncHandler(async (req, res) => {
+  const { challengeId } = challengeSchema.parse(req.body);
+  res.json(await requestLoginSms(challengeId));
+}));
+
+/** Активні сесії для екрана «Пристрої». */
+router.get('/sessions', requireAuth, asyncHandler(async (req, res) => {
+  const result = await query<{ id: string; created_at: Date; expires_at: Date; user_agent: string | null; ip_address: string | null }>(
+    `SELECT id, created_at, expires_at, user_agent, ip_address
+     FROM refresh_tokens
+     WHERE user_id = $1 AND expires_at > now()
+     ORDER BY created_at DESC`,
+    [req.auth!.userId],
+  );
+  res.json({
+    sessions: result.rows.map((row) => ({
+      id: String(row.id),
+      createdAt: new Date(row.created_at).toISOString(),
+      expiresAt: new Date(row.expires_at).toISOString(),
+      userAgent: row.user_agent,
+      ipAddress: row.ip_address,
+    })),
+  });
+}));
+
+router.delete('/sessions/:id', requireAuth, asyncHandler(async (req, res) => {
+  const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
+  const result = await query(
+    'DELETE FROM refresh_tokens WHERE id = $1 AND user_id = $2 RETURNING id',
+    [id, req.auth!.userId],
+  );
+  if (result.rowCount === 0) throw new AppError(404, 'SESSION_NOT_FOUND', 'Сесію не знайдено.');
+  res.status(204).send();
 }));
 
 router.post('/refresh', asyncHandler(async (req, res) => {

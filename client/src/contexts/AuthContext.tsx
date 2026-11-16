@@ -2,12 +2,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { api } from '../api';
 import { tokenStore } from '../api/client';
-import type { AuthResponse, User } from '../types/models';
+import type { AuthResponse, LoginChallenge, User } from '../types/models';
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  pendingLogin: LoginChallenge | null;
   login: (identifier: string, password: string) => Promise<void>;
+  confirmLogin: (code: string) => Promise<void>;
+  resendLogin: () => Promise<void>;
+  requestLoginSms: () => Promise<void>;
+  cancelLogin: () => void;
   register: (email: string, username: string, displayName: string, password: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
   endSession: (reason?: string) => void;
@@ -22,6 +27,8 @@ export const SESSION_NOTICE_KEY = 'miston.sessionNotice';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // Вхід, який очікує 8-значного коду. Токени ще не видані сервером.
+  const [pendingLogin, setPendingLogin] = useState<LoginChallenge | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -54,8 +61,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (identifier: string, password: string) => {
-    saveSession(await api.auth.login(identifier, password));
+    const result = await api.auth.login(identifier, password);
+    if ('loginRequired' in result) {
+      setPendingLogin(result);
+      return;
+    }
+    saveSession(result);
   }, [saveSession]);
+
+  const confirmLogin = useCallback(async (code: string) => {
+    if (!pendingLogin) throw new Error('Немає запиту на вхід');
+    const session = await api.auth.loginVerify(pendingLogin.challengeId, code);
+    saveSession(session);
+    setPendingLogin(null);
+  }, [pendingLogin, saveSession]);
+
+  const resendLogin = useCallback(async () => {
+    if (!pendingLogin) return;
+    setPendingLogin(await api.auth.loginResend(pendingLogin.challengeId));
+  }, [pendingLogin]);
+
+  const requestLoginSms = useCallback(async () => {
+    if (!pendingLogin) return;
+    setPendingLogin(await api.auth.loginSms(pendingLogin.challengeId));
+  }, [pendingLogin]);
+
+  const cancelLogin = useCallback(() => setPendingLogin(null), []);
 
   const register = useCallback(async (email: string, username: string, displayName: string, password: string, phone?: string) => {
     saveSession(await api.auth.register(email, username, displayName, password, phone));
@@ -76,7 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, loading, login, register, logout, endSession, updateUser: setUser }), [user, loading, login, register, logout, endSession]);
+  const value = useMemo(() => ({
+    user, loading, pendingLogin, login, confirmLogin, resendLogin, requestLoginSms, cancelLogin,
+    register, logout, endSession, updateUser: setUser,
+  }), [user, loading, pendingLogin, login, confirmLogin, resendLogin, requestLoginSms, cancelLogin, register, logout, endSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -49,6 +49,10 @@ const schema = z.object({
   PHONE_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(30).default(5),
   PHONE_CODE_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
   PHONE_SMS_COOLDOWN_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
+  // Підтвердження входу: код у чаті з ботом Miston або SMS.
+  LOGIN_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(30).default(10),
+  LOGIN_CODE_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
+  LOGIN_SMS_COOLDOWN_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
   // SMS-повідомлення про нові повідомлення в месенджері.
   // Через скільки хвилин без відповіді в розмові вважатимемо, що людина "не читає".
   SMS_NOTIFY_IDLE_MINUTES: z.coerce.number().int().min(0).max(240).default(5),

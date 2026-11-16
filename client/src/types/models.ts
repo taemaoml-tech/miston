@@ -376,6 +376,28 @@ export interface AuthResponse {
   user: User;
 }
 
+/** Вхід підтверджується 8-значним кодом: у чаті Miston або SMS. */
+export interface LoginChallenge {
+  loginRequired: true;
+  challengeId: string;
+  delivery: 'miston' | 'sms';
+  expiresAt: string;
+  canRequestSms: boolean;
+  phoneHint: string | null;
+  deliveryError?: string;
+  smsDebugCode?: string;
+}
+
+export type LoginResult = AuthResponse | LoginChallenge;
+
+export interface LoginSession {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+}
+
 export interface MessagePage {
   items: Message[];
   nextCursor: string | null;

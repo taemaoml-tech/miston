@@ -1,4 +1,5 @@
 import { AuthPage } from './components/auth/AuthPage';
+import { LoginConfirmation } from './components/auth/LoginConfirmation';
 import { PhoneVerification } from './components/auth/PhoneVerification';
 import { Splash } from './components/common/Splash';
 import { InfoRouter } from './components/info/InfoRouter';
@@ -7,10 +8,12 @@ import { useAuth } from './contexts/AuthContext';
 import { useInfoRoute } from './router/infoRoute';
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, pendingLogin } = useAuth();
   const route = useInfoRoute();
 
   if (loading) return <main className="h-full"><Splash hint="Відновлюємо сесію…" /></main>;
+
+  if (!user && pendingLogin) return <LoginConfirmation />;
 
   if (!user) return route ? <InfoRouter route={route} variant="public" /> : <AuthPage />;
 

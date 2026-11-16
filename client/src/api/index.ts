@@ -1,10 +1,15 @@
-import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, User, UserProfile, UserRole } from '../types/models';
+import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, User, UserProfile, UserRole } from '../types/models';
 import { request, tokenStore } from './client';
 
 export const api = {
   auth: {
-    login: (identifier: string, password: string) => request<AuthResponse>('/auth/login', { method: 'POST', body: { identifier, password }, auth: false }),
+    login: (identifier: string, password: string) => request<LoginResult>('/auth/login', { method: 'POST', body: { identifier, password }, auth: false }),
     register: (email: string, username: string, displayName: string, password: string, phone?: string) => request<AuthResponse>('/auth/register', { method: 'POST', body: { email, username, displayName, password, ...(phone ? { phone } : {}) }, auth: false }),
+    loginVerify: (challengeId: string, code: string) => request<AuthResponse>('/auth/login/verify', { method: 'POST', body: { challengeId, code }, auth: false }),
+    loginResend: (challengeId: string) => request<LoginChallenge>('/auth/login/resend', { method: 'POST', body: { challengeId }, auth: false }),
+    loginSms: (challengeId: string) => request<LoginChallenge>('/auth/login/sms', { method: 'POST', body: { challengeId }, auth: false }),
+    sessions: () => request<{ sessions: LoginSession[] }>('/auth/sessions'),
+    revokeSession: (id: string) => request<void>(`/auth/sessions/${id}`, { method: 'DELETE' }),
     me: () => request<{ user: User }>('/auth/me'),
     logout: () => request<void>('/auth/logout', { method: 'POST', body: { refreshToken: tokenStore.refreshToken } }),
     phone: {
