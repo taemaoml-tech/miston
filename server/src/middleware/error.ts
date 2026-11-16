@@ -45,6 +45,10 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     statusCode = 400;
     code = 'INVALID_REFERENCE';
     message = 'Пов\'язаний ресурс не існує';
+  } else if ((error as { status?: number; statusCode?: number })?.status === 404 || (error as { statusCode?: number })?.statusCode === 404) {
+    statusCode = 404;
+    code = 'NOT_FOUND';
+    message = 'Файл не знайдено';
   }
 
   if (statusCode >= 500) {
