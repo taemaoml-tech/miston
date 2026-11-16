@@ -3,11 +3,17 @@ import { AppError } from '../utils/errors';
 
 export type SmsProvider = 'zavu' | 'twilio';
 
-/** Який провайдер реально налаштований (Zavu має перевагу над Twilio). */
+/** Які провайдери реально налаштовані (Zavu має перевагу над Twilio). */
 export function smsProvider(): SmsProvider | null {
-  if (config.ZAVU_API_KEY) return 'zavu';
-  if (config.TWILIO_ACCOUNT_SID && config.TWILIO_AUTH_TOKEN && config.TWILIO_FROM_NUMBER) return 'twilio';
-  return null;
+  return smsProviders()[0] ?? null;
+}
+
+/** Усі налаштовані провайдери у порядку пріоритету: Zavu, потім Twilio. */
+export function smsProviders(): SmsProvider[] {
+  const providers: SmsProvider[] = [];
+  if (config.ZAVU_API_KEY) providers.push('zavu');
+  if (config.TWILIO_ACCOUNT_SID && config.TWILIO_AUTH_TOKEN && config.TWILIO_FROM_NUMBER) providers.push('twilio');
+  return providers;
 }
 
 export function smsConfigured(): boolean {
@@ -107,19 +113,34 @@ async function sendViaTwilio(to: string, body: string): Promise<void> {
   }
 }
 
-/** Надсилає SMS на номер у форматі E.164 через налаштований провайдер. */
+/**
+ * Надсилає SMS на номер у форматі E.164 через налаштований провайдер.
+ * Якщо основний провайдер не зміг надіслати (наприклад, немає грошей на
+ * рахунку), пробуємо другий, якщо він налаштований.
+ */
 export async function sendSms(to: string, body: string): Promise<void> {
-  const provider = smsProvider();
-  if (!provider) {
+  const providers = smsProviders();
+  if (providers.length === 0) {
     throw new AppError(
       503,
       'SMS_NOT_CONFIGURED',
       'Відправка SMS ще не налаштована: додайте ZAVU_API_KEY або дані Twilio в налаштуваннях сервера.',
     );
   }
-  if (provider === 'zavu') {
-    await sendViaZavu(to, body);
-    return;
+
+  let lastError: unknown;
+  for (const provider of providers) {
+    try {
+      if (provider === 'zavu') {
+        await sendViaZavu(to, body);
+      } else {
+        await sendViaTwilio(to, body);
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      console.error(`SMS via ${provider} failed`, error instanceof Error ? error.message : error);
+    }
   }
-  await sendViaTwilio(to, body);
+  throw lastError;
 }
