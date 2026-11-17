@@ -250,22 +250,25 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
     if (count > 0) offlineWithTokens.push(id);
   }
 
-  if (available.length === 0 && offlineWithTokens.length === 0) {
+  // Відхиляємо лише якщо взагалі нікого немає (ні онлайн, ні офлайн).
+  const allOffline = offline.filter((id) => !userInCall(id));
+  if (available.length === 0 && allOffline.length === 0) {
     const busy = online.some((id) => userInCall(id));
-    const noTokens = offline.length > 0;
     reply(ack, {
       ok: false,
       code: busy ? 'BUSY' : 'OFFLINE',
-      message: busy
-        ? 'Учасники вже в іншому дзвінку'
-        : noTokens
-          ? 'Учасник не в мережі і не має активних пристроїв для сповіщень. Він має хоча б раз увійти в застосунок.'
-          : 'Нікого немає в мережі',
+      message: busy ? 'Учасники вже в іншому дзвінку' : 'Нікого немає в мережі',
     });
     return;
   }
 
-  const invitedSet = new Set<string>([...available, ...offlineWithTokens]);
+  if (online.length > 0 && available.length === 0 && online.every((id) => userInCall(id))) {
+    reply(ack, { ok: false, code: 'BUSY', message: 'Учасники вже в іншому дзвінку' });
+    return;
+  }
+
+  // Включаємо всіх офлайн-учасників у запрошені, щоб дзвінок не завершився одразу.
+  const invitedSet = new Set<string>([...available, ...allOffline]);
 
   const caller = await loadSender(userId);
   if (!caller) {
@@ -302,7 +305,7 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
   };
   calls.set(id, call);
   // Для офлайн-учасників даємо більше часу на пробудження пристрою.
-  const ringTimeout = offlineWithTokens.length > 0 ? 90000 : config.CALL_RING_TIMEOUT_MS;
+  const ringTimeout = offline.length > 0 ? 90000 : config.CALL_RING_TIMEOUT_MS;
   call.ringTimer = setTimeout(() => {
     call.ringTimer = null;
     if (call.answered) stopRinging(io, call);
