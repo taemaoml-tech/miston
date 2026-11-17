@@ -207,6 +207,7 @@ router.post('/login', asyncHandler(async (req, res) => {
   // запропонує прив'язати номер телефону (екран підтвердження).
   const hasPhone = Boolean(user.phone_number && user.phone_verified_at);
   const online = isUserOnline(String(user.id));
+  console.log('LOGIN_DEBUG', JSON.stringify({ username: user.username, hasPhone, online, skipFlag: user.skip_login_confirmation, skipType: typeof user.skip_login_confirmation }));
   if ((!hasPhone && !online) || Boolean(user.skip_login_confirmation)) {
     const refresh = createRefreshToken();
     const device = deviceInfo(req);
