@@ -12,21 +12,57 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 const base = self.location.pathname.replace(/firebase-messaging-sw\.js$/, '');
+
 messaging.onBackgroundMessage((payload) => {
+  const data = payload?.data || {};
+  if (data.type === 'call') {
+    const title = data.callerName ? `Вхідний дзвінок · ${data.callerName}` : 'Вхідний дзвінок';
+    const body = data.kind === 'video' ? 'Вхідний відеодзвінок' : 'Вхідний аудіодзвінок';
+    self.registration.showNotification(title, {
+      body,
+      icon: base + 'icons/icon-192.png',
+      badge: base + 'icons/icon-72.png',
+      tag: `call:${data.callId}`,
+      requireInteraction: true,
+      vibrate: [200, 100, 200, 100, 200],
+      data: { type: 'call', callId: data.callId },
+      actions: [
+        { action: 'accept', title: 'Прийняти' },
+        { action: 'decline', title: 'Відхилити' },
+      ],
+    });
+    return;
+  }
   const title = payload?.notification?.title || 'Planegram';
   const body = payload?.notification?.body || 'Нове повідомлення';
   self.registration.showNotification(title, {
     body,
     icon: base + 'icons/icon-192.png',
     badge: base + 'icons/icon-72.png',
-    tag: payload?.data?.conversationId || undefined,
+    tag: data.conversationId || undefined,
   });
 });
 
-// Клік по сповіщенню відкриває застосунок (або фокусує вже відкриту вкладку).
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const data = event.notification.data || {};
   const target = base || '/';
+  if (data.type === 'call' && data.callId) {
+    if (event.action === 'decline') return;
+    const url = target + '?incomingCall=' + encodeURIComponent(data.callId);
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+        for (const client of list) {
+          if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+            client.postMessage({ type: 'incoming-call', callId: data.callId });
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      }),
+    );
+    return;
+  }
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {

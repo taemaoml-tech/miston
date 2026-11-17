@@ -8,6 +8,7 @@ import type {
 } from '../types/domain';
 import { uuid } from '../utils/validation';
 import { isUserOnline } from './presence';
+import { sendPushToUser } from '../services/push';
 
 interface SessionParticipant extends CallParticipant {
   socketId: string;
@@ -239,15 +240,23 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
 
   const online = others.filter((id) => isUserOnline(id));
   const available = online.filter((id) => !userInCall(id));
-  if (available.length === 0) {
+  const offline = others.filter((id) => !isUserOnline(id));
+
+  // Якщо ніхто не онлайн, але є офлайн-учасники з push-токенами —
+  // дзвонимо їм через FCM (пробуджує пристрій), а не відхиляємо дзвінок.
+  const offlineReachable = offline.filter((id) => !userInCall(id));
+
+  if (available.length === 0 && offlineReachable.length === 0) {
     const busy = online.some((id) => userInCall(id));
     reply(ack, {
       ok: false,
       code: busy ? 'BUSY' : 'OFFLINE',
-      message: busy ? 'Учасники вже в іншому дзвінку' : 'Нікого немає в мережі',
+      message: busy ? 'Учасники вже в іншому дзвінку' : 'Нікого немає в мережі і немає активних пристроїв для сповіщень',
     });
     return;
   }
+
+  const invitedSet = new Set<string>([...available, ...offlineReachable]);
 
   const caller = await loadSender(userId);
   if (!caller) {
@@ -277,7 +286,7 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
     kind: input.kind,
     initiatorId: userId,
     participants: new Map([[socket.id, participant]]),
-    invited: new Set(available),
+    invited: invitedSet,
     answered: false,
     ringTimer: null,
     startedAt: new Date().toISOString(),
@@ -295,6 +304,24 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
   const incoming = { call: serializeCall(call) };
   for (const memberId of call.invited) {
     io.to(`user:${memberId}`).emit('call:incoming', incoming);
+  }
+
+  // Офлайн-учасникам шлемо високопріоритетний push, щоб пробудити пристрій
+  // і показати екран дзвінка з кнопками «Прийняти / Відхилити».
+  if (offlineReachable.length > 0) {
+    const callerName = caller?.displayName || 'Хтось';
+    const callBody = call.kind === 'video' ? 'Вхідний відеодзвінок' : 'Вхідний аудіодзвінок';
+    const serializedCall = JSON.stringify(serializeCall(call));
+    for (const memberId of offlineReachable) {
+      void sendPushToUser(memberId, `Вхідний дзвінок · ${callerName}`, callBody, {
+        type: 'call',
+        callId: call.id,
+        conversationId: call.conversationId,
+        kind: call.kind,
+        callerName,
+        call: serializedCall,
+      }).catch(() => undefined);
+    }
   }
 }
 
@@ -515,4 +542,11 @@ export function handleCallDisconnect(io: Server, socketId: string): void {
     if (!participant) continue;
     removeParticipant(io, call, participant, 'disconnected');
   }
+}
+
+export function getActiveCall(callId: string, userId: string): CallInfo | null {
+  const call = calls.get(callId);
+  if (!call) return null;
+  if (!call.invited.has(userId) && !findParticipantByUser(call, userId)) return null;
+  return serializeCall(call);
 }

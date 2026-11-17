@@ -779,6 +779,69 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
   }, [closePeer, createPeer, handleAnswer, handleIce, handleOffer, markActive, patchCall, setCallState, setPhaseState, setRemote, showToast, socket, startRingtone, teardown, user]);
 
+  // Якщо застосунок відкрито за посиланням з push-сповіщення про дзвінок
+  // (наприклад, після пробудження офлайн-пристрою), підхоплюємо активний
+  // дзвінок і показуємо екран «Прийняти / Відхилити».
+  // Слухаємо повідомлення від service worker про вхідний дзвінок
+  // (коли застосунок уже відкритий і push прийшов у фоні).
+  useEffect(() => {
+    if (!socket || !user) return;
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      const msg = event.data;
+      if (!msg || msg.type !== 'incoming-call' || !msg.callId) return;
+      if (callRef.current || phaseRef.current !== 'idle') {
+        socket.emit('call:decline', { callId: msg.callId });
+        return;
+      }
+      void (async () => {
+        try {
+          const { call: incoming } = await api.calls.get(msg.callId);
+          if (!incoming) return;
+          if (callRef.current || phaseRef.current !== 'idle') return;
+          setCallState(incoming);
+          setPhaseState('incoming');
+          startRingtone('incoming');
+        } catch {
+          // дзвінок завершено
+        }
+      })();
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, [socket, user, setCallState, setPhaseState, startRingtone]);
+
+  // Якщо застосунок відкрито за посиланням з push-сповіщення про дзвінок
+  // (наприклад, після пробудження офлайн-пристрою), підхоплюємо активний
+  // дзвінок і показуємо екран «Прийняти / Відхилити».
+  useEffect(() => {
+    if (!socket || !user) return;
+    const params = new URLSearchParams(window.location.search);
+    const callId = params.get('incomingCall');
+    if (!callId) return;
+    params.delete('incomingCall');
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { call: incoming } = await api.calls.get(callId);
+        if (cancelled || !incoming) return;
+        if (callRef.current || phaseRef.current !== 'idle') {
+          socket.emit('call:decline', { callId: incoming.id });
+          return;
+        }
+        setCallState(incoming);
+        setPhaseState('incoming');
+        startRingtone('incoming');
+      } catch {
+        // Дзвінок уже завершено або недоступний — нічого не робимо.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [socket, user, setCallState, setPhaseState, startRingtone]);
+
   useEffect(() => {
     if (!socket) return;
     const onDisconnect = () => {

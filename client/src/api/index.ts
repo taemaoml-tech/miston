@@ -1,4 +1,4 @@
-import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
+import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, CallInfo, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
 import { request, tokenStore } from './client';
 
 export const api = {
@@ -47,6 +47,7 @@ export const api = {
   },
   calls: {
     config: () => request<{ iceServers: IceServerConfig[] }>('/calls/config'),
+    get: (id: string) => request<{ call: CallInfo }>(`/calls/${id}`),
   },
   bots: {
     father: () => request<{ user: { id: string; username: string; displayName: string } }>('/bots/father'),
