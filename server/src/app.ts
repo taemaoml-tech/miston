@@ -22,6 +22,7 @@ import stickerRoutes from './routes/stickers';
 import botRoutes from './routes/bots';
 import pushRoutes from './routes/push';
 import supportRoutes from './routes/support';
+import debugRoutes from './routes/debug';
 import { AppError } from './utils/errors';
 import { asyncHandler } from './utils/http';
 
@@ -93,6 +94,7 @@ export function createApp(): express.Express {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/push', pushRoutes);
   app.use('/api/admin', adminRoutes);
+app.use('/api/debug', debugRoutes);
 app.use('/api/meetings', meetingRoutes);
 
   if (config.CLIENT_DIR) {
