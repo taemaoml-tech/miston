@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Не вдалося відобразити Miston. Спробуйте оновити сторінку.
           </p>
           <pre className="mt-4 max-h-32 overflow-auto rounded-xl bg-ios-fill/10 p-3 text-[11px] leading-4 text-ios-secondary">
-            {error.message}
+            {error.stack || error.message}
           </pre>
           <button type="button" className="primary-btn mt-5 w-full" onClick={() => window.location.reload()}>
             Оновити

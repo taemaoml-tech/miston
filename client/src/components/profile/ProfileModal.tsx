@@ -127,7 +127,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
 
   useEffect(() => {
     if (user && open) {
-      setForm({ displayName: user.displayName, username: user.username, bio: user.bio || '' });
+      setForm({ displayName: user.displayName ?? '', username: user.username ?? '', bio: user.bio ?? '' });
       setPreview(null); setAvatarFile(null); setError(''); setSaved(false); setSection('root');
     }
   }, [user, open]);

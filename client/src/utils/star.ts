@@ -7,7 +7,8 @@ export const DEFAULT_ACCENT = [
   '#007aff', '#0069e0', '#0058bc', '#00499a', '#003d7d', '#001f42',
 ];
 
-export function hexToRgb(value: string): string | null {
+export function hexToRgb(value?: string | null): string | null {
+  if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   const short = /^#([0-9a-f]{3})$/i.exec(trimmed);
   if (short?.[1]) {

@@ -1,5 +1,5 @@
-export function initials(name: string): string {
-  return name
+export function initials(name?: string | null): string {
+  return (typeof name === 'string' ? name : '')
     .trim()
     .split(/\s+/)
     .slice(0, 2)

@@ -5,7 +5,7 @@ import { initials } from '../../utils/format';
 import { configString, configStringArray, hexToRgb } from '../../utils/star';
 
 interface AvatarProps {
-  name: string;
+  name: string | null;
   src?: string | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   online?: boolean;

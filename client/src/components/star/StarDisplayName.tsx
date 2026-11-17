@@ -4,7 +4,7 @@ import type { StarCosmetics } from '../../types/models';
 import { configString, configStringArray } from '../../utils/star';
 
 interface StarDisplayNameProps {
-  name: string;
+  name: string | null;
   cosmetics?: StarCosmetics | null;
   verified?: boolean;
   className?: string;
@@ -24,7 +24,7 @@ export function StarDisplayName({ name, cosmetics, verified, className = '' }: S
 
   return (
     <span className={`inline-flex min-w-0 items-center gap-1 ${className}`}>
-      <span className={`truncate ${gradient.length >= 2 && animated ? 'avatar-frame-animated' : ''}`} style={style}>{name}</span>
+      <span className={`truncate ${gradient.length >= 2 && animated ? 'avatar-frame-animated' : ''}`} style={style}>{name ?? ''}</span>
       {verified && <BadgeCheck size={14} className="shrink-0 text-sky-500" aria-label="Верифікований акаунт" role="img" />}
       {badgeEmoji && <span title={badgeLabel} aria-label={badgeLabel} className="shrink-0 text-[0.95em] leading-none">{badgeEmoji}</span>}
     </span>
