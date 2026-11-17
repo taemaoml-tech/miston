@@ -24,7 +24,23 @@ export function isPushActive(): boolean {
 }
 
 export function isNativeApp(): boolean {
-  return Capacitor.isNativePlatform();
+  const win = window as Window & { androidBridge?: unknown; webkit?: { messageHandlers?: { bridge?: unknown } } };
+  return Capacitor.isNativePlatform() || Boolean(win.androidBridge) || Boolean(win.webkit?.messageHandlers?.bridge);
+}
+
+/**
+ * У застосунку сторінка відкривається з мережі, тому її скрипти інколи
+ * виконуються раніше за ін'єкцію Capacitor-містка. Чекаємо, доки місток
+ * з'явиться, інакше виклик плагіна пішов би у веб-заглушку.
+ */
+async function nativeReady(): Promise<boolean> {
+  if (Capacitor.isNativePlatform()) return true;
+  if (!isNativeApp()) return false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (Capacitor.isNativePlatform()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
 }
 
 /** Веб (Chrome/Edge, у т.ч. PWA): токен через service worker. */
@@ -60,6 +76,7 @@ export async function getFcmToken(): Promise<string | null> {
 /** Android APK (WebView): нативний FCM-токен через Capacitor-плагін. */
 export async function getNativeFcmToken(): Promise<string | null> {
   if (!isNativeApp()) return null;
+  if (!(await nativeReady())) return null;
   try {
     const permission = await FirebaseMessaging.requestPermissions();
     if (permission.receive === 'denied') return null;
@@ -78,6 +95,7 @@ export async function getNativeFcmToken(): Promise<string | null> {
  */
 export async function watchNativeFcmToken(onToken: (token: string) => void): Promise<void> {
   if (!isNativeApp()) return;
+  if (!(await nativeReady())) return;
   try {
     await FirebaseMessaging.addListener('tokenReceived', (event) => {
       if (event.token) onToken(event.token);
