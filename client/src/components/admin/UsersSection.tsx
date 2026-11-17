@@ -1,4 +1,4 @@
-import { Lock, ShieldCheck, ShieldOff, Trash2, Undo2 } from 'lucide-react';
+import { KeyRound, Lock, ShieldCheck, ShieldOff, Trash2, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { AdminCapability, ModerationUser, UserRole } from '../../types/models';
@@ -37,6 +37,9 @@ export function UsersSection({ view, me, capabilities, onChanged }: UsersSection
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
   const [blocking, setBlocking] = useState<{ id: string; reason: string; hours: string } | null>(null);
+  const [resetFor, setResetFor] = useState<ModerationUser | null>(null);
+  const [resetDisableTwoFactor, setResetDisableTwoFactor] = useState(true);
+  const [resetResult, setResetResult] = useState<{ password: string; delivery: 'miston' | 'email' | 'none'; deliveryError?: string } | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebounced(query.trim()), 300);
@@ -98,6 +101,19 @@ export function UsersSection({ view, me, capabilities, onChanged }: UsersSection
     setBlocking(null);
   }
 
+  async function submitReset(user: ModerationUser) {
+    await run(user.id, async () => {
+      const result = await api.admin.resetPassword(user.id, resetDisableTwoFactor);
+      setResetResult({ password: result.temporaryPassword, delivery: result.delivery, deliveryError: result.deliveryError });
+    });
+    setResetFor(null);
+  }
+
+  async function confirmDisableTwoFactor(user: ModerationUser) {
+    if (!window.confirm(`Вимкнути двофакторну перевірку для @${user.username}?`)) return;
+    await run(user.id, () => api.admin.disableTwoFactor(user.id));
+  }
+
   return (
     <div>
       <AdminSectionTitle
@@ -119,6 +135,20 @@ export function UsersSection({ view, me, capabilities, onChanged }: UsersSection
         )}
       />
       {error && <AdminNotice message={error} onRetry={() => void load()} />}
+      {resetResult && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-200">
+          <p className="font-semibold">Тимчасовий пароль сгенеровано</p>
+          <div className="mt-2 flex items-center gap-2">
+            <code className="rounded-lg bg-white px-3 py-1.5 font-mono text-base text-slate-800 dark:bg-slate-900 dark:text-slate-100">{resetResult.password}</code>
+            <button type="button" className="secondary-btn px-3 py-1.5 text-xs" onClick={() => void navigator.clipboard.writeText(resetResult.password)}>Копіювати</button>
+            <button type="button" className="secondary-btn px-3 py-1.5 text-xs" onClick={() => setResetResult(null)}>Закрити</button>
+          </div>
+          <p className="mt-2 text-xs">
+            Доставка: {resetResult.delivery === 'miston' ? 'надіслано у чат бота Miston' : resetResult.delivery === 'email' ? 'надіслано email-ом' : 'не доставлено'}.
+          </p>
+          {resetResult.deliveryError && <p className="mt-1 text-xs text-rose-600 dark:text-rose-300">{resetResult.deliveryError}</p>}
+        </div>
+      )}
       {loading ? <Spinner label="Завантаження…" className="py-16" /> : (
         <div className="subtle-scrollbar overflow-x-auto rounded-xl border">
           <table className="w-full min-w-[720px] text-left text-sm">
@@ -128,7 +158,7 @@ export function UsersSection({ view, me, capabilities, onChanged }: UsersSection
                 <th className="px-4 py-3 font-medium">Статус</th>
                 <th className="px-4 py-3 font-medium">Star</th>
                 <th className="px-4 py-3 font-medium">Роль</th>
-                {(can('user.verify') || can('user.block') || can('user.delete')) && <th className="px-4 py-3 text-right font-medium">Дії</th>}
+                {(can('user.verify') || can('user.block') || can('user.delete') || can('user.reset_password')) && <th className="px-4 py-3 text-right font-medium">Дії</th>}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -177,6 +207,12 @@ export function UsersSection({ view, me, capabilities, onChanged }: UsersSection
                             ? <ActionBtn busy={busy} disabled={!editable} tone="green" icon={Undo2} label="Розблокувати" onClick={() => void run(user.id, () => api.admin.unblock(user.id))} />
                             : <ActionBtn busy={busy} disabled={!editable} tone="red" icon={Lock} label="Заблокувати" onClick={() => setBlocking({ id: user.id, reason: '', hours: '24' })} />)}
                           {can('user.delete') && <ActionBtn busy={busy} disabled={!editable} tone="red" icon={Trash2} label="Видалити" onClick={() => void confirmDelete(user)} />}
+                          {can('user.reset_password') && (
+                            <>
+                              <ActionBtn busy={busy} disabled={!editable} tone="amber" icon={KeyRound} label="Скинути пароль" onClick={() => { setResetFor(user); setResetDisableTwoFactor(true); setResetResult(null); }} />
+                              <ActionBtn busy={busy} disabled={!editable} tone="neutral" icon={ShieldOff} label="Вимкнути 2FA" onClick={() => void confirmDisableTwoFactor(user)} />
+                            </>
+                          )}
                         </div>
                         {blocking?.id === user.id && (
                           <div className="mt-2 rounded-xl border bg-slate-50 p-3 text-left dark:bg-slate-800/60">
@@ -192,6 +228,19 @@ export function UsersSection({ view, me, capabilities, onChanged }: UsersSection
                               </select>
                               <button type="button" className="primary-btn px-3 py-1.5 text-xs" disabled={busy} onClick={() => void submitBlock(user)}>Підтвердити</button>
                               <button type="button" className="secondary-btn px-3 py-1.5 text-xs" onClick={() => setBlocking(null)}>Скасувати</button>
+                            </div>
+                          </div>
+                        )}
+                        {resetFor?.id === user.id && (
+                          <div className="mt-2 rounded-xl border bg-slate-50 p-3 text-left dark:bg-slate-800/60">
+                            <p className="mb-2 text-xs font-semibold text-slate-500">Скидання пароля @{user.username}</p>
+                            <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                              <input type="checkbox" className="h-4 w-4 accent-accent-600" checked={resetDisableTwoFactor} onChange={(event) => setResetDisableTwoFactor(event.target.checked)} />
+                              Вимкнути двофакторну перевірку (щоб увійти лише з новим паролем)
+                            </label>
+                            <div className="mt-2 flex items-center gap-2">
+                              <button type="button" className="primary-btn px-3 py-1.5 text-xs" disabled={busy} onClick={() => void submitReset(user)}>Скинути</button>
+                              <button type="button" className="secondary-btn px-3 py-1.5 text-xs" onClick={() => setResetFor(null)}>Скасувати</button>
                             </div>
                           </div>
                         )}

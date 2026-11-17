@@ -7,7 +7,7 @@ import { ADMIN_ACTION_LABELS, ROLE_LABELS } from '../../utils/moderation';
 import { Spinner } from '../common/Spinner';
 import { AdminChip, AdminEmpty, AdminNotice, AdminPager, AdminRefreshButton, AdminSectionTitle } from './parts';
 
-const ACTION_ORDER: AdminAction[] = ['user.block', 'user.unblock', 'user.delete', 'user.verify', 'user.unverify', 'star.grant', 'star.remove', 'role.grant', 'role.revoke', 'complaint.status', 'message.delete', 'notification.send'];
+const ACTION_ORDER: AdminAction[] = ['user.block', 'user.unblock', 'user.delete', 'user.verify', 'user.unverify', 'user.password_reset', 'user.2fa.disable', 'star.grant', 'star.remove', 'role.grant', 'role.revoke', 'complaint.status', 'message.delete', 'notification.send'];
 
 export function AuditSection() {
   const [action, setAction] = useState<AdminAction | 'all'>('all');

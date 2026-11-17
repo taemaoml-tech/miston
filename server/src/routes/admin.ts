@@ -9,7 +9,8 @@ import { listSupportRequests, supportQuerySchema, updateSupportStatus } from '..
 import { listSentNotifications, sendSystemNotification } from '../moderation/notifications';
 import {
   adjustStars, blockUser, createStaffAccount, deleteAccount, deleteMessageByStaff,
-  getPlatformStats, listAuditLogs, listModerationUsers, setStaffRole, setVerification, unblockUser,
+  disableUserTwoFactor, getPlatformStats, listAuditLogs, listModerationUsers, resetUserPassword,
+  setStaffRole, setVerification, unblockUser,
 } from '../moderation/service';
 import { emitMessageDeleted, emitSystemNotification, forceUserLogout, notifyUserRefresh } from '../sockets/emitter';
 import { asyncHandler } from '../utils/http';
@@ -20,7 +21,7 @@ const router = Router();
 router.use(requireAuth);
 
 const CAPABILITIES: AdminCapability[] = [
-  'panel.open', 'user.view', 'user.block', 'user.delete', 'user.verify', 'star.manage',
+  'panel.open', 'user.view', 'user.block', 'user.delete', 'user.verify', 'user.reset_password', 'star.manage',
   'staff.manage', 'stats.view', 'audit.view', 'notification.send', 'complaint.view',
   'complaint.manage', 'message.delete',
 ];
@@ -42,6 +43,7 @@ const blockBody = z.object({
   untilHours: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(8_760).optional()),
 });
 const verificationBody = z.object({ verified: z.boolean() });
+const passwordResetBody = z.object({ disableTwoFactor: z.boolean().default(true) });
 const starBody = z.object({
   direction: z.enum(['grant', 'remove']),
   amount: z.coerce.number().int().min(1).max(1_000_000),
@@ -57,6 +59,7 @@ const staffBody = z.object({
 const auditQuery = z.object({
   action: z.enum([
     'user.block', 'user.unblock', 'user.delete', 'user.verify', 'user.unverify',
+    'user.password_reset', 'user.2fa.disable',
     'star.grant', 'star.remove', 'role.grant', 'role.revoke',
     'complaint.status', 'message.delete', 'notification.send', 'support.status',
   ]).optional(),
@@ -135,6 +138,17 @@ router.put('/users/:id/verification', requirePermission('user.verify'), asyncHan
   const user = await setVerification(req.auth!, id, verified);
   notifyUserRefresh(id);
   res.json({ user });
+}));
+
+router.post('/users/:id/password-reset', requirePermission('user.reset_password'), asyncHandler(async (req, res) => {
+  const { id } = idParams.parse(req.params);
+  const input = passwordResetBody.parse(req.body ?? {});
+  res.json(await resetUserPassword(req.auth!, id, input));
+}));
+
+router.post('/users/:id/two-factor/disable', requirePermission('user.reset_password'), asyncHandler(async (req, res) => {
+  const { id } = idParams.parse(req.params);
+  res.json({ user: await disableUserTwoFactor(req.auth!, id) });
 }));
 
 router.post('/users/:id/star', requirePermission('star.manage'), asyncHandler(async (req, res) => {

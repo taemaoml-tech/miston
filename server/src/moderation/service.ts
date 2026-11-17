@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { adminAdjustStars } from '../star/service';
 import { assertCanManage } from '../auth/permissions';
@@ -6,6 +7,8 @@ import { recordAudit, recordAuditStandalone } from '../auth/audit';
 import { config } from '../config/env';
 import { query, withTransaction } from '../db/pool';
 import { isUserOnline } from '../sockets/presence';
+import { sendBotMessage } from '../services/bot';
+import { emailConfigured, sendEmail } from '../services/email';
 import { AppError, notFound } from '../utils/errors';
 import { serializeSender } from '../utils/serializers';
 import type { AdminActionLog, AuthContext, ModerationUser, StarReward, UserRole } from '../types/domain';
@@ -69,6 +72,136 @@ export async function unblockUser(actor: AuthContext, userId: string): Promise<M
     );
     await recordAudit(client, {
       action: 'user.unblock',
+      actor,
+      targetUserId: userId,
+      details: { username: target.username },
+    });
+    return selectModerationUser(client, userId);
+  });
+}
+
+const TEMP_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+
+/** Випадковий тимчасовий пароль без схожих літер/цифр (0/O, 1/l), щоб його можна було диктувати. */
+function generateTemporaryPassword(length = 14): string {
+  const bytes = crypto.randomBytes(length);
+  let password = '';
+  for (let index = 0; index < length; index += 1) {
+    password += TEMP_PASSWORD_ALPHABET[bytes[index]! % TEMP_PASSWORD_ALPHABET.length];
+  }
+  return password;
+}
+
+export interface PasswordResetInput {
+  disableTwoFactor: boolean;
+}
+
+export interface PasswordResetResult {
+  user: ModerationUser;
+  temporaryPassword: string;
+  delivery: 'miston' | 'email' | 'none';
+  deliveryError?: string;
+}
+
+function resetMessage(password: string, disableTwoFactor: boolean): string {
+  return [
+    '🔑 Скидання пароля від адміністрації',
+    '',
+    'Адміністратор скинув ваш пароль у Miston.',
+    `Тимчасовий пароль: ${password}`,
+    ...(disableTwoFactor ? ['Двофакторну перевірку вимкнено — використовуйте лише цей пароль.'] : []),
+    '',
+    'Увійдіть і одразу змініть пароль у налаштуваннях.',
+    'Якщо це були не ви — зверніться до підтримки Miston.',
+  ].join('\n');
+}
+
+/**
+ * Скидання пароля адміністратором: генеруємо тимчасовий пароль, ставимо його
+ * акаунту і надсилаємо його користувачу через чат бота Miston. Якщо бота
+ * немає — запасний канал email.
+ */
+export async function resetUserPassword(
+  actor: AuthContext,
+  userId: string,
+  input: PasswordResetInput,
+): Promise<PasswordResetResult> {
+  const temporaryPassword = generateTemporaryPassword();
+  const user = await withTransaction(async (client) => {
+    const target = await loadTarget(client, userId);
+    assertCanManage(actor, userId, target.role);
+
+    const passwordHash = await bcrypt.hash(temporaryPassword, config.BCRYPT_ROUNDS);
+    await client.query(
+      'UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1',
+      [userId, passwordHash],
+    );
+    if (input.disableTwoFactor) {
+      await client.query(
+        `UPDATE users
+         SET two_factor_enabled = false, two_factor_password_hash = NULL, two_factor_hint = NULL, updated_at = now()
+         WHERE id = $1`,
+        [userId],
+      );
+    }
+    // Стара сесія більше не дійсна: скинутий пароль має відразу забирати доступ.
+    await client.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM login_challenges WHERE user_id = $1 AND consumed_at IS NULL', [userId]);
+
+    await recordAudit(client, {
+      action: 'user.password_reset',
+      actor,
+      targetUserId: userId,
+      details: { username: target.username, disableTwoFactor: input.disableTwoFactor },
+    });
+    return selectModerationUser(client, userId);
+  });
+
+  const emailResult = await query<{ email: string }>('SELECT email FROM users WHERE id = $1', [userId]);
+  const email = String(emailResult.rows[0]?.email ?? '');
+
+  let delivery: PasswordResetResult['delivery'] = 'none';
+  let deliveryError: string | undefined;
+  try {
+    const botSent = await sendBotMessage(userId, resetMessage(temporaryPassword, input.disableTwoFactor));
+    if (botSent) delivery = 'miston';
+  } catch (error) {
+    console.error('Failed to deliver the reset password via Miston bot', error instanceof Error ? error.message : error);
+  }
+
+  if (delivery === 'none' && emailConfigured() && email) {
+    try {
+      await sendEmail(
+        email,
+        'Miston - скидання пароля',
+        `Тимчасовий пароль: ${temporaryPassword}\n\n${input.disableTwoFactor ? 'Двофакторну перевірку вимкнено.\n\n' : ''}Увійдіть і одразу змініть пароль у налаштуваннях.`,
+      );
+      delivery = 'email';
+    } catch (error) {
+      deliveryError = error instanceof Error ? error.message : 'Не вдалося надіслати email.';
+    }
+  }
+
+  if (delivery === 'none' && !deliveryError) {
+    deliveryError = 'Бот недоступний, а email не налаштовано. Передайте пароль користувачу власноруч.';
+  }
+
+  return { user, temporaryPassword, delivery, ...(deliveryError ? { deliveryError } : {}) };
+}
+
+/** Примусове вимкнення двофакторної перевірки: щоб користувач міг увійти лише з паролем. */
+export async function disableUserTwoFactor(actor: AuthContext, userId: string): Promise<ModerationUser> {
+  return withTransaction(async (client) => {
+    const target = await loadTarget(client, userId);
+    assertCanManage(actor, userId, target.role);
+    await client.query(
+      `UPDATE users
+       SET two_factor_enabled = false, two_factor_password_hash = NULL, two_factor_hint = NULL, updated_at = now()
+       WHERE id = $1`,
+      [userId],
+    );
+    await recordAudit(client, {
+      action: 'user.2fa.disable',
       actor,
       targetUserId: userId,
       details: { username: target.username },

@@ -141,6 +141,8 @@ export const api = {
     unblock: (id: string) => request<{ user: ModerationUser }>(`/admin/users/${id}/unblock`, { method: 'POST' }),
     removeUser: (id: string) => request<{ removed: boolean }>(`/admin/users/${id}`, { method: 'DELETE' }),
     setVerification: (id: string, verified: boolean) => request<{ user: ModerationUser }>(`/admin/users/${id}/verification`, { method: 'PUT', body: { verified } }),
+    resetPassword: (id: string, disableTwoFactor = true) => request<{ user: ModerationUser; temporaryPassword: string; delivery: 'miston' | 'email' | 'none'; deliveryError?: string }>(`/admin/users/${id}/password-reset`, { method: 'POST', body: { disableTwoFactor } }),
+    disableTwoFactor: (id: string) => request<{ user: ModerationUser }>(`/admin/users/${id}/two-factor/disable`, { method: 'POST' }),
     adjustStars: (id: string, direction: 'grant' | 'remove', amount: number, description: string) => request<{ reward: { id: string; amount: number; balanceAfter: number } }>(`/admin/users/${id}/star`, { method: 'POST', body: { direction, amount, description } }),
     starHistory: (id: string) => request<{ balance: number; items: StarHistoryEntry[] }>(`/admin/users/${id}/star-history`),
     setRole: (id: string, role: Exclude<UserRole, 'owner'>) => request<{ user: ModerationUser }>(`/admin/users/${id}/role`, { method: 'PUT', body: { role } }),

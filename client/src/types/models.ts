@@ -438,7 +438,7 @@ export interface AdminStats {
 }
 
 export type AdminCapability =
-  | 'panel.open' | 'user.view' | 'user.block' | 'user.delete' | 'user.verify' | 'star.manage'
+  | 'panel.open' | 'user.view' | 'user.block' | 'user.delete' | 'user.verify' | 'user.reset_password' | 'star.manage'
   | 'staff.manage' | 'stats.view' | 'audit.view' | 'notification.send' | 'complaint.view'
   | 'complaint.manage' | 'message.delete';
 
@@ -503,6 +503,7 @@ export interface SupportRequest {
 
 export type AdminAction =
   | 'user.block' | 'user.unblock' | 'user.delete' | 'user.verify' | 'user.unverify'
+  | 'user.password_reset' | 'user.2fa.disable'
   | 'star.grant' | 'star.remove' | 'role.grant' | 'role.revoke'
   | 'complaint.status' | 'message.delete' | 'notification.send' | 'support.status';
 

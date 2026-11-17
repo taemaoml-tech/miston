@@ -36,6 +36,8 @@ export const ADMIN_ACTION_LABELS: Record<AdminAction, string> = {
   'user.delete': 'Видалення акаунта',
   'user.verify': 'Видача галочки',
   'user.unverify': 'Зняття галочки',
+  'user.password_reset': 'Скидання пароля',
+  'user.2fa.disable': 'Вимкнення 2FA',
   'star.grant': 'Нарахування Star',
   'star.remove': 'Списання Star',
   'role.grant': 'Видача ролі',

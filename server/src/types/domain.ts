@@ -301,6 +301,8 @@ export type AdminAction =
   | 'user.delete'
   | 'user.verify'
   | 'user.unverify'
+  | 'user.password_reset'
+  | 'user.2fa.disable'
   | 'star.grant'
   | 'star.remove'
   | 'role.grant'

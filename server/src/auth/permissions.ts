@@ -14,6 +14,7 @@ export type AdminCapability =
   | 'user.block'
   | 'user.delete'
   | 'user.verify'
+  | 'user.reset_password'
   | 'star.manage'
   | 'staff.manage'
   | 'stats.view'
@@ -28,7 +29,7 @@ const MODERATOR_CAPABILITIES: AdminCapability[] = [
   'notification.send', 'complaint.view', 'complaint.manage', 'message.delete',
 ];
 
-const OWNER_CAPABILITIES: AdminCapability[] = [...MODERATOR_CAPABILITIES, 'user.delete', 'staff.manage', 'audit.view'];
+const OWNER_CAPABILITIES: AdminCapability[] = [...MODERATOR_CAPABILITIES, 'user.delete', 'staff.manage', 'audit.view', 'user.reset_password'];
 
 const MATRIX: Record<UserRole, readonly AdminCapability[]> = {
   user: [],
