@@ -153,6 +153,7 @@ export interface MessageForward {
 export interface UserProfile {
   id: string;
   username: string;
+  mistId: string | null;
   displayName: string;
   avatarUrl: string | null;
   bio: string;

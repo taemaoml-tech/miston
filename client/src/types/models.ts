@@ -141,6 +141,7 @@ export interface User {
 export interface UserProfile {
   id: string;
   username: string;
+  mistId?: string | null;
   displayName: string;
   avatarUrl?: string | null;
   bio: string;

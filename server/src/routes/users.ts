@@ -29,7 +29,7 @@ router.get('/search', asyncHandler(async (req, res) => {
      LEFT JOIN friendships f
        ON (f.requester_id = u.id AND f.addressee_id = $2)
        OR (f.addressee_id = u.id AND f.requester_id = $2)
-     WHERE u.id <> $2 AND (u.username ILIKE $1 ESCAPE '\\' OR u.display_name ILIKE $1 ESCAPE '\\')
+     WHERE u.id <> $2 AND (u.mist_id ILIKE $1 ESCAPE '\\' OR u.username ILIKE $1 ESCAPE '\\' OR u.display_name ILIKE $1 ESCAPE '\\')
      ORDER BY u.username ASC LIMIT 20`,
     [`%${escaped}%`, me],
   );

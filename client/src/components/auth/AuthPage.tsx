@@ -32,7 +32,13 @@ export function AuthPage() {
     }
     try {
       const last = localStorage.getItem('relay.lastMistId');
-      if (last) setSavedAccount(last);
+      if (last) {
+        setSavedAccount(last);
+      } else {
+        // Міграція зі старого ключа: звичайний логін перетворюємо на Mist ID.
+        const previous = localStorage.getItem('relay.lastUsername');
+        if (previous && !previous.includes('@')) setSavedAccount(`${previous}@mist.id`);
+      }
     } catch { /* ignore */ }
   }, []);
 
