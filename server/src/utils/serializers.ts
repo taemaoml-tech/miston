@@ -30,6 +30,8 @@ export function serializeUser(row: Record<string, unknown>, online?: boolean): P
     email: String(row.email),
     username: String(row.username),
     mistId: row.mist_id == null ? null : String(row.mist_id),
+    // Постійний QR-токен у профілі не зберігаємо: видаємо короткоживучі через /api/mist-qr/generate.
+    qrToken: null,
     displayName: String(row.display_name),
     avatarUrl: row.avatar_url == null ? null : String(row.avatar_url),
     bio: String(row.bio ?? ''),

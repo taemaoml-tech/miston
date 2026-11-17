@@ -11,6 +11,7 @@ interface AuthContextValue {
   pendingLogin: LoginChallenge | null;
   pendingTwoFactor: string | null;
   login: (identifier: string, password: string) => Promise<void>;
+  loginWithQr: (token: string) => Promise<void>;
   confirmLogin: (code: string) => Promise<void>;
   completeTwoFactor: (password: string) => Promise<void>;
   resendLogin: () => Promise<void>;
@@ -90,6 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const saveSession = useCallback((session: AuthResponse) => {
     tokenStore.set(session.token, session.refreshToken);
     setUser(session.user);
+    // Запам'ятовуємо Mist ID для швидкого входу на цьому пристрої.
+    try {
+      localStorage.setItem('relay.lastMistId', session.user.mistId || `${session.user.username}@mist.id`);
+    } catch { /* ignore */ }
   }, []);
 
   const login = useCallback(async (identifier: string, password: string) => {
@@ -99,6 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     saveSession(result);
+  }, [saveSession]);
+
+  const loginWithQr = useCallback(async (token: string) => {
+    saveSession(await api.mistQr.verify(token));
   }, [saveSession]);
 
   const confirmLogin = useCallback(async (code: string) => {
@@ -155,9 +164,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin,
+    user, loading, pendingLogin, pendingTwoFactor, login, loginWithQr, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin,
     register, logout, endSession, updateUser: setUser,
-  }), [user, loading, pendingLogin, pendingTwoFactor, login, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin, register, logout, endSession]);
+  }), [user, loading, pendingLogin, pendingTwoFactor, login, loginWithQr, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin, register, logout, endSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

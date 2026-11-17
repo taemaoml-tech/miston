@@ -121,6 +121,8 @@ export interface User {
   email?: string;
   username: string;
   mistId?: string | null;
+  /** Постійного токена немає: короткоживучий код видає /api/mist-qr/generate. */
+  qrToken?: string | null;
   displayName: string;
   avatarUrl?: string | null;
   bio?: string | null;

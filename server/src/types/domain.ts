@@ -108,6 +108,7 @@ export interface PublicUser {
   email: string;
   username: string;
   mistId: string | null;
+  qrToken: string | null;
   displayName: string;
   avatarUrl: string | null;
   bio: string;

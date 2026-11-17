@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, MessageCircle, Moon, ShieldAlert, ShieldCheck, Sun, Users, Video } from 'lucide-react';
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, MessageCircle, Moon, QrCode, ShieldAlert, ShieldCheck, Sun, Users, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { SESSION_NOTICE_KEY, useAuth } from '../../contexts/AuthContext';
@@ -10,12 +10,20 @@ import { AppDownload } from '../common/AppDownload';
 import { Logo } from '../common/Logo';
 import { Spinner } from '../common/Spinner';
 
+type AuthMode = 'login' | 'register' | 'qr';
+
 export function AuthPage() {
-  const { login, register } = useAuth();
+  const { login, loginWithQr, register } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<AuthMode>('login');
   const [notice, setNotice] = useState('');
   const [savedAccount, setSavedAccount] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [qrInput, setQrInput] = useState('');
+  const [form, setForm] = useState({ identifier: '', email: '', username: '', displayName: '', phone: '', password: '', confirm: '' });
+
   useEffect(() => {
     const value = sessionStorage.getItem(SESSION_NOTICE_KEY);
     if (value) {
@@ -23,17 +31,13 @@ export function AuthPage() {
       setNotice(value);
     }
     try {
-      const last = localStorage.getItem('relay.lastUsername');
+      const last = localStorage.getItem('relay.lastMistId');
       if (last) setSavedAccount(last);
     } catch { /* ignore */ }
   }, []);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ identifier: '', email: '', username: '', displayName: '', phone: '', password: '', confirm: '' });
 
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  const switchMode = (next: 'login' | 'register') => { setMode(next); setError(''); };
+  const switchMode = (next: AuthMode) => { setMode(next); setError(''); };
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -44,10 +48,8 @@ export function AuthPage() {
     try {
       if (mode === 'login') {
         await login(form.identifier.trim(), form.password);
-        try { localStorage.setItem('relay.lastUsername', form.identifier.trim()); } catch { /* ignore */ }
       } else {
         await register(form.email.trim(), form.username.trim(), form.displayName.trim(), form.password, form.phone.trim());
-        try { localStorage.setItem('relay.lastUsername', form.username.trim()); } catch { /* ignore */ }
       }
     } catch (cause) {
       setError(errorMessage(cause));
@@ -55,6 +57,31 @@ export function AuthPage() {
       setLoading(false);
     }
   }
+
+  async function submitQr(event: FormEvent) {
+    event.preventDefault();
+    const token = qrInput.trim();
+    if (!token) return;
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithQr(token);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const title = mode === 'qr' ? 'Вхід за QR-кодом' : mode === 'login' ? 'З поверненням' : 'Створіть акаунт';
+  const subtitle = mode === 'qr'
+    ? 'Відскануйте QR-код з іншого пристрою або введіть його код.'
+    : mode === 'login'
+      ? 'Продовжте з того місця, де зупинилися.'
+      : 'Ваша наступна розмова починається тут.';
+  const errorBlock = error ? (
+    <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">{error}</div>
+  ) : null;
 
   return (
     <main className="relative min-h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
@@ -93,13 +120,13 @@ export function AuthPage() {
           <div className="w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-6 shadow-soft backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 sm:p-8">
             <div className="mb-8 lg:hidden"><Logo /></div>
             <div className="mb-7">
-              <h2 className="text-2xl font-bold tracking-tight">{mode === 'login' ? 'З поверненням' : 'Створіть акаунт'}</h2>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{mode === 'login' ? 'Продовжте з того місця, де зупинилися.' : 'Ваша наступна розмова починається тут.'}</p>
+              <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
             </div>
             {savedAccount && mode === 'login' && (
               <div className="mb-5 rounded-2xl border border-accent-200 bg-accent-50 p-4 dark:border-accent-500/30 dark:bg-accent-950/30">
                 <p className="text-sm font-semibold text-accent-700 dark:text-accent-300">Увійти за допомогою Mist ID</p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{savedAccount}@mist.id</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{savedAccount}</p>
                 <button type="button" className="primary-btn mt-3 w-full py-2.5" onClick={() => { setForm((f) => ({ ...f, identifier: savedAccount })); }}>
                   Продовжити
                 </button>
@@ -111,29 +138,50 @@ export function AuthPage() {
                 <button type="button" onClick={() => setNotice('')} className="shrink-0 font-semibold underline">Зрозуміло</button>
               </div>
             )}
-            <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Режим автентифікації">
-              {(['login', 'register'] as const).map((item) => (
-                <button key={item} type="button" role="tab" aria-selected={mode === item} onClick={() => switchMode(item)} className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${mode === item ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}>{item === 'login' ? 'Увійти' : 'Реєстрація'}</button>
+            <div className="mb-6 grid grid-cols-3 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Режим автентифікації">
+              {([
+                { key: 'login' as const, label: 'Увійти' },
+                { key: 'register' as const, label: 'Реєстрація' },
+                { key: 'qr' as const, label: 'QR-код' },
+              ]).map((item) => (
+                <button key={item.key} type="button" role="tab" aria-selected={mode === item.key} onClick={() => switchMode(item.key)} className={`rounded-lg px-2 py-2 text-sm font-semibold transition ${mode === item.key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}>{item.label}</button>
               ))}
             </div>
-            <form onSubmit={submit} className="space-y-4">
-              {mode === 'login' ? (
-                <label className="block"><span className="field-label">Mist ID, логін або email</span><input className="text-input" autoComplete="username" required autoFocus value={form.identifier} onChange={(e) => update('identifier', e.target.value)} placeholder="username@mist.id" /></label>
-              ) : (
-                <>
-                  <label className="block"><span className="field-label">Показуване ім'я</span><input className="text-input" autoComplete="name" required maxLength={60} value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="Олена Коваль" /></label>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block"><span className="field-label">Ім'я користувача</span><input className="text-input" autoComplete="username" required minLength={3} pattern="[a-zA-Z0-9_]+" value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="olena" /></label>
-                    <label className="block"><span className="field-label">Електронна пошта</span><input className="text-input" type="email" autoComplete="email" required value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="olena@mail.com" /></label>
-                  </div>
-                  <label className="block"><span className="field-label">Номер телефону</span><input className="text-input" type="tel" autoComplete="tel" required minLength={8} maxLength={30} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+380 50 123 45 67" /><span className="mt-1 block text-[11px] text-slate-400">Надішлемо 8-значний код підтвердження через SMS.</span></label>
-                </>
-              )}
-              <label className="block"><span className="field-label">Пароль</span><span className="relative block"><input className="text-input pr-11" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={8} value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Щонайменше 8 символів" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span></label>
-              {mode === 'register' && <label className="block"><span className="field-label">Підтвердіть пароль</span><span className="relative block"><input className="text-input pr-10" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={form.confirm} onChange={(e) => update('confirm', e.target.value)} placeholder="Повторіть пароль" />{form.confirm && form.confirm === form.password && <Check size={17} className="absolute right-3 top-3 text-emerald-500" />}</span></label>}
-              {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">{error}</div>}
-              <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>{loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Miston' : 'Створити акаунт'}<ArrowRight size={17} /></>}</button>
-            </form>
+
+            {mode === 'qr' ? (
+              <form onSubmit={submitQr} className="space-y-4">
+                <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                  <QrCode size={20} className="mt-0.5 shrink-0 text-accent-500" />
+                  <p>Відкрийте <b>Профіль → Mist ID → QR-код для входу</b> на пристрої, де ви вже увійшли. Відскануйте код або скопіюйте його та введіть нижче.</p>
+                </div>
+                <label className="block"><span className="field-label">Код входу Mist ID</span><input className="text-input" autoComplete="off" required minLength={10} maxLength={64} value={qrInput} onChange={(e) => setQrInput(e.target.value)} placeholder="Наприклад, 48 символів з QR-коду" /></label>
+                {errorBlock}
+                <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>
+                  {loading ? <Spinner label="Вхід…" className="text-white" /> : <>Увійти за QR-кодом<ArrowRight size={17} /></>}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={submit} className="space-y-4">
+                {mode === 'login' ? (
+                  <label className="block"><span className="field-label">Mist ID, логін або email</span><input className="text-input" autoComplete="username" required autoFocus value={form.identifier} onChange={(e) => update('identifier', e.target.value)} placeholder="username@mist.id" /></label>
+                ) : (
+                  <>
+                    <label className="block"><span className="field-label">Показуване ім'я</span><input className="text-input" autoComplete="name" required maxLength={60} value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="Олена Коваль" /></label>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block"><span className="field-label">Ім'я користувача</span><input className="text-input" autoComplete="username" required minLength={3} pattern="[a-zA-Z0-9_]+" value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="olena" /></label>
+                      <label className="block"><span className="field-label">Електронна пошта</span><input className="text-input" type="email" autoComplete="email" required value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="olena@mail.com" /></label>
+                    </div>
+                    <label className="block"><span className="field-label">Номер телефону</span><input className="text-input" type="tel" autoComplete="tel" required minLength={8} maxLength={30} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+380 50 123 45 67" /><span className="mt-1 block text-[11px] text-slate-400">Надішлемо 8-значний код підтвердження через SMS.</span></label>
+                  </>
+                )}
+                <label className="block"><span className="field-label">Пароль</span><span className="relative block"><input className="text-input pr-11" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={8} value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Щонайменше 8 символів" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span></label>
+                {mode === 'register' && <label className="block"><span className="field-label">Підтвердіть пароль</span><span className="relative block"><input className="text-input pr-10" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={form.confirm} onChange={(e) => update('confirm', e.target.value)} placeholder="Повторіть пароль" />{form.confirm && form.confirm === form.password && <Check size={17} className="absolute right-3 top-3 text-emerald-500" />}</span></label>}
+                {errorBlock}
+                <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>
+                  {loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Miston' : 'Створити акаунт'}<ArrowRight size={17} /></>}
+                </button>
+              </form>
+            )}
             <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400"><LockKeyhole size={13} /> Ваша сесія безпечно зберігається на цьому пристрої</div>
             <AppDownload />
             <nav className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs" aria-label="Сторінки проєкту">

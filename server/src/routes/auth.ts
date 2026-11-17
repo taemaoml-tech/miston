@@ -124,7 +124,7 @@ export function authPayload(user: Record<string, unknown>, refreshToken: string)
  * Токен-видачі перевіряють блокування окремо від requireAuth: заблокований
  * акаунт не повинен отримати ні нового доступу, ні оновленого refresh-токена.
  */
-function assertNotBlocked(row: Record<string, unknown>): void {
+export function assertNotBlocked(row: Record<string, unknown>): void {
   const blockedAt = row.blocked_at as Date | null | undefined;
   const blockedUntil = row.blocked_until as Date | null | undefined;
   if (!blockedAt || (blockedUntil && blockedUntil.getTime() <= Date.now())) return;
