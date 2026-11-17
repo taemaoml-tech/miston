@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { errorMessage } from '../../utils/format';
 import { diagnoseNotifications, sendTestNotification } from '../../utils/notifications';
 import type { NotificationReport } from '../../utils/notifications';
+import { getFcmToken, getNativeFcmToken } from '../../utils/firebase';
 
 function maskPhone(phone: string): string {
   if (phone.length <= 6) return phone;
@@ -63,11 +64,34 @@ export function NotificationSettings() {
           return;
         }
         const sent = await api.push.test();
-        setResult(`${local} Сервер надіслав пуш на пристроїв: ${sent.tokens}.`);
+        if (sent.sent === 0 && sent.failed > 0) {
+          setResult(`${local} Firebase відхилив пуш: ${sent.errors[0] || 'невідома помилка'}`);
+          return;
+        }
+        setResult(`${local} Сервер надіслав пуш: успішно ${sent.sent}, помилок ${sent.failed}.`);
       } catch (cause) {
         setResult(`${local} ${errorMessage(cause)}`);
       }
     })().finally(() => setBusy(false));
+  };
+
+  const enablePush = async () => {
+    setBusy(true); setResult('');
+    try {
+      const nativeToken = await getNativeFcmToken();
+      const token = nativeToken ?? (await getFcmToken());
+      if (!token) {
+        setResult('Не вдалося отримати дозвіл на сповіщення. Перевірте налаштування browser/Android для Miston.');
+        return;
+      }
+      await api.push.register(token, nativeToken ? 'android' : 'web');
+      setResult('Сповіщення увімкнено для цього пристрою.');
+      refreshServerPush();
+    } catch (cause) {
+      setResult(errorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const toggleSms = async (enabled: boolean) => {
@@ -103,6 +127,7 @@ export function NotificationSettings() {
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="secondary-btn" onClick={() => void enablePush()} disabled={busy}>Увімкнути сповіщення</button>
         <button type="button" className="secondary-btn" onClick={test} disabled={busy}>Надіслати тестове</button>
         <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-accent-300 hover:text-accent-700 dark:text-slate-300 dark:hover:text-accent-300" onClick={check} disabled={busy}>
           <RefreshCw size={13} /> Перевірити ще раз

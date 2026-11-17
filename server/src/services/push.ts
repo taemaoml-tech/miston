@@ -47,29 +47,36 @@ export async function pushTokenCount(userId: string): Promise<number> {
   return result.rows[0]?.count ?? 0;
 }
 
+export interface PushResult {
+  tokens: number;
+  sent: number;
+  failed: number;
+  errors: string[];
+}
+
 export async function sendPushToUser(
   userId: string,
   title: string,
   body: string,
   data: Record<string, string> = {},
-): Promise<void> {
+): Promise<PushResult> {
   const firebaseAdmin = await getAdmin();
-  if (!firebaseAdmin) return;
+  if (!firebaseAdmin) return { tokens: 0, sent: 0, failed: 0, errors: ['firebase-admin не ініціалізовано'] };
   const result = await query<{ token: string }>('SELECT token FROM push_tokens WHERE user_id = $1', [userId]);
   const tokens = result.rows.map((row) => row.token);
-  if (tokens.length === 0) return;
+  if (tokens.length === 0) return { tokens: 0, sent: 0, failed: 0, errors: [] };
   try {
     const response = await (firebaseAdmin as any).messaging().sendEachForMulticast({
       tokens,
       notification: { title, body },
-      data,
+      data: { ...data, title, body },
       android: {
         priority: 'high',
         notification: { sound: 'default' },
       },
       webpush: {
         headers: { Urgency: 'high', TTL: '86400' },
-        notification: { title, body, icon: '/icons/icon-192.png', tag: userId },
+        notification: { title, body, tag: data.conversationId || 'miston' },
         fcmOptions: { link: 'https://taemaoml-tech.github.io/miston/' },
       },
     });
@@ -77,9 +84,11 @@ export async function sendPushToUser(
     // Прибираємо токени, яких Firebase більше не знає (видалений застосунок,
     // скидання даних, перевстановлення APK).
     const stale: string[] = [];
-    response.responses.forEach((entry: { success: boolean; error?: { code?: string } }, index: number) => {
+    const errors: string[] = [];
+    response.responses.forEach((entry: { success: boolean; error?: { code?: string; message?: string } }, index: number) => {
       if (entry.success) return;
-      const code = entry.error?.code ?? '';
+      const code = entry.error?.code ?? 'unknown';
+      errors.push(`${code}: ${entry.error?.message ?? ''}`.trim());
       if (
         code === 'messaging/registration-token-not-registered' ||
         code === 'messaging/invalid-registration-token' ||
@@ -91,7 +100,15 @@ export async function sendPushToUser(
     if (stale.length > 0) {
       await query('DELETE FROM push_tokens WHERE token = ANY($1::text[])', [stale]);
     }
+    return {
+      tokens: tokens.length,
+      sent: response.successCount ?? tokens.length - errors.length,
+      failed: response.failureCount ?? errors.length,
+      errors,
+    };
   } catch (error) {
-    console.error('FCM send failed', error instanceof Error ? error.message : error);
+    const text = error instanceof Error ? error.message : String(error);
+    console.error('FCM send failed', text);
+    return { tokens: tokens.length, sent: 0, failed: tokens.length, errors: [text] };
   }
 }

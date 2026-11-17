@@ -56,7 +56,7 @@ export const api = {
     register: (token: string, platform: string) => request<void>('/push/register', { method: 'POST', body: { token, platform } }),
     unregister: (token: string) => request<void>('/push/unregister', { method: 'POST', body: { token } }),
     status: () => request<{ tokens: number; configured: boolean }>('/push/status'),
-    test: () => request<{ sent: boolean; tokens: number }>('/push/test', { method: 'POST', body: {} }),
+    test: () => request<{ tokens: number; sent: number; failed: number; errors: string[]; configured: boolean }>('/push/test', { method: 'POST', body: {} }),
   },
   conversations: {
     list: () => request<{ conversations: Conversation[] }>('/conversations'),
