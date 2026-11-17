@@ -1,7 +1,7 @@
 {
-  "name": "Planegram",
-  "short_name": "Planegram",
-  "description": "Planegram — безпечний месенджер для спілкування.",
+  "name": "Miston",
+  "short_name": "Miston",
+  "description": "Miston — безпечний месенджер для спілкування.",
   "lang": "uk",
   "start_url": "./",
   "scope": "./",

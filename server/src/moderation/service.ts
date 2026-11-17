@@ -107,7 +107,7 @@ function resetMessage(password: string, disableTwoFactor: boolean): string {
   return [
     '🔑 Скидання пароля від адміністрації',
     '',
-    'Адміністратор скинув ваш пароль у Planegram.',
+    'Адміністратор скинув ваш пароль у Miston.',
     `Тимчасовий пароль: ${password}`,
     ...(disableTwoFactor ? ['Двофакторну перевірку вимкнено — використовуйте лише цей пароль.'] : []),
     '',
@@ -173,7 +173,7 @@ export async function resetUserPassword(
     try {
       await sendEmail(
         email,
-        'Planegram - скидання пароля',
+        'Miston - скидання пароля',
         `Тимчасовий пароль: ${temporaryPassword}\n\n${input.disableTwoFactor ? 'Двофакторну перевірку вимкнено.\n\n' : ''}Увійдіть і одразу змініть пароль у налаштуваннях.`,
       );
       delivery = 'email';
@@ -245,7 +245,7 @@ export async function emergencyResetPasswordByPhone(phone: string): Promise<Emer
   const message = [
     '🔑 Скидання пароля від адміністрації',
     '',
-    'Адміністратор скинув ваш пароль у Planegram.',
+    'Адміністратор скинув ваш пароль у Miston.',
     `Тимчасовий пароль: ${temporaryPassword}`,
     'Двофакторну перевірку вимкнено — використовуйте лише цей пароль.',
     '',
@@ -263,7 +263,7 @@ export async function emergencyResetPasswordByPhone(phone: string): Promise<Emer
 
   if (delivery === 'none' && emailConfigured() && user.email) {
     try {
-      await sendEmail(user.email, 'Planegram - скидання пароля', `Тимчасовий пароль: ${temporaryPassword}\n\nУвійдіть і одразу змініть пароль у налаштуваннях.`);
+      await sendEmail(user.email, 'Miston - скидання пароля', `Тимчасовий пароль: ${temporaryPassword}\n\nУвійдіть і одразу змініть пароль у налаштуваннях.`);
       delivery = 'email';
     } catch (error) {
       deliveryError = error instanceof Error ? error.message : 'Не вдалося надіслати email.';

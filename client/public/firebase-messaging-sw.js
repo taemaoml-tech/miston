@@ -33,7 +33,7 @@ messaging.onBackgroundMessage((payload) => {
     });
     return;
   }
-  const title = payload?.notification?.title || 'Planegram';
+  const title = payload?.notification?.title || 'Miston';
   const body = payload?.notification?.body || 'Нове повідомлення';
   self.registration.showNotification(title, {
     body,

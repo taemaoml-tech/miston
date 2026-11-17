@@ -24,7 +24,7 @@ router.get('/status', asyncHandler(async (req, res) => {
 }));
 
 router.post('/test', asyncHandler(async (req, res) => {
-  const { title, body } = z.object({ title: z.string().default('Planegram'), body: z.string().default('Тестове push-сповіщення') }).parse(req.body);
+  const { title, body } = z.object({ title: z.string().default('Miston'), body: z.string().default('Тестове push-сповіщення') }).parse(req.body);
   const result = await sendPushToUser(req.auth!.userId, title, body);
   res.json({ ...result, configured: pushConfigured() });
 }));

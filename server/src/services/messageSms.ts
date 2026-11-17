@@ -38,16 +38,16 @@ export function describeMessage(message: Message): string {
   return KIND_LABELS[message.kind] ?? 'нове повідомлення';
 }
 
-/** Текст SMS: «Planegram: Артем: фото» або «Planegram: Артем у «Чат»: фото». */
+/** Текст SMS: «Miston: Артем: фото» або «Miston: Артем у «Чат»: фото». */
 export function buildSmsText(message: Message, conversation: ConversationRow | null): string {
   const sender = message.sender.displayName || message.sender.username || 'Хтось';
   const content = describeMessage(message);
   const isGroup = conversation?.kind === 'group' || conversation?.kind === 'channel';
   const where = isGroup && conversation?.title ? ` у «${conversation.title}»` : '';
   if (message.kind === 'text') {
-    return `Planegram: ${sender}${where}: ${content}`;
+    return `Miston: ${sender}${where}: ${content}`;
   }
-  return `Planegram: ${sender}${where} надіслав(ла) ${content}`;
+  return `Miston: ${sender}${where} надіслав(ла) ${content}`;
 }
 
 /**
@@ -156,8 +156,8 @@ export async function notifyRecipientsByPush(message: Message, recipientIds: str
       [recipientIds],
     );
 
-    const text = buildSmsText(message, conversation).replace(/^Planegram: /, '');
-    const title = 'Planegram';
+    const text = buildSmsText(message, conversation).replace(/^Miston: /, '');
+    const title = 'Miston';
 
     // Push надсилаємо завжди, незалежно від presence: застосунок у фоні або
     // закритий не має живого сокета, і саме push — єдиний спосіб розбудити

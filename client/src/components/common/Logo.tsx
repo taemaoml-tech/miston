@@ -1,8 +1,8 @@
 export function Logo({ compact = false, size = 36 }: { compact?: boolean; size?: number }) {
   return (
-    <div className="flex items-center gap-2.5" aria-label="Planegram">
+    <div className="flex items-center gap-2.5" aria-label="Miston">
       <Mark size={size} />
-      {!compact && <span className="text-xl font-bold tracking-tight">Planegram</span>}
+      {!compact && <span className="text-xl font-bold tracking-tight">Miston</span>}
     </div>
   );
 }

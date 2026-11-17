@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="ios-glass w-full max-w-md rounded-[28px] border p-6 shadow-soft">
           <h1 className="text-xl font-bold">Щось пішло не так</h1>
           <p className="mt-2 text-sm text-ios-secondary">
-            Не вдалося відобразити Planegram. Спробуйте оновити сторінку.
+            Не вдалося відобразити Miston. Спробуйте оновити сторінку.
           </p>
           <pre className="mt-4 max-h-32 overflow-auto rounded-xl bg-ios-fill/10 p-3 text-[11px] leading-4 text-ios-secondary">
             {error.message}

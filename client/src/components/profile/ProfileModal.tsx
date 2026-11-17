@@ -252,7 +252,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             >
               <LogOut size={17} /> Вийти з акаунта
             </button>
-            <span className="text-xs text-ios-secondary">Planegram 1.0.0</span>
+            <span className="text-xs text-ios-secondary">Miston 1.0.0</span>
           </div>
         </>
       ) : (

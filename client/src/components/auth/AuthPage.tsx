@@ -83,7 +83,7 @@ export function AuthPage() {
   const subtitle = mode === 'qr'
     ? 'Відскануйте QR-код з іншого пристрою або введіть його код.'
     : mode === 'login'
-      ? 'Ваш Mist ID — це адреса для входу та пошти в Planegram.'
+      ? 'Ваш Mist ID — це адреса для входу та пошти в Miston.'
       : 'Одна адреса для чатів, друзів і пошти Mist ID.';
   const errorBlock = error ? (
     <div role="alert" className="ios-glass rounded-2xl border border-rose-500/25 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">{error}</div>
@@ -103,7 +103,7 @@ export function AuthPage() {
             <div className="ios-glass mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold text-ios-blue">
               <span className="h-1.5 w-1.5 rounded-full bg-[#34C759]" /> Спілкування завжди в синхроні
             </div>
-            <h1 className="text-5xl font-bold leading-[1.08] tracking-tight text-ios-label xl:text-6xl">Planegram —<br /><span className="bg-gradient-to-r from-[#4A97FF] to-[#007AFF] bg-clip-text text-transparent">твій сучасний месенджер.</span></h1>
+            <h1 className="text-5xl font-bold leading-[1.08] tracking-tight text-ios-label xl:text-6xl">Miston —<br /><span className="bg-gradient-to-r from-[#4A97FF] to-[#007AFF] bg-clip-text text-transparent">твій сучасний месенджер.</span></h1>
             <p className="mt-6 max-w-md text-lg leading-8 text-ios-secondary">Продумані повідомлення для друзів, згуртованих команд і спільнот будь-якого розміру.</p>
             <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-sm text-ios-label">
               <span className="flex items-center gap-2"><ShieldCheck size={18} className="text-ios-blue" /> Безпечні сесії</span>
@@ -188,7 +188,7 @@ export function AuthPage() {
                 {mode === 'register' && <label className="block"><span className="field-label">Підтвердіть пароль</span><span className="relative block"><input className="text-input pr-10" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={form.confirm} onChange={(e) => update('confirm', e.target.value)} placeholder="Повторіть пароль" />{form.confirm && form.confirm === form.password && <Check size={17} className="absolute right-3 top-3 text-emerald-500" />}</span></label>}
                 {errorBlock}
                 <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>
-                  {loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Planegram' : 'Створити Mist ID'}<ArrowRight size={17} /></>}
+                  {loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Miston' : 'Створити Mist ID'}<ArrowRight size={17} /></>}
                 </button>
               </form>
             )}
