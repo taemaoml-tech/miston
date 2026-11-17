@@ -8,7 +8,7 @@ import type {
 } from '../types/domain';
 import { uuid } from '../utils/validation';
 import { isUserOnline } from './presence';
-import { sendPushToUser } from '../services/push';
+import { sendPushToUser, pushTokenCount } from '../services/push';
 
 interface SessionParticipant extends CallParticipant {
   socketId: string;
@@ -242,21 +242,30 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
   const available = online.filter((id) => !userInCall(id));
   const offline = others.filter((id) => !isUserOnline(id));
 
-  // Якщо ніхто не онлайн, але є офлайн-учасники з push-токенами —
-  // дзвонимо їм через FCM (пробуджує пристрій), а не відхиляємо дзвінок.
-  const offlineReachable = offline.filter((id) => !userInCall(id));
+  // Офлайн-учасники, яких можна пробудити через push (є зареєстровані пристрої).
+  const offlineWithTokens: string[] = [];
+  for (const id of offline) {
+    if (userInCall(id)) continue;
+    const count = await pushTokenCount(id);
+    if (count > 0) offlineWithTokens.push(id);
+  }
 
-  if (available.length === 0 && offlineReachable.length === 0) {
+  if (available.length === 0 && offlineWithTokens.length === 0) {
     const busy = online.some((id) => userInCall(id));
+    const noTokens = offline.length > 0;
     reply(ack, {
       ok: false,
       code: busy ? 'BUSY' : 'OFFLINE',
-      message: busy ? 'Учасники вже в іншому дзвінку' : 'Нікого немає в мережі і немає активних пристроїв для сповіщень',
+      message: busy
+        ? 'Учасники вже в іншому дзвінку'
+        : noTokens
+          ? 'Учасник не в мережі і не має активних пристроїв для сповіщень. Він має хоча б раз увійти в застосунок.'
+          : 'Нікого немає в мережі',
     });
     return;
   }
 
-  const invitedSet = new Set<string>([...available, ...offlineReachable]);
+  const invitedSet = new Set<string>([...available, ...offlineWithTokens]);
 
   const caller = await loadSender(userId);
   if (!caller) {
@@ -292,11 +301,13 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
     startedAt: new Date().toISOString(),
   };
   calls.set(id, call);
+  // Для офлайн-учасників даємо більше часу на пробудження пристрою.
+  const ringTimeout = offlineWithTokens.length > 0 ? 90000 : config.CALL_RING_TIMEOUT_MS;
   call.ringTimer = setTimeout(() => {
     call.ringTimer = null;
     if (call.answered) stopRinging(io, call);
     else finishCall(io, call, 'timeout');
-  }, config.CALL_RING_TIMEOUT_MS);
+  }, ringTimeout);
 
   await socket.join(`call:${id}`);
   reply(ack, { ok: true, call: serializeCall(call) });
@@ -306,21 +317,32 @@ async function handleInvite(io: Server, socket: Socket, userId: string, payload:
     io.to(`user:${memberId}`).emit('call:incoming', incoming);
   }
 
-  // Офлайн-учасникам шлемо високопріоритетний push, щоб пробудити пристрій
-  // і показати екран дзвінка з кнопками «Прийняти / Відхилити».
-  if (offlineReachable.length > 0) {
-    const callerName = caller?.displayName || 'Хтось';
-    const callBody = call.kind === 'video' ? 'Вхідний відеодзвінок' : 'Вхідний аудіодзвінок';
-    const serializedCall = JSON.stringify(serializeCall(call));
-    for (const memberId of offlineReachable) {
-      void sendPushToUser(memberId, `Вхідний дзвінок · ${callerName}`, callBody, {
-        type: 'call',
-        callId: call.id,
-        conversationId: call.conversationId,
-        kind: call.kind,
-        callerName,
-        call: serializedCall,
-      }).catch(() => undefined);
+  // Шлемо push ВСІМ запрошеним (онлайн і офлайн), щоб пробудити пристрої
+  // і показати екран дзвінка. Онлайн-користувачі, які мають відкриту вкладку,
+  // отримають і socket-подію, і push — дубль не з'явиться, бо onBackgroundMessage
+  // спрацьовує лише коли вкладка в фоні.
+  const callerName = caller?.displayName || 'Хтось';
+  const callBody = call.kind === 'video' ? 'Вхідний відеодзвінок' : 'Вхідний аудіодзвінок';
+  const serializedCall = JSON.stringify(serializeCall(call));
+  for (const memberId of call.invited) {
+    void sendPushToUser(memberId, `Вхідний дзвінок · ${callerName}`, callBody, {
+      type: 'call',
+      callId: call.id,
+      conversationId: call.conversationId,
+      kind: call.kind,
+      callerName,
+      call: serializedCall,
+    }).catch(() => undefined);
+  }
+
+  // Для офлайн-учасників без push-токенів — надсилаємо повідомлення від бота,
+  // щоб вони побачили дзвінок при наступному відкритті застосунку.
+  const offlineWithoutTokens = offline.filter((id) => !offlineWithTokens.includes(id) && !userInCall(id));
+  if (offlineWithoutTokens.length > 0) {
+    const botCallBody = call.kind === 'video' ? 'відеодзвінок' : 'аудіодзвінок';
+    const { sendBotMessage } = await import('../services/bot');
+    for (const memberId of offlineWithoutTokens) {
+      void sendBotMessage(memberId, `📞 Вхідний ${botCallBody} від ${callerName}. Відкрийте Miston, щоб відповісти.`).catch(() => undefined);
     }
   }
 }
