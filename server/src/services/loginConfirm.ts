@@ -153,7 +153,7 @@ export async function issueLoginChallenge(
       try {
         await sendEmail(
           String(user.email),
-          'Miston - код підтвердження входу',
+          'Planegram - код підтвердження входу',
           'Ваш код підтвердження входу: ' + code + '\n\nКод діє ' + ttl + ' хв. Нікому його не повідомляйте.\nЯкщо це були не ви - змініть пароль.',
         );
       } catch (error) {

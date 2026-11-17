@@ -4,7 +4,7 @@ const SITE_URL = 'https://taemaoml-tech.github.io/miston/';
 
 const config: CapacitorConfig = {
   appId: 'com.miston.messenger',
-  appName: 'Miston',
+  appName: 'Planegram',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

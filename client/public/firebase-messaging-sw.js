@@ -13,7 +13,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 const base = self.location.pathname.replace(/firebase-messaging-sw\.js$/, '');
 messaging.onBackgroundMessage((payload) => {
-  const title = payload?.notification?.title || 'Miston';
+  const title = payload?.notification?.title || 'Planegram';
   const body = payload?.notification?.body || 'Нове повідомлення';
   self.registration.showNotification(title, {
     body,
