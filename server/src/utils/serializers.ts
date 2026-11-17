@@ -29,6 +29,7 @@ export function serializeUser(row: Record<string, unknown>, online?: boolean): P
     id: String(row.id),
     email: String(row.email),
     username: String(row.username),
+    mistId: row.mist_id == null ? null : String(row.mist_id),
     displayName: String(row.display_name),
     avatarUrl: row.avatar_url == null ? null : String(row.avatar_url),
     bio: String(row.bio ?? ''),

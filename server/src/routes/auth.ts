@@ -156,14 +156,21 @@ router.post('/register', asyncHandler(async (req, res) => {
     }
     const existing = await client.query<{ has_users: boolean }>('SELECT EXISTS (SELECT 1 FROM users) AS has_users');
     const role = existing.rows[0]?.has_users ? 'user' : 'owner';
+    const mistId = `${input.username}@mist.id`;
     const inserted = await client.query<Record<string, unknown>>(
-      `INSERT INTO users (email, username, display_name, password_hash, role)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [input.email, input.username, input.displayName, passwordHash, role],
+      `INSERT INTO users (email, username, display_name, password_hash, role, mist_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [input.email, input.username, input.displayName, passwordHash, role, mistId],
     );
     const user = inserted.rows[0];
     if (!user) throw new Error('User insert returned no row');
     await client.query('INSERT INTO user_wallets (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [user.id]);
+    // Вітальне повідомлення у пошту Mist ID.
+    await client.query(
+      `INSERT INTO mist_id_inbox (user_id, title, body, kind)
+       VALUES ($1, $2, $3, 'welcome')`,
+      [user.id, 'Ласкаво просимо до Mist!', `Ваш Mist ID: ${mistId}\n\nЗберігайте цей ідентифікатор — він потрібен для входу та додавання друзів.`],
+    );
     const refresh = createRefreshToken();
     await client.query(
       'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
@@ -194,7 +201,7 @@ router.post('/register', asyncHandler(async (req, res) => {
 router.post('/login', asyncHandler(async (req, res) => {
   const input = loginSchema.parse(req.body);
   const result = await query<Record<string, unknown>>(
-    'SELECT * FROM users WHERE email = $1 OR username = $1 LIMIT 1',
+    'SELECT * FROM users WHERE email = $1 OR username = $1 OR mist_id = $1 LIMIT 1',
     [input.identifier],
   );
   const user = result.rows[0];

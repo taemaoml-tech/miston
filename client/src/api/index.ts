@@ -195,6 +195,11 @@ export const api = {
     get: (id: string) => request<{ meeting: { id: string; title: string; link: string }; conversation?: Conversation }>(`/meetings/${id}`),
     join: (id: string) => request<{ meeting: { id: string; link: string }; conversation: Conversation | null }>(`/meetings/${id}/join`, { method: 'POST' }),
   },
+  mistInbox: {
+    list: () => request<{ items: { id: string; title: string; body: string; kind: string; read: boolean; createdAt: string }[]; unread: number }>('/mist-inbox'),
+    markRead: (id: string) => request<{ ok: boolean }>(`/mist-inbox/${id}/read`, { method: 'POST' }),
+    markAllRead: () => request<{ ok: boolean }>('/mist-inbox/read-all', { method: 'POST' }),
+  },
 };
 
 export type { ConversationKind };

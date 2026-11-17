@@ -120,6 +120,7 @@ export interface User {
   id: string;
   email?: string;
   username: string;
+  mistId?: string | null;
   displayName: string;
   avatarUrl?: string | null;
   bio?: string | null;
