@@ -78,6 +78,17 @@
   .subtle-scrollbar::-webkit-scrollbar-thumb { @apply rounded-full bg-ios-fill/30; }
 }
 
+/* Android System WebView 153/154 іноді малює backdrop-filter суцільною плямою.
+   На Android залишаємо зовнішній вигляд скляним, але без GPU-blur. */
+html.android .ios-glass {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: rgb(var(--ios-bg) / .96) !important;
+}
+html.android.dark .ios-glass {
+  background-color: rgb(20 20 22 / .98) !important;
+}
+
 .chat-backdrop {
   background-color: #f7f7f9;
   background-image: var(--chat-image-light, radial-gradient(circle at 12% 15%, rgb(0 122 255 / .06) 0, transparent 28%), radial-gradient(circle at 90% 85%, rgb(0 122 255 / .05) 0, transparent 30%));
@@ -106,6 +117,28 @@
   border-radius: 9999px;
   background: radial-gradient(circle at 50% 0, rgb(var(--effect-rgb)) 0 3px, transparent 3.6px);
   animation: avatar-spin 4.2s linear infinite;
+}
+
+/* Friends QR: Wallet-style sheen and a lightweight scanner line. */
+.wallet-shine { animation: wallet-shine 6s ease-in-out infinite; }
+.qr-scan-frame::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, #0a84ff, transparent);
+  box-shadow: 0 0 14px 2px rgb(10 132 255 / .7);
+  animation: qr-scan-line 2.4s ease-in-out infinite;
+}
+@keyframes wallet-shine {
+  0%, 55% { transform: translateX(-120%); }
+  75%, 100% { transform: translateX(120%); }
+}
+@keyframes qr-scan-line {
+  0%, 100% { top: 8%; opacity: .35; }
+  50% { top: 92%; opacity: 1; }
 }
 
 @keyframes avatar-frame-shift {

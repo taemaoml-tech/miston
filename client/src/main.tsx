@@ -4,7 +4,13 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './index.css';
+
+// На Android System WebView 153/154 скляні панелі з backdrop-filter можуть
+// малюватися суцільною темною плямою. Тримаємо цей клас тільки для Android,
+// щоб на iOS/windows залишався повний Apple-glass еfect.
+if (/android/i.test(navigator.userAgent)) document.documentElement.classList.add('android');
 
 function removeBootSplash() {
   const boot = document.getElementById('boot-splash');
@@ -24,7 +30,9 @@ try {
       <ThemeProvider>
         <AuthProvider>
           <SocketProvider>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </SocketProvider>
         </AuthProvider>
       </ThemeProvider>
