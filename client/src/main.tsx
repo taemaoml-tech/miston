@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
-import { ThemeProvider } from './contexts/ThemeProvider';
+import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
 
 function removeBootSplash() {
