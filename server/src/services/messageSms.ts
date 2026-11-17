@@ -151,7 +151,7 @@ export async function notifyRecipientsByPush(message: Message, recipientIds: str
     const conversation = conversationResult.rows[0] ?? null;
     if (conversation?.kind === 'saved') return;
 
-    const recipients = await query<{ id: string; sms_notifications_enabled: boolean }>(
+    const recipients = await query<{ id: string }>(
       'SELECT id FROM users WHERE id = ANY($1::uuid[])',
       [recipientIds],
     );
@@ -159,10 +159,15 @@ export async function notifyRecipientsByPush(message: Message, recipientIds: str
     const text = buildSmsText(message, conversation).replace(/^Miston: /, '');
     const title = 'Miston';
 
+    // Push надсилаємо завжди, незалежно від presence: застосунок у фоні або
+    // закритий не має живого сокета, і саме push — єдиний спосіб розбудити
+    // пристрій. Показ сповіщення вирішує ОС / service worker.
     for (const recipient of recipients.rows) {
       try {
-        if (!(await shouldNotify(recipient.id, message.conversationId))) continue;
-        await sendPushToUser(recipient.id, title, text);
+        await sendPushToUser(recipient.id, title, text, {
+          conversationId: message.conversationId,
+          messageId: message.id,
+        });
       } catch (error) {
         console.error('Failed to send push notification', error instanceof Error ? error.message : error);
       }

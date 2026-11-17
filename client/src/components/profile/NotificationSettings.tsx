@@ -19,14 +19,20 @@ export function NotificationSettings() {
   const [smsEnabled, setSmsEnabled] = useState(user?.smsNotificationsEnabled ?? true);
   const [smsError, setSmsError] = useState('');
   const [smsBusy, setSmsBusy] = useState(false);
+  const [serverPush, setServerPush] = useState<{ tokens: number; configured: boolean } | null>(null);
 
   const phoneVerified = user?.phoneVerified === true;
   const phoneNumber = user?.phoneNumber ?? null;
+
+  const refreshServerPush = () => {
+    void api.push.status().then(setServerPush).catch(() => setServerPush(null));
+  };
 
   useEffect(() => {
     let alive = true;
     setReport(null);
     void diagnoseNotifications().then((next) => { if (alive) setReport(next); });
+    refreshServerPush();
     return () => { alive = false; };
   }, []);
 
@@ -39,12 +45,29 @@ export function NotificationSettings() {
     void diagnoseNotifications()
       .then(setReport)
       .finally(() => setBusy(false));
+    refreshServerPush();
   };
   const test = () => {
     setBusy(true); setResult('');
-    void sendTestNotification()
-      .then(setResult)
-      .finally(() => setBusy(false));
+    void (async () => {
+      const local = await sendTestNotification();
+      try {
+        const status = await api.push.status();
+        setServerPush(status);
+        if (!status.configured) {
+          setResult(`${local} Серверні пуші вимкнені: немає ключа Firebase на сервері.`);
+          return;
+        }
+        if (status.tokens === 0) {
+          setResult(`${local} Але цей пристрій ще не зареєстрований для пушів — перезавантажте Miston і дозвольте сповіщення.`);
+          return;
+        }
+        const sent = await api.push.test();
+        setResult(`${local} Сервер надіслав пуш на пристроїв: ${sent.tokens}.`);
+      } catch (cause) {
+        setResult(`${local} ${errorMessage(cause)}`);
+      }
+    })().finally(() => setBusy(false));
   };
 
   const toggleSms = async (enabled: boolean) => {
@@ -67,6 +90,13 @@ export function NotificationSettings() {
       <p className="text-sm text-slate-500 dark:text-slate-400">
         {report ? report.message : 'Перевіряємо…'}
       </p>
+      {serverPush && (
+        <p className="mt-1 text-xs text-slate-400">
+          {serverPush.configured
+            ? `Серверні пуші увімкнено, пристроїв у черзі: ${serverPush.tokens}.`
+            : 'Серверні пуші вимкнені: немає ключа Firebase.'}
+        </p>
+      )}
       {result && (
         <p className={`mt-2 rounded-xl p-3 text-sm ${report?.ready || result.startsWith('Тестове') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'}`}>
           {result}
@@ -79,7 +109,8 @@ export function NotificationSettings() {
         </button>
       </div>
       <p className="mt-2.5 text-xs text-slate-400">
-        Сповіщення приходять, доки Miston відкритий або працює у фоні. Якщо повністю закрити застосунок, телефон його не розбудить.
+        Нові повідомлення надходять через Firebase навіть коли вкладку закрито або застосунок у фоні.
+        На Android системні налаштування можуть обмежувати фонову роботу: Додатки → Miston → Батарея → «Без обмежень».
       </p>
 
       <div className="mt-5 border-t pt-4">

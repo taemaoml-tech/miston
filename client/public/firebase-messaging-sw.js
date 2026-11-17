@@ -15,5 +15,24 @@ const base = self.location.pathname.replace(/firebase-messaging-sw\.js$/, '');
 messaging.onBackgroundMessage((payload) => {
   const title = payload?.notification?.title || 'Miston';
   const body = payload?.notification?.body || 'Нове повідомлення';
-  self.registration.showNotification(title, { body, icon: base + 'icons/icon-192.png' });
+  self.registration.showNotification(title, {
+    body,
+    icon: base + 'icons/icon-192.png',
+    badge: base + 'icons/icon-72.png',
+    tag: payload?.data?.conversationId || undefined,
+  });
+});
+
+// Клік по сповіщенню відкриває застосунок (або фокусує вже відкриту вкладку).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = base || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if (client.url.startsWith(self.location.origin + target) && 'focus' in client) return client.focus();
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });

@@ -1,9 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthResponse, LoginChallenge, User } from '../types/models';
 import { api } from '../api';
 import { tokenStore } from '../api/client';
-import { getFcmToken, getNativeFcmToken } from '../utils/firebase';
+import { getFcmToken, getNativeFcmToken, watchNativeFcmToken } from '../utils/firebase';
 
 interface AuthContextValue {
   user: User | null;
@@ -34,6 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [pendingLogin, setPendingLogin] = useState<LoginChallenge | null>(null);
   // Короткоживучий токен другого етапу перевірки (якщо увімкнено 2FA).
   const [pendingTwoFactor, setPendingTwoFactor] = useState<string | null>(null);
+  // Токен цього пристрою, щоб зняти його при виході з акаунта.
+  const pushTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -62,15 +64,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     void (async () => {
+      const registerToken = (token: string, platform: string) => {
+        if (cancelled) return;
+        pushTokenRef.current = token;
+        void api.push.register(token, platform).catch(() => undefined);
+      };
+
       const nativeToken = await getNativeFcmToken();
       if (nativeToken) {
-        void api.push.register(nativeToken, 'android').catch(() => undefined);
+        registerToken(nativeToken, 'android');
+        // Токен може оновитися без перезапуску застосунку.
+        void watchNativeFcmToken((token) => registerToken(token, 'android'));
         return;
       }
       const token = await getFcmToken();
-      if (token) void api.push.register(token, 'web').catch(() => undefined);
+      if (token) registerToken(token, 'web');
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const saveSession = useCallback((session: AuthResponse) => {
@@ -123,6 +137,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [saveSession]);
 
   const logout = useCallback(async () => {
+    const pushToken = pushTokenRef.current;
+    pushTokenRef.current = null;
+    if (pushToken) void api.push.unregister(pushToken).catch(() => undefined);
     try {
       await api.auth.logout();
     } finally {

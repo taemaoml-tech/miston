@@ -47,17 +47,50 @@ export async function pushTokenCount(userId: string): Promise<number> {
   return result.rows[0]?.count ?? 0;
 }
 
-export async function sendPushToUser(userId: string, title: string, body: string): Promise<void> {
+export async function sendPushToUser(
+  userId: string,
+  title: string,
+  body: string,
+  data: Record<string, string> = {},
+): Promise<void> {
   const firebaseAdmin = await getAdmin();
   if (!firebaseAdmin) return;
   const result = await query<{ token: string }>('SELECT token FROM push_tokens WHERE user_id = $1', [userId]);
   const tokens = result.rows.map((row) => row.token);
   if (tokens.length === 0) return;
   try {
-    await (firebaseAdmin as any).messaging().sendEachForMulticast({
+    const response = await (firebaseAdmin as any).messaging().sendEachForMulticast({
       tokens,
       notification: { title, body },
+      data,
+      android: {
+        priority: 'high',
+        notification: { sound: 'default' },
+      },
+      webpush: {
+        headers: { Urgency: 'high', TTL: '86400' },
+        notification: { title, body, icon: '/icons/icon-192.png', tag: userId },
+        fcmOptions: { link: 'https://taemaoml-tech.github.io/miston/' },
+      },
     });
+
+    // Прибираємо токени, яких Firebase більше не знає (видалений застосунок,
+    // скидання даних, перевстановлення APK).
+    const stale: string[] = [];
+    response.responses.forEach((entry: { success: boolean; error?: { code?: string } }, index: number) => {
+      if (entry.success) return;
+      const code = entry.error?.code ?? '';
+      if (
+        code === 'messaging/registration-token-not-registered' ||
+        code === 'messaging/invalid-registration-token' ||
+        code === 'messaging/invalid-argument'
+      ) {
+        stale.push(tokens[index]!);
+      }
+    });
+    if (stale.length > 0) {
+      await query('DELETE FROM push_tokens WHERE token = ANY($1::text[])', [stale]);
+    }
   } catch (error) {
     console.error('FCM send failed', error instanceof Error ? error.message : error);
   }

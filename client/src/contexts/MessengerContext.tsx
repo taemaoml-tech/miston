@@ -5,6 +5,7 @@ import type { AppNotification, Channel, CleanupScope, CommunityServer, Conversat
 import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
 import { isNativeApp, notifyInBackground, OPEN_CONVERSATION_EVENT, requestNotificationPermission } from '../utils/notifications';
+import { isPushActive } from '../utils/firebase';
 
 interface MessengerContextValue {
   conversations: Conversation[];
@@ -189,14 +190,13 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
       });
       setServers((current) => current.map((server) => ({ ...server, channels: server.channels.map((channel) => channel.id === message.conversationId ? { ...channel, unreadCount: message.senderId !== user.id && !isActive ? (channel.unreadCount || 0) + 1 : channel.unreadCount } : channel) })));
       if (message.senderId !== user.id && !isActive) {
-        console.warn('[notif] branch', { isActive, native: isNativeApp(), hidden: document.hidden, kind: message.kind, sender: message.sender?.displayName });
         const senderName = message.sender?.displayName || message.sender?.username || 'Користувач';
         const preview = message.content || (message.kind === 'text' ? 'Нове повідомлення' : `Надіслано: ${attachmentLabels[message.kind] || 'вкладення'}`);
         const source = conversationTitle(message.conversationId);
         notify(senderName, preview, message.conversationId);
-        // WebView не підтримує Web Notification, тому в застосунку шлях лише
-        // нативний; у браузері сповіщаємо, тільки коли вкладку не видно.
-        if (isNativeApp() || document.hidden) {
+        // WebView не підтримує Web Notification. Якщо FCM-токен уже отримано,
+        // сповіщення надішле сервер через Firebase — локальне було б дублем.
+        if (!isPushActive() && (isNativeApp() || document.hidden)) {
           void notifyInBackground({
             title: source ? `${senderName} · ${source}` : senderName,
             body: preview,
