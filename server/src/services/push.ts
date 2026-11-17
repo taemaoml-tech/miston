@@ -1,32 +1,67 @@
+import { readFileSync } from 'node:fs';
 import { config } from '../config/env';
 import { query } from '../db/pool';
 
-let admin: typeof import('firebase-admin') | null = null;
-let initialized = false;
+interface Messaging {
+  sendEachForMulticast: (message: Record<string, unknown>) => Promise<{
+    successCount: number;
+    failureCount: number;
+    responses: Array<{ success: boolean; error?: { code?: string; message?: string } }>;
+  }>;
+}
 
-async function getAdmin() {
-  if (initialized) return admin;
-  initialized = true;
+interface MessagingClient {
+  messaging: Messaging;
+}
+
+let client: MessagingClient | null = null;
+let initialized = false;
+let initError = '';
+
+function readServiceAccount(): Record<string, unknown> | null {
   try {
-    const firebaseAdmin: any = await import('firebase-admin');
     if (config.FIREBASE_SERVICE_ACCOUNT_JSON) {
-      const credential = firebaseAdmin.credential.cert(JSON.parse(config.FIREBASE_SERVICE_ACCOUNT_JSON));
-      firebaseAdmin.initializeApp({ credential });
-      admin = firebaseAdmin;
-    } else if (config.FIREBASE_SERVICE_ACCOUNT_PATH) {
-      const credential = firebaseAdmin.credential.cert(config.FIREBASE_SERVICE_ACCOUNT_PATH);
-      firebaseAdmin.initializeApp({ credential });
-      admin = firebaseAdmin;
+      return JSON.parse(config.FIREBASE_SERVICE_ACCOUNT_JSON) as Record<string, unknown>;
+    }
+    if (config.FIREBASE_SERVICE_ACCOUNT_PATH) {
+      return JSON.parse(readFileSync(config.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8')) as Record<string, unknown>;
     }
   } catch (error) {
-    console.error('Firebase Admin init failed', error instanceof Error ? error.message : error);
-    admin = null;
+    initError = `Не вдалося прочитати ключ Firebase: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(initError);
   }
-  return admin;
+  return null;
+}
+
+/**
+ * firebase-admin 14 — модульний: `cert` живе в `firebase-admin/app`, а
+ * `getMessaging` — в `firebase-admin/messaging`. Старий `admin.credential.cert`
+ * тут уже не існує, тому імпортуємо саме підмодулі.
+ */
+async function getClient(): Promise<MessagingClient | null> {
+  if (initialized) return client;
+  initialized = true;
+  try {
+    const serviceAccount = readServiceAccount();
+    if (!serviceAccount) return null;
+    const appModule = await import('firebase-admin/app');
+    const messagingModule = await import('firebase-admin/messaging');
+    const app = appModule.initializeApp({ credential: appModule.cert(serviceAccount as never) });
+    client = { messaging: messagingModule.getMessaging(app) as unknown as Messaging };
+  } catch (error) {
+    initError = error instanceof Error ? error.message : String(error);
+    console.error('Firebase Admin init failed', initError);
+    client = null;
+  }
+  return client;
 }
 
 export function pushConfigured(): boolean {
   return Boolean(config.FIREBASE_SERVICE_ACCOUNT_JSON || config.FIREBASE_SERVICE_ACCOUNT_PATH);
+}
+
+export function pushInitError(): string {
+  return initError;
 }
 
 export async function registerPushToken(userId: string, token: string, platform: string): Promise<void> {
@@ -60,13 +95,15 @@ export async function sendPushToUser(
   body: string,
   data: Record<string, string> = {},
 ): Promise<PushResult> {
-  const firebaseAdmin = await getAdmin();
-  if (!firebaseAdmin) return { tokens: 0, sent: 0, failed: 0, errors: ['firebase-admin не ініціалізовано'] };
+  const current = await getClient();
+  if (!current) {
+    return { tokens: 0, sent: 0, failed: 0, errors: [initError || 'firebase-admin не ініціалізовано'] };
+  }
   const result = await query<{ token: string }>('SELECT token FROM push_tokens WHERE user_id = $1', [userId]);
   const tokens = result.rows.map((row) => row.token);
   if (tokens.length === 0) return { tokens: 0, sent: 0, failed: 0, errors: [] };
   try {
-    const response = await (firebaseAdmin as any).messaging().sendEachForMulticast({
+    const response = await current.messaging.sendEachForMulticast({
       tokens,
       notification: { title, body },
       data: { ...data, title, body },
@@ -85,7 +122,7 @@ export async function sendPushToUser(
     // скидання даних, перевстановлення APK).
     const stale: string[] = [];
     const errors: string[] = [];
-    response.responses.forEach((entry: { success: boolean; error?: { code?: string; message?: string } }, index: number) => {
+    response.responses.forEach((entry, index) => {
       if (entry.success) return;
       const code = entry.error?.code ?? 'unknown';
       errors.push(`${code}: ${entry.error?.message ?? ''}`.trim());
@@ -102,8 +139,8 @@ export async function sendPushToUser(
     }
     return {
       tokens: tokens.length,
-      sent: response.successCount ?? tokens.length - errors.length,
-      failed: response.failureCount ?? errors.length,
+      sent: response.successCount,
+      failed: response.failureCount,
       errors,
     };
   } catch (error) {

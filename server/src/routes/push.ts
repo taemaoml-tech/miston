@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/http';
-import { registerPushToken, unregisterPushToken, sendPushToUser, pushConfigured, pushTokenCount } from '../services/push';
+import { registerPushToken, unregisterPushToken, sendPushToUser, pushConfigured, pushTokenCount, pushInitError } from '../services/push';
 
 const router = Router();
 router.use(requireAuth);
@@ -20,7 +20,7 @@ router.post('/unregister', asyncHandler(async (req, res) => {
 }));
 
 router.get('/status', asyncHandler(async (req, res) => {
-  res.json({ tokens: await pushTokenCount(req.auth!.userId), configured: pushConfigured() });
+  res.json({ tokens: await pushTokenCount(req.auth!.userId), configured: pushConfigured(), error: pushInitError() });
 }));
 
 router.post('/test', asyncHandler(async (req, res) => {

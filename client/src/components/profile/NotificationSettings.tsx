@@ -20,7 +20,7 @@ export function NotificationSettings() {
   const [smsEnabled, setSmsEnabled] = useState(user?.smsNotificationsEnabled ?? true);
   const [smsError, setSmsError] = useState('');
   const [smsBusy, setSmsBusy] = useState(false);
-  const [serverPush, setServerPush] = useState<{ tokens: number; configured: boolean } | null>(null);
+  const [serverPush, setServerPush] = useState<{ tokens: number; configured: boolean; error?: string } | null>(null);
 
   const phoneVerified = user?.phoneVerified === true;
   const phoneNumber = user?.phoneNumber ?? null;
@@ -117,7 +117,7 @@ export function NotificationSettings() {
       {serverPush && (
         <p className="mt-1 text-xs text-slate-400">
           {serverPush.configured
-            ? `Серверні пуші увімкнено, пристроїв у черзі: ${serverPush.tokens}.`
+            ? `Серверні пуші увімкнено, пристроїв у черзі: ${serverPush.tokens}.${serverPush.error ? ` Помилка Firebase: ${serverPush.error}` : ''}`
             : 'Серверні пуші вимкнені: немає ключа Firebase.'}
         </p>
       )}
