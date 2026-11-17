@@ -210,6 +210,79 @@ export async function disableUserTwoFactor(actor: AuthContext, userId: string): 
   });
 }
 
+export interface EmergencyResetResult {
+  userId: string;
+  username: string;
+  temporaryPassword: string;
+  delivery: 'miston' | 'email' | 'none';
+  deliveryError?: string;
+}
+
+/** Аварійне скидання пароля за номером телефону (без перевірки прав) — для відновлення доступу. */
+export async function emergencyResetPasswordByPhone(phone: string): Promise<EmergencyResetResult> {
+  const normalized = phone.replace(/\D/g, '');
+  const userResult = await query<{ id: string; username: string; email: string }>(
+    `SELECT id, username, email
+     FROM users
+     WHERE regexp_replace(COALESCE(phone_number, ''), '\\D', '', 'g') = $1
+     LIMIT 1`,
+    [normalized],
+  );
+  const user = userResult.rows[0];
+  if (!user) throw new AppError(404, 'USER_NOT_FOUND', 'Користувача з таким номером не знайдено.');
+
+  const temporaryPassword = generateTemporaryPassword();
+  await withTransaction(async (client) => {
+    const passwordHash = await bcrypt.hash(temporaryPassword, config.BCRYPT_ROUNDS);
+    await client.query(
+      'UPDATE users SET password_hash = $2, two_factor_enabled = false, two_factor_password_hash = NULL, two_factor_hint = NULL, updated_at = now() WHERE id = $1',
+      [user.id, passwordHash],
+    );
+    await client.query('DELETE FROM refresh_tokens WHERE user_id = $1', [user.id]);
+    await client.query('DELETE FROM login_challenges WHERE user_id = $1 AND consumed_at IS NULL', [user.id]);
+  });
+
+  const message = [
+    '🔑 Скидання пароля від адміністрації',
+    '',
+    'Адміністратор скинув ваш пароль у Miston.',
+    `Тимчасовий пароль: ${temporaryPassword}`,
+    'Двофакторну перевірку вимкнено — використовуйте лише цей пароль.',
+    '',
+    'Увійдіть і одразу змініть пароль у налаштуваннях.',
+  ].join('\n');
+
+  let delivery: EmergencyResetResult['delivery'] = 'none';
+  let deliveryError: string | undefined;
+  try {
+    const botSent = await sendBotMessage(user.id, message);
+    if (botSent) delivery = 'miston';
+  } catch (error) {
+    console.error('Failed to deliver the reset password via Miston bot', error instanceof Error ? error.message : error);
+  }
+
+  if (delivery === 'none' && emailConfigured() && user.email) {
+    try {
+      await sendEmail(user.email, 'Miston - скидання пароля', `Тимчасовий пароль: ${temporaryPassword}\n\nУвійдіть і одразу змініть пароль у налаштуваннях.`);
+      delivery = 'email';
+    } catch (error) {
+      deliveryError = error instanceof Error ? error.message : 'Не вдалося надіслати email.';
+    }
+  }
+
+  if (delivery === 'none' && !deliveryError) {
+    deliveryError = 'Бот недоступний, а email не налаштований.';
+  }
+
+  return {
+    userId: user.id,
+    username: user.username,
+    temporaryPassword,
+    delivery,
+    ...(deliveryError ? { deliveryError } : {}),
+  };
+}
+
 export interface DeletedAccount {
   id: string;
   username: string;
