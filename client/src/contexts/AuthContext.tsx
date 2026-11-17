@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { AuthResponse, LoginChallenge, User } from '../types/models';
 import { api } from '../api';
 import { tokenStore } from '../api/client';
-import { getFcmToken } from '../utils/firebase';
+import { getFcmToken, getNativeFcmToken } from '../utils/firebase';
 
 interface AuthContextValue {
   user: User | null;
@@ -62,9 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    void getFcmToken().then((token) => {
+    void (async () => {
+      const nativeToken = await getNativeFcmToken();
+      if (nativeToken) {
+        void api.push.register(nativeToken, 'android').catch(() => undefined);
+        return;
+      }
+      const token = await getFcmToken();
       if (token) void api.push.register(token, 'web').catch(() => undefined);
-    });
+    })();
   }, [user?.id]);
 
   const saveSession = useCallback((session: AuthResponse) => {

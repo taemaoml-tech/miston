@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const SITE_URL = 'https://taemaoml-tech.github.io/miston/';
 
 const config: CapacitorConfig = {
-  appId: 'com.miston.app',
+  appId: 'com.miston.messenger',
   appName: 'Miston',
   webDir: 'dist',
   server: {
@@ -13,6 +13,11 @@ const config: CapacitorConfig = {
     // тож локальна копія в WebView билась би об 403 без зміни на проді.
     url: SITE_URL,
     allowNavigation: ['taemaoml-tech.github.io'],
+  },
+  plugins: {
+    FirebaseMessaging: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 
