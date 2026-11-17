@@ -25,7 +25,9 @@ export function isPushActive(): boolean {
 
 export function isNativeApp(): boolean {
   const win = window as Window & { androidBridge?: unknown; webkit?: { messageHandlers?: { bridge?: unknown } } };
-  return Capacitor.isNativePlatform() || Boolean(win.androidBridge) || Boolean(win.webkit?.messageHandlers?.bridge);
+  const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  const capNative = typeof cap?.isNativePlatform === 'function' ? cap.isNativePlatform() : false;
+  return capNative || Boolean(win.androidBridge) || Boolean(win.webkit?.messageHandlers?.bridge);
 }
 
 /**
@@ -34,10 +36,12 @@ export function isNativeApp(): boolean {
  * з'явиться, інакше виклик плагіна пішов би у веб-заглушку.
  */
 async function nativeReady(): Promise<boolean> {
-  if (Capacitor.isNativePlatform()) return true;
+  const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  if (typeof cap?.isNativePlatform === 'function' && cap.isNativePlatform()) return true;
   if (!isNativeApp()) return false;
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    if (Capacitor.isNativePlatform()) return true;
+    const c = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (typeof c?.isNativePlatform === 'function' && c.isNativePlatform()) return true;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return false;
