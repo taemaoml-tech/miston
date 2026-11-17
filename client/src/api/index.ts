@@ -190,6 +190,11 @@ export const api = {
     list: (limit = 30) => request<{ items: SystemNotification[]; unread: number }>(`/notifications?limit=${limit}`),
     markRead: (id: string) => request<{ notification: SystemNotification }>(`/notifications/${id}/read`, { method: 'POST' }),
   },
+  meetings: {
+    create: (title?: string) => request<{ meeting: { id: string; title: string; link: string } }>('/meetings', { method: 'POST', body: { title: title || 'Зустріч' } }),
+    get: (id: string) => request<{ meeting: { id: string; title: string; link: string }; conversation?: Conversation }>(`/meetings/${id}`),
+    join: (id: string) => request<{ meeting: { id: string; link: string }; conversation: Conversation | null }>(`/meetings/${id}/join`, { method: 'POST' }),
+  },
 };
 
 export type { ConversationKind };

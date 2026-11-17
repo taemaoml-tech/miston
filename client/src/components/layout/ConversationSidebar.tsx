@@ -1,9 +1,10 @@
-import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, MessageSquarePlus, MoreVertical, Search, Trash2, Users, X } from 'lucide-react';
+import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, MessageSquarePlus, MoreVertical, Search, Trash2, Users, Video, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFriends } from '../../contexts/FriendsContext';
 import { useMessenger } from '../../contexts/MessengerContext';
+import { api } from '../../api';
 import type { Conversation } from '../../types/models';
 import { formatConversationTime } from '../../utils/format';
 import { Avatar } from '../common/Avatar';
@@ -41,11 +42,27 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<RowMenu | null>(null);
   const [openingNotes, setOpeningNotes] = useState(false);
+  const [meetingLink, setMeetingLink] = useState<string | null>(null);
+  const [creatingMeeting, setCreatingMeeting] = useState(false);
 
   async function openNotes() {
     if (savedNotes) { selectConversation(savedNotes.id); return; }
     setOpeningNotes(true);
     try { await openSavedNotes(); } finally { setOpeningNotes(false); }
+  }
+
+  async function createMeeting() {
+    setCreatingMeeting(true);
+    try {
+      const { meeting } = await api.meetings.create('Зустріч');
+      const fullLink = `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}${meeting.link}`;
+      setMeetingLink(fullLink);
+      try { await navigator.clipboard.writeText(fullLink); } catch { /* ignore */ }
+    } catch {
+      setMeetingLink(null);
+    } finally {
+      setCreatingMeeting(false);
+    }
   }
 
   function openMenu(conversation: Conversation, x: number, y: number) {
@@ -70,8 +87,20 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
           {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-600 px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
         </button>
         <button type="button" className="icon-btn bg-slate-100 text-accent-600 hover:bg-accent-50 dark:bg-slate-800 dark:text-accent-400" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
+        <button type="button" className="icon-btn bg-slate-100 text-emerald-600 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-400" onClick={() => void createMeeting()} disabled={creatingMeeting} aria-label="Створити зустріч"><Video size={20} /></button>
       </div></div>
       {inboxOpen && <SystemInboxPanel onClose={() => setInboxOpen(false)} />}
+      {meetingLink && (
+        <div className="mx-3 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-200">
+          <p className="font-semibold">Зустріч створено</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-white px-2 py-1 font-mono text-[11px] text-slate-800 dark:bg-slate-900 dark:text-slate-100">{meetingLink}</code>
+            <button type="button" className="secondary-btn px-2 py-1 text-[11px]" onClick={() => void navigator.clipboard.writeText(meetingLink)}>Копіювати</button>
+            <button type="button" className="secondary-btn px-2 py-1 text-[11px]" onClick={() => setMeetingLink(null)}>✕</button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-emerald-700 dark:text-emerald-300">Надішліть посилання учасникам — вони приєднаються до зустрічі.</p>
+        </div>
+      )}
       <div className="px-3 pb-2">
         <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Розділи">
           <button type="button" role="tab" aria-selected={tab === 'chats'} onClick={() => setTab('chats')} className={`rounded-lg py-1.5 text-xs font-semibold transition ${tab === 'chats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>Повідомлення</button>

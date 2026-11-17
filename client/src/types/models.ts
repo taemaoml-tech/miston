@@ -221,7 +221,7 @@ export interface IceServerConfig {
   credential?: string;
 }
 
-export type ConversationKind = 'direct' | 'saved' | 'group' | 'channel';
+export type ConversationKind = 'direct' | 'saved' | 'group' | 'channel' | 'meeting';
 export type CleanupScope = 'me' | 'everyone';
 export type MessageKind = 'text' | 'image' | 'video' | 'video_note' | 'document' | 'voice' | 'sticker';
 

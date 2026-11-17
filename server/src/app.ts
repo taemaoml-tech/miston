@@ -15,6 +15,7 @@ import messageRoutes from './routes/messages';
 import serverRoutes from './routes/servers';
 import adminRoutes from './routes/admin';
 import complaintRoutes from './routes/complaints';
+import meetingRoutes from './routes/meetings';
 import notificationRoutes from './routes/notifications';
 import starRoutes from './routes/star';
 import stickerRoutes from './routes/stickers';
@@ -92,6 +93,7 @@ export function createApp(): express.Express {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/push', pushRoutes);
   app.use('/api/admin', adminRoutes);
+app.use('/api/meetings', meetingRoutes);
 
   if (config.CLIENT_DIR) {
     const clientDir = path.resolve(config.CLIENT_DIR);
