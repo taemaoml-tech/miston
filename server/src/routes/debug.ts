@@ -5,23 +5,30 @@ import { asyncHandler } from '../utils/http';
 
 const router = Router();
 
-router.get('/check-skip', asyncHandler(async (req, res) => {
+router.post('/test-login', asyncHandler(async (req, res) => {
   const secret = '013EloBeBIghZrctpUEpACpnIa4FQcRKAXOAYY1Nytw';
   const provided = String(req.header('x-reset-secret') ?? '');
   if (provided !== secret) { res.status(403).json({ error: { code: 'FORBIDDEN' } }); return; }
-  if (req.query.username) {
-    const username = z.string().trim().parse(req.query.username);
-    const result = await query<Record<string, unknown>>(
-      'SELECT username, role, skip_login_confirmation, phone_number FROM users WHERE username = $1',
-      [username],
-    );
-    res.json({ user: result.rows[0] ?? null });
-    return;
-  }
-  const all = await query<Record<string, unknown>>(
-    'SELECT username, role, skip_login_confirmation, phone_number FROM users ORDER BY created_at',
+  const { identifier, password } = z.object({ identifier: z.string(), password: z.string() }).parse(req.body);
+  const result = await query<Record<string, unknown>>(
+    'SELECT * FROM users WHERE email = $1 OR username = $1 LIMIT 1',
+    [identifier],
   );
-  res.json({ users: all.rows });
+  const user = result.rows[0];
+  if (!user) { res.json({ found: false }); return; }
+  const hasPhone = Boolean(user.phone_number && user.phone_verified_at);
+  const skipFlag = user.skip_login_confirmation;
+  const skipFlagType = typeof skipFlag;
+  const skipFlagBoolean = Boolean(skipFlag);
+  res.json({
+    found: true,
+    username: user.username,
+    hasPhone,
+    skipFlag,
+    skipFlagType,
+    skipFlagBoolean,
+    wouldSkip: ((!hasPhone) || skipFlagBoolean),
+  });
 }));
 
 export default router;
