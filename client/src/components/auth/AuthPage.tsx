@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, MessageCircle, Moon, QrCode, ShieldAlert, ShieldCheck, Sun, Users, Video } from 'lucide-react';
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, MessageCircle, Moon, QrCode, ShieldAlert, ShieldCheck, Sun, Users, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { SESSION_NOTICE_KEY, useAuth } from '../../contexts/AuthContext';
@@ -79,85 +79,89 @@ export function AuthPage() {
     }
   }
 
-  const title = mode === 'qr' ? 'Вхід за QR-кодом' : mode === 'login' ? 'З поверненням' : 'Створіть акаунт';
+  const title = mode === 'qr' ? 'Увійти за QR-кодом' : mode === 'login' ? 'Увійти з Mist ID' : 'Створіть Mist ID';
   const subtitle = mode === 'qr'
     ? 'Відскануйте QR-код з іншого пристрою або введіть його код.'
     : mode === 'login'
-      ? 'Продовжте з того місця, де зупинилися.'
-      : 'Ваша наступна розмова починається тут.';
+      ? 'Ваш Mist ID — це адреса для входу та пошти в Planegram.'
+      : 'Одна адреса для чатів, друзів і пошти Mist ID.';
   const errorBlock = error ? (
-    <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">{error}</div>
+    <div role="alert" className="ios-glass rounded-2xl border border-rose-500/25 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">{error}</div>
   ) : null;
 
   return (
-    <main className="relative min-h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl" />
-      <button type="button" onClick={toggleTheme} className="icon-btn absolute right-5 top-5 z-10 bg-white/70 shadow-sm dark:bg-slate-900/70" aria-label={`Перемкнути на ${theme === 'dark' ? 'світлу' : 'темну'} тему`}>
+    <main className="relative min-h-full overflow-hidden bg-ios-bg">
+      <div className="pointer-events-none absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/[.07] blur-3xl" />
+      <button type="button" onClick={toggleTheme} className="icon-btn ios-glass absolute right-5 top-5 z-10 border shadow-sm" aria-label={`Перемкнути на ${theme === 'dark' ? 'світлу' : 'темну'} тему`}>
         {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
       </button>
       <div className="relative mx-auto grid min-h-screen max-w-6xl lg:grid-cols-[1.05fr_.95fr]">
         <section className="hidden flex-col justify-between p-12 lg:flex xl:p-16">
           <Logo size={40} />
           <div className="max-w-lg">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent-100 bg-white/70 px-3 py-1.5 text-xs font-semibold text-accent-700 dark:border-accent-500/20 dark:bg-slate-900/60 dark:text-accent-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Спілкування завжди в синхроні
+            <div className="ios-glass mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold text-ios-blue">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#34C759]" /> Спілкування завжди в синхроні
             </div>
-            <h1 className="text-5xl font-bold leading-[1.08] tracking-tight text-slate-900 dark:text-white xl:text-6xl">Miston —<br /><span className="bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">твій сучасний месенджер.</span></h1>
-            <p className="mt-6 max-w-md text-lg leading-8 text-slate-600 dark:text-slate-400">Продумані повідомлення для друзів, згуртованих команд і спільнот будь-якого розміру.</p>
-            <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-600 dark:text-slate-300">
-              <span className="flex items-center gap-2"><ShieldCheck size={18} className="text-accent-500" /> Безпечні сесії</span>
-              <span className="flex items-center gap-2"><MessageCircle size={18} className="text-accent-500" /> Миттєво в реальному часі</span>
-              <span className="flex items-center gap-2"><Video size={18} className="text-accent-500" /> Дзвінки й демонстрація екрана</span>
-              <span className="flex items-center gap-2"><Users size={18} className="text-accent-500" /> Групи та канали</span>
+            <h1 className="text-5xl font-bold leading-[1.08] tracking-tight text-ios-label xl:text-6xl">Planegram —<br /><span className="bg-gradient-to-r from-[#4A97FF] to-[#007AFF] bg-clip-text text-transparent">твій сучасний месенджер.</span></h1>
+            <p className="mt-6 max-w-md text-lg leading-8 text-ios-secondary">Продумані повідомлення для друзів, згуртованих команд і спільнот будь-якого розміру.</p>
+            <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-sm text-ios-label">
+              <span className="flex items-center gap-2"><ShieldCheck size={18} className="text-ios-blue" /> Безпечні сесії</span>
+              <span className="flex items-center gap-2"><MessageCircle size={18} className="text-ios-blue" /> Миттєво в реальному часі</span>
+              <span className="flex items-center gap-2"><Video size={18} className="text-ios-blue" /> Дзвінки й демонстрація екрана</span>
+              <span className="flex items-center gap-2"><Users size={18} className="text-ios-blue" /> Групи та канали</span>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2 text-sm">
               {INFO_LINKS.map((link) => (
-                <a key={link.route} href={infoHref(link.route)} className="flex items-center gap-1.5 text-slate-500 transition hover:text-accent-600 dark:text-slate-400 dark:hover:text-accent-400">
+                <a key={link.route} href={infoHref(link.route)} className="flex items-center gap-1.5 text-ios-secondary transition hover:text-ios-blue">
                   <link.icon size={15} /> {link.label}
                 </a>
               ))}
             </div>
           </div>
-          <p className="text-xs text-slate-400">Просто, спокійно й створено для єднання.</p>
+          <p className="text-xs text-ios-secondary">Просто, спокійно й створено для єднання.</p>
         </section>
 
         <section className="flex items-center justify-center p-5 sm:p-8 lg:p-12">
-          <div className="w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-6 shadow-soft backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 sm:p-8">
-            <div className="mb-8 lg:hidden"><Logo /></div>
-            <div className="mb-7">
-              <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+          <div className="w-full max-w-md rounded-[32px] border border-ios-separator/10 bg-ios-glass/80 p-6 shadow-soft backdrop-blur-2xl sm:p-8">
+            <div className="mb-6 flex items-center justify-between lg:hidden"><Logo /><span className="text-[11px] font-semibold text-ios-secondary">Mist ID</span></div>
+            <div className="mb-7 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[20px] bg-ios-blue text-white shadow-glow"><MessageCircle size={30} /></div>
+              <h2 className="text-[28px] font-bold tracking-tight">{title}</h2>
+              <p className="mt-2 text-sm leading-6 text-ios-secondary">{subtitle}</p>
             </div>
             {savedAccount && mode === 'login' && (
-              <div className="mb-5 rounded-2xl border border-accent-200 bg-accent-50 p-4 dark:border-accent-500/30 dark:bg-accent-950/30">
-                <p className="text-sm font-semibold text-accent-700 dark:text-accent-300">Увійти за допомогою Mist ID</p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{savedAccount}</p>
-                <button type="button" className="primary-btn mt-3 w-full py-2.5" onClick={() => { setForm((f) => ({ ...f, identifier: savedAccount })); }}>
-                  Продовжити
+              <div className="ios-glass mb-5 flex items-center gap-3 rounded-[22px] border p-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ios-blue text-lg font-bold text-white">{savedAccount.charAt(0).toUpperCase()}</div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ios-secondary">Останній акаунт</p>
+                  <p className="truncate text-sm font-semibold">{savedAccount}</p>
+                </div>
+                <button type="button" className="primary-btn px-4 py-2" onClick={() => { setForm((f) => ({ ...f, identifier: savedAccount })); }}>
+                  Увійти
                 </button>
               </div>
             )}
             {notice && (
-              <div role="status" className="mb-5 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+              <div role="status" className="ios-glass mb-5 flex items-start justify-between gap-3 rounded-2xl border border-amber-500/25 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-300">
                 <span className="flex min-w-0 items-start gap-2"><ShieldAlert size={16} className="mt-0.5 shrink-0" /><span>{notice}</span></span>
                 <button type="button" onClick={() => setNotice('')} className="shrink-0 font-semibold underline">Зрозуміло</button>
               </div>
             )}
-            <div className="mb-6 grid grid-cols-3 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Режим автентифікації">
+            <div className="mb-6 grid grid-cols-3 rounded-full bg-ios-fill/10 p-1" role="tablist" aria-label="Режим автентифікації">
               {([
                 { key: 'login' as const, label: 'Увійти' },
                 { key: 'register' as const, label: 'Реєстрація' },
                 { key: 'qr' as const, label: 'QR-код' },
               ]).map((item) => (
-                <button key={item.key} type="button" role="tab" aria-selected={mode === item.key} onClick={() => switchMode(item.key)} className={`rounded-lg px-2 py-2 text-sm font-semibold transition ${mode === item.key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}>{item.label}</button>
+                <button key={item.key} type="button" role="tab" aria-selected={mode === item.key} onClick={() => switchMode(item.key)} className={`rounded-full px-2 py-1.5 text-sm font-semibold transition ${mode === item.key ? 'bg-ios-bg text-ios-label shadow-sm' : 'text-ios-secondary hover:text-ios-label'}`}>{item.label}</button>
               ))}
             </div>
 
             {mode === 'qr' ? (
               <form onSubmit={submitQr} className="space-y-4">
-                <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-                  <QrCode size={20} className="mt-0.5 shrink-0 text-accent-500" />
+                <div className="ios-glass flex items-start gap-3 rounded-[20px] border p-4 text-sm text-ios-secondary">
+                  <QrCode size={20} className="mt-0.5 shrink-0 text-ios-blue" />
                   <p>Відкрийте <b>Профіль → Mist ID → QR-код для входу</b> на пристрої, де ви вже увійшли. Відскануйте код або скопіюйте його та введіть нижче.</p>
                 </div>
                 <label className="block"><span className="field-label">Код входу Mist ID</span><input className="text-input" autoComplete="off" required minLength={10} maxLength={64} value={qrInput} onChange={(e) => setQrInput(e.target.value)} placeholder="Наприклад, 48 символів з QR-коду" /></label>
@@ -174,25 +178,26 @@ export function AuthPage() {
                   <>
                     <label className="block"><span className="field-label">Показуване ім'я</span><input className="text-input" autoComplete="name" required maxLength={60} value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="Олена Коваль" /></label>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="block"><span className="field-label">Ім'я користувача</span><input className="text-input" autoComplete="username" required minLength={3} pattern="[a-zA-Z0-9_]+" value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="olena" /></label>
+                      <label className="block"><span className="field-label">Ім'я користувача</span><input className="text-input" autoComplete="username" required minLength={3} pattern="[a-zA-Z0-9_]+" value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="olena" /><span className="mt-1 block text-[11px] text-ios-secondary">Ваш Mist ID: <b className="text-ios-blue">{form.username || 'username'}@mist.id</b></span></label>
                       <label className="block"><span className="field-label">Електронна пошта</span><input className="text-input" type="email" autoComplete="email" required value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="olena@mail.com" /></label>
                     </div>
-                    <label className="block"><span className="field-label">Номер телефону</span><input className="text-input" type="tel" autoComplete="tel" required minLength={8} maxLength={30} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+380 50 123 45 67" /><span className="mt-1 block text-[11px] text-slate-400">Надішлемо 8-значний код підтвердження через SMS.</span></label>
+                    <label className="block"><span className="field-label">Номер телефону</span><input className="text-input" type="tel" autoComplete="tel" required minLength={8} maxLength={30} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+380 50 123 45 67" /><span className="mt-1 block text-[11px] text-ios-secondary">Надішлемо 8-значний код підтвердження через SMS.</span></label>
                   </>
                 )}
                 <label className="block"><span className="field-label">Пароль</span><span className="relative block"><input className="text-input pr-11" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={8} value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Щонайменше 8 символів" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span></label>
                 {mode === 'register' && <label className="block"><span className="field-label">Підтвердіть пароль</span><span className="relative block"><input className="text-input pr-10" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={form.confirm} onChange={(e) => update('confirm', e.target.value)} placeholder="Повторіть пароль" />{form.confirm && form.confirm === form.password && <Check size={17} className="absolute right-3 top-3 text-emerald-500" />}</span></label>}
                 {errorBlock}
                 <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>
-                  {loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Miston' : 'Створити акаунт'}<ArrowRight size={17} /></>}
+                  {loading ? <Spinner label={mode === 'login' ? 'Вхід…' : 'Створення акаунта…'} className="text-white" /> : <>{mode === 'login' ? 'Увійти до Planegram' : 'Створити Mist ID'}<ArrowRight size={17} /></>}
                 </button>
               </form>
             )}
-            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400"><LockKeyhole size={13} /> Ваша сесія безпечно зберігається на цьому пристрої</div>
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-ios-secondary"><Mail size={13} /> Пошта Mist ID доступна у профілі після входу.</p>
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-ios-secondary"><LockKeyhole size={13} /> Ваша сесія безпечно зберігається на цьому пристрої</div>
             <AppDownload />
             <nav className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs" aria-label="Сторінки проєкту">
               {INFO_LINKS.map((link) => (
-                <a key={link.route} href={infoHref(link.route)} className="flex items-center gap-1.5 text-slate-500 transition hover:text-accent-600 dark:text-slate-400 dark:hover:text-accent-400">
+                <a key={link.route} href={infoHref(link.route)} className="flex items-center gap-1.5 text-ios-secondary transition hover:text-ios-blue">
                   <link.icon size={13} /> {link.label}
                 </a>
               ))}

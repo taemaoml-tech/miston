@@ -1,4 +1,4 @@
-import { Camera, Check, FileText, Film, Image, Mic, Paperclip, Reply, Send, SmilePlus, Square, X } from 'lucide-react';
+import { ArrowUp, Camera, Check, FileText, Film, Image, Mic, Plus, Reply, SmilePlus, Square, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { api } from '../../api';
@@ -233,49 +233,49 @@ export function Composer({
   };
 
   return (
-    <div className="border-t bg-white/95 px-3 pb-3 pt-2 backdrop-blur dark:bg-slate-900/95 sm:px-5 sm:pb-4">
-      {error && <div role="alert" className="mx-auto mb-2 flex max-w-4xl items-center justify-between gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Закрити помилку"><X size={14} /></button></div>}
-      {editing && <div className="mx-auto mb-2 flex max-w-4xl items-center justify-between gap-3 rounded-xl border-l-4 border-accent-500 bg-accent-50 px-3 py-2 text-xs text-accent-700 dark:bg-accent-500/10 dark:text-accent-300"><div className="min-w-0"><p className="font-semibold">Редагування повідомлення</p><p className="truncate opacity-80">{editing.content || 'Без тексту'}</p></div><button type="button" className="icon-btn h-7 w-7 shrink-0" onClick={() => onCancelEdit?.()} aria-label="Скасувати редагування"><X size={15} /></button></div>}
+    <div className="border-t border-ios-separator/10 bg-ios-glass/70 px-3 pb-3 pt-2 backdrop-blur-xl sm:px-5 sm:pb-4">
+      {error && <div role="alert" className="ios-glass mx-auto mb-2 flex max-w-4xl items-center justify-between gap-2 rounded-2xl px-3 py-2 text-xs text-rose-600 dark:text-rose-300"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Закрити помилку"><X size={14} /></button></div>}
+      {editing && <div className="mx-auto mb-2 flex max-w-4xl items-center justify-between gap-3 rounded-2xl border-l-[3px] border-ios-blue bg-ios-blue/10 px-3 py-2 text-xs text-ios-blue"><div className="min-w-0"><p className="font-semibold">Редагування повідомлення</p><p className="truncate opacity-80">{editing.content || 'Без тексту'}</p></div><button type="button" className="icon-btn h-7 w-7 shrink-0" onClick={() => onCancelEdit?.()} aria-label="Скасувати редагування"><X size={15} /></button></div>}
       {replyTo && !editing && (
-        <div className="mx-auto mb-2 flex max-w-4xl items-center gap-3 rounded-xl border-l-4 border-accent-500 bg-slate-50 px-3 py-2 text-xs dark:bg-slate-800/70">
-          <Reply size={15} className="shrink-0 text-accent-500" aria-hidden />
+        <div className="ios-glass mx-auto mb-2 flex max-w-4xl items-center gap-3 rounded-2xl border-l-[3px] border-ios-blue px-3 py-2 text-xs">
+          <Reply size={15} className="shrink-0 text-ios-blue" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-accent-600 dark:text-accent-400">Відповідь · {replyTo.sender.displayName}</p>
-            <p className="truncate text-slate-500 dark:text-slate-400">{replyTo.content || 'Вкладення'}</p>
+            <p className="truncate font-semibold text-ios-blue">Відповідь · {replyTo.sender.displayName}</p>
+            <p className="truncate text-ios-secondary">{replyTo.content || 'Вкладення'}</p>
           </div>
           <button type="button" className="icon-btn h-7 w-7 shrink-0" onClick={() => onCancelReply?.()} aria-label="Скасувати відповідь"><X size={15} /></button>
         </div>
       )}
-      {file && <div className="mx-auto mb-2 flex max-w-4xl items-center gap-3 rounded-xl border bg-slate-50 p-2.5 dark:bg-slate-800/70"><div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg bg-accent-100 text-accent-600 dark:bg-accent-500/10 dark:text-accent-400">{previewUrl ? <img src={previewUrl} alt="Перегляд вкладення" className="h-full w-full object-cover" /> : kind === 'video' ? <Film size={20} /> : <FileText size={20} />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{file.name}</p><p className="text-xs text-slate-400">{formatBytes(file.size)}</p></div><button type="button" className="icon-btn h-8 w-8" onClick={() => setFile(null)} aria-label="Видалити вкладення"><X size={17} /></button></div>}
+      {file && <div className="ios-glass mx-auto mb-2 flex max-w-4xl items-center gap-3 rounded-2xl p-2.5"><div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-ios-blue/10 text-ios-blue">{previewUrl ? <img src={previewUrl} alt="Перегляд вкладення" className="h-full w-full object-cover" /> : kind === 'video' ? <Film size={20} /> : <FileText size={20} />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{file.name}</p><p className="text-xs text-ios-secondary">{formatBytes(file.size)}</p></div><button type="button" className="icon-btn h-8 w-8" onClick={() => setFile(null)} aria-label="Видалити вкладення"><X size={17} /></button></div>}
       {pickerOpen && !editing && (
         <div className="mx-auto mb-2 max-w-4xl">
           <PickerPanel onEmoji={insertEmoji} onSticker={(sticker) => void sendSticker(sticker)} />
         </div>
       )}
-      <div className="mx-auto flex max-w-4xl items-end gap-2">
-        {!recording && !editing && <div className="relative"><button type="button" className={`icon-btn mb-0.5 ${menuOpen ? 'bg-slate-100 text-accent-600 dark:bg-slate-800' : ''}`} onClick={() => setMenuOpen((value) => !value)} aria-label="Прикріпити файл" aria-expanded={menuOpen}><Paperclip size={21} /></button>{menuOpen && <><button className="fixed inset-0 z-10 cursor-default" tabIndex={-1} aria-label="Закрити меню вкладень" onClick={() => setMenuOpen(false)} /><div className="absolute bottom-12 left-0 z-20 w-44 rounded-2xl border bg-white p-1.5 shadow-soft animate-slide-up dark:bg-slate-800"><button type="button" onClick={() => pickFile('image/*', 'image')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"><Image size={18} className="text-accent-500" /> Фото</button><button type="button" onClick={() => pickFile('video/*', 'video')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"><Film size={18} className="text-violet-500" /> Відео</button><button type="button" onClick={() => pickFile('*/*', 'document')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"><FileText size={18} className="text-slate-500" /> Документ</button></div></>}</div>}
+      <div className="mx-auto flex max-w-4xl items-end gap-1.5 rounded-full border border-ios-separator/15 bg-ios-bg/80 p-1.5 shadow-sm backdrop-blur-xl dark:bg-ios-glass/80">
+        {!recording && !editing && <div className="relative"><button type="button" className={`icon-btn h-9 w-9 bg-ios-fill/10 text-ios-blue hover:bg-ios-blue/15 ${menuOpen ? 'bg-ios-blue/15' : ''}`} onClick={() => setMenuOpen((value) => !value)} aria-label="Прикріпити файл" aria-expanded={menuOpen}><Plus size={21} /></button>{menuOpen && <><button className="fixed inset-0 z-10 cursor-default" tabIndex={-1} aria-label="Закрити меню вкладень" onClick={() => setMenuOpen(false)} /><div className="ios-glass absolute bottom-12 left-0 z-20 w-44 rounded-[20px] p-1.5 shadow-soft animate-slide-up"><button type="button" onClick={() => pickFile('image/*', 'image')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-ios-fill/10"><Image size={18} className="text-ios-blue" /> Фото</button><button type="button" onClick={() => pickFile('video/*', 'video')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-ios-fill/10"><Film size={18} className="text-[#AF52DE]" /> Відео</button><button type="button" onClick={() => pickFile('*/*', 'document')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-ios-fill/10"><FileText size={18} className="text-ios-secondary" /> Документ</button></div></>}</div>}
         <input ref={inputRef} type="file" className="hidden" onChange={fileChosen} />
         {!recording && !editing && (
           <button
             type="button"
-            className={`icon-btn mb-0.5 ${pickerOpen ? 'bg-accent-50 text-accent-600 dark:bg-accent-500/10 dark:text-accent-400' : ''}`}
+            className={`icon-btn h-9 w-9 ${pickerOpen ? 'bg-ios-blue/10 text-ios-blue' : 'text-ios-secondary'}`}
             onClick={() => setPickerOpen((value) => !value)}
             aria-label="Стікери та емодзі"
             aria-expanded={pickerOpen}
             title="Стікери та емодзі"
           >
-            <SmilePlus size={21} />
+            <SmilePlus size={20} />
           </button>
         )}
         {recording ? (
-          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-rose-50 px-4 py-3 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"><span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500" /><span className="text-sm font-semibold tabular-nums">{formatDuration(seconds)}</span><span className="hidden truncate text-xs opacity-70 sm:block">Запис голосового повідомлення…</span><button type="button" onClick={() => stopRecording(true)} className="ml-auto rounded-lg px-2 py-1 text-xs font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/40">Скасувати</button></div>
+          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-rose-500/10 px-4 py-2 text-rose-600 dark:text-rose-300"><span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500" /><span className="text-sm font-semibold tabular-nums">{formatDuration(seconds)}</span><span className="hidden truncate text-xs opacity-70 sm:block">Запис голосового повідомлення…</span><button type="button" onClick={() => stopRecording(true)} className="ml-auto rounded-full px-2 py-1 text-xs font-semibold hover:bg-rose-500/15">Скасувати</button></div>
         ) : (
           <div className="relative min-w-0 flex-1">
             <textarea
               ref={textareaRef}
               rows={1}
               maxLength={4000}
-              className="subtle-scrollbar max-h-32 min-h-11 w-full resize-none rounded-2xl border-transparent bg-slate-100 px-4 py-3 text-sm leading-5 placeholder:text-slate-400 focus:border-accent-500 focus:bg-white dark:bg-slate-800 dark:focus:bg-slate-800"
+              className="subtle-scrollbar max-h-32 min-h-9 w-full resize-none border-0 bg-transparent px-1 py-2 text-[15px] leading-5 text-ios-label placeholder:text-ios-secondary focus:border-0 focus:outline-none focus:ring-0"
               value={text}
               onChange={(event) => onTextChange(event.target.value, event.target.selectionStart)}
               onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
@@ -284,8 +284,8 @@ export function Composer({
               aria-label={editing ? 'Редагування повідомлення' : 'Повідомлення'}
             />
             {mention && mention.options.length > 0 && (
-              <div className="absolute bottom-full left-0 z-30 mb-2 w-full max-w-sm overflow-hidden rounded-2xl border bg-white py-1 shadow-soft animate-slide-up dark:bg-slate-800" role="listbox" aria-label="Згадки учасників">
-                <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="ios-glass absolute bottom-full left-0 z-30 mb-2 w-full max-w-sm overflow-hidden rounded-[20px] py-1 shadow-soft animate-slide-up" role="listbox" aria-label="Згадки учасників">
+                <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-ios-secondary">
                   {mention.query ? `Згадка «${mention.query}»` : 'Згадати учасника'}
                 </p>
                 {mention.options.map((member, index) => (
@@ -295,12 +295,12 @@ export function Composer({
                     role="option"
                     aria-selected={index === activeMention}
                     onMouseDown={(event) => { event.preventDefault(); insertMention(member); }}
-                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition ${index === activeMention ? 'bg-accent-50 dark:bg-accent-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-700/60'}`}
+                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition ${index === activeMention ? 'bg-ios-blue/10' : 'hover:bg-ios-fill/10'}`}
                   >
                     <Avatar name={member.displayName} src={member.avatarUrl} size="sm" cosmetics={member.cosmetics} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{member.alias || member.displayName}</span>
-                      <span className="block truncate text-[11px] text-slate-400">@{member.username}</span>
+                      <span className="block truncate text-[11px] text-ios-secondary">@{member.username}</span>
                     </span>
                   </button>
                 ))}
@@ -308,8 +308,8 @@ export function Composer({
             )}
           </div>
         )}
-        {!recording && !editing && <button type="button" className="icon-btn mb-0.5 h-11 w-11 text-accent-600 hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500/10" onClick={() => setVideoNoteOpen(true)} aria-label="Записати відеокружечок" title="Відеокружечок"><Camera size={21} /></button>}
-        {recording ? <button type="button" className="primary-btn mb-0.5 h-11 w-11 rounded-2xl p-0" onClick={() => stopRecording(false)} aria-label="Зупинити й надіслати голосове повідомлення"><Square size={17} fill="currentColor" /></button> : editing ? <button type="button" className="primary-btn mb-0.5 h-11 w-11 rounded-2xl p-0 shadow-glow" onClick={() => void send()} disabled={sending || !text.trim()} aria-label="Зберегти зміни">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Check size={19} />}</button> : text.trim() || file ? <button type="button" className="primary-btn mb-0.5 h-11 w-11 rounded-2xl p-0 shadow-glow" onClick={() => void send()} disabled={sending} aria-label="Надіслати повідомлення">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Send size={19} />}</button> : <button type="button" className="icon-btn mb-0.5 h-11 w-11 text-accent-600 hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500/10" onClick={() => void startRecording()} aria-label="Записати голосове повідомлення"><Mic size={21} /></button>}
+        {!recording && !editing && <button type="button" className="icon-btn h-9 w-9 text-ios-blue hover:bg-ios-blue/10" onClick={() => setVideoNoteOpen(true)} aria-label="Записати відеокружечок" title="Відеокружечок"><Camera size={20} /></button>}
+        {recording ? <button type="button" className="primary-btn h-9 w-9 rounded-full p-0" onClick={() => stopRecording(false)} aria-label="Зупинити й надіслати голосове повідомлення"><Square size={16} fill="currentColor" /></button> : editing ? <button type="button" className="primary-btn h-9 w-9 rounded-full p-0 shadow-glow" onClick={() => void send()} disabled={sending || !text.trim()} aria-label="Зберегти зміни">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Check size={18} />}</button> : text.trim() || file ? <button type="button" className="primary-btn h-9 w-9 rounded-full p-0 shadow-glow" onClick={() => void send()} disabled={sending} aria-label="Надіслати повідомлення">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <ArrowUp size={20} />}</button> : <button type="button" className="icon-btn h-9 w-9 text-ios-blue hover:bg-ios-blue/10" onClick={() => void startRecording()} aria-label="Записати голосове повідомлення"><Mic size={20} /></button>}
       </div>
       {videoNoteOpen && <VideoNoteRecorder conversationId={conversationId} replyToId={replyTo?.id} onSent={(message) => { onSent(message); onCancelReply?.(); }} onClose={() => setVideoNoteOpen(false)} />}
     </div>

@@ -73,16 +73,16 @@ function SettingsRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+      className="flex w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-ios-fill/10"
     >
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${color}`}>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm ${color}`}>
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-medium text-slate-800 dark:text-slate-100">{title}</span>
-        <span className="block truncate text-xs text-slate-400 dark:text-slate-500">{subtitle}</span>
+        <span className="block truncate text-[15px] font-medium text-ios-label">{title}</span>
+        <span className="block truncate text-xs text-ios-secondary">{subtitle}</span>
       </span>
-      <ChevronRight size={17} className="shrink-0 text-slate-300 dark:text-slate-600" />
+      <ChevronRight size={17} className="shrink-0 text-ios-secondary" />
     </button>
   );
 }
@@ -92,7 +92,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition hover:text-accent-500 dark:text-accent-400"
+      className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-ios-blue transition hover:text-accent-500"
     >
       <ChevronLeft size={17} /> Налаштування
     </button>
@@ -218,19 +218,19 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           <div className="flex flex-col items-center pb-5">
             <div className="relative">
               <Avatar name={user.displayName} src={user.avatarUrl} size="xl" cosmetics={user.cosmetics} />
-              <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-accent-600 text-white dark:border-slate-900">
+              <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-ios-bg bg-ios-blue text-white">
                 <Camera size={14} />
               </span>
             </div>
-            <p className="mt-3 text-xl font-bold text-slate-900 dark:text-white">
+            <p className="mt-3 text-xl font-bold text-ios-label">
               <StarDisplayName name={user.displayName} cosmetics={user.cosmetics} verified={user.isVerified} />
             </p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {user.phoneNumber ? `${maskPhone(user.phoneNumber)} · ` : ''}@{user.username}
+            <p className="mt-1 text-sm text-ios-secondary">
+              {user.mistId || `${user.username}@mist.id`}
             </p>
           </div>
 
-          <div className="divide-y overflow-hidden rounded-2xl border bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="divide-y divide-ios-separator/10 overflow-hidden rounded-[22px] border border-ios-separator/10 bg-ios-bg/70">
             <SettingsRow icon={<Mail size={19} />} color="bg-indigo-500" title="Пошта Mist ID" subtitle="Системні повідомлення акаунту" onClick={() => setSection('mistInbox')} />
             <SettingsRow icon={<UserRound size={19} />} color="bg-sky-500" title="Акаунт" subtitle="Номер, ім'я користувача, «Про себе»" onClick={() => setSection('account')} />
             <SettingsRow icon={<MessageSquare size={19} />} color="bg-orange-500" title="Налаштування чатів" subtitle="Тема, анімації, вигляд повідомлень" onClick={() => setSection('chats')} />
@@ -247,12 +247,12 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           <div className="mt-5 flex items-center justify-between gap-3 border-t pt-5">
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30"
+              className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
               onClick={() => void logout()}
             >
               <LogOut size={17} /> Вийти з акаунта
             </button>
-            <span className="text-xs text-slate-400">Miston 1.0.0</span>
+            <span className="text-xs text-ios-secondary">Planegram 1.0.0</span>
           </div>
         </>
       ) : (
@@ -314,7 +314,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                     <p className="text-sm font-semibold">Темна тема</p>
                     <p className="mt-1 text-xs text-slate-400">Зараз увімкнено: {theme === 'dark' ? 'темна' : 'світла'}.</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={theme === 'dark'} onClick={toggleTheme} className={`relative h-6 w-11 shrink-0 rounded-full transition ${theme === 'dark' ? 'bg-accent-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  <button type="button" role="switch" aria-checked={theme === 'dark'} onClick={toggleTheme} className={`relative h-6 w-11 shrink-0 rounded-full transition ${theme === 'dark' ? 'bg-ios-blue' : 'bg-ios-fill/30'}`}>
                     <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${theme === 'dark' ? 'left-[22px]' : 'left-0.5'}`} />
                   </button>
                 </div>

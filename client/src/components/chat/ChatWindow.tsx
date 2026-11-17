@@ -275,52 +275,57 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
 
   return (
     <section className="relative flex h-full min-w-0 flex-1 flex-col" aria-label={`Розмова з ${activeConversation.title}`}>
-      <header className="z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white/90 px-2 backdrop-blur-xl dark:bg-slate-900/90 sm:px-4">
-        <button type="button" className="icon-btn md:hidden" onClick={closeMobileChat} aria-label="Назад до розмов"><ArrowLeft size={21} /></button>
-        <Avatar name={activeConversation.title} src={activeConversation.avatarUrl} online={online} square={!isSaved && activeConversation.kind !== 'direct'} cosmetics={directCosmetics} />
-        <button type="button" className="min-w-0 flex-1 rounded-lg py-1 text-left" onClick={() => setShowInfo((value) => !value)}>
-          <h1 className="flex items-center gap-1.5 truncate text-sm font-semibold sm:text-[15px]">{activeConversation.kind === 'channel' && <Hash size={15} className="shrink-0 text-slate-400" />}{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h1>
-          <p className={`mt-0.5 truncate text-xs ${typingNames.length || online ? 'text-accent-600 dark:text-accent-400' : 'text-slate-400'}`}>{subtitle}</p>
+      <header className="ios-glass relative z-20 grid h-16 shrink-0 grid-cols-[minmax(40px,1fr)_auto_minmax(40px,1fr)] items-center gap-1 border-b px-2 sm:px-4">
+        <div className="flex items-center justify-start">
+          <button type="button" className="icon-btn md:hidden" onClick={closeMobileChat} aria-label="Назад до розмов"><ArrowLeft size={21} /></button>
+        </div>
+        <button type="button" className="mx-auto flex min-w-0 items-center justify-center gap-2.5 justify-self-center rounded-full px-2 py-1 text-center transition hover:bg-ios-fill/10" onClick={() => setShowInfo((value) => !value)}>
+          <Avatar name={activeConversation.title} src={activeConversation.avatarUrl} size="sm" online={online} cosmetics={directCosmetics} />
+          <span className="min-w-0">
+            <h1 className="flex items-center justify-center gap-1 truncate text-[15px] font-semibold leading-5">{activeConversation.kind === 'channel' && <Hash size={15} className="shrink-0 text-ios-secondary" />}{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h1>
+            <p className={`mt-0.5 truncate text-[11px] ${!connected ? 'text-amber-600 dark:text-amber-400' : typingNames.length || online ? 'text-ios-blue' : 'text-ios-secondary'}`}>{!connected ? 'Підключення…' : subtitle}</p>
+          </span>
         </button>
-        {!connected && <span className="hidden rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 sm:block">Підключення…</span>}
-        {!isSaved && activeConversation.kind !== 'channel' && (
-          <>
-            <button
-              type="button"
-              className="icon-btn"
-              disabled={callPhase !== 'idle'}
-              onClick={() => {
-                if (activeConversation.kind === 'direct' && other && online === false) {
-                  notify('Користувач не в мережі', 'Дзвінок можливий, коли співрозмовник онлайн.');
-                  return;
-                }
-                void startCall(activeConversation.id, 'audio');
-              }}
-              aria-label="Аудіодзвінок"
-              title={callPhase === 'idle' ? 'Аудіодзвінок' : 'Завершіть поточний дзвінок'}
-            >
-              <Phone size={19} />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
-              disabled={callPhase !== 'idle'}
-              onClick={() => {
-                if (activeConversation.kind === 'direct' && other && online === false) {
-                  notify('Користувач не в мережі', 'Дзвінок можливий, коли співрозмовник онлайн.');
-                  return;
-                }
-                void startCall(activeConversation.id, 'video');
-              }}
-              aria-label="Відеодзвінок"
-              title={callPhase === 'idle' ? 'Відеодзвінок' : 'Завершіть поточний дзвінок'}
-            >
-              <Video size={20} />
-            </button>
-          </>
-        )}
-        <button type="button" className="icon-btn relative" onClick={() => setPinsOpen(true)} aria-label={`Закріплені повідомлення${pins.length ? `: ${pins.length}` : ''}`}><Pin size={19} />{pins.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-accent-500 px-1 text-[9px] font-bold leading-4 text-white">{pins.length > 9 ? '9+' : pins.length}</span>}</button>
-        <button type="button" className={`icon-btn ${showInfo ? 'bg-accent-50 text-accent-600 dark:bg-accent-500/10' : ''}`} onClick={() => setShowInfo((value) => !value)} aria-label="Деталі розмови" aria-expanded={showInfo}><Info size={20} /></button>
+        <div className="flex items-center justify-end gap-0.5">
+          {!isSaved && activeConversation.kind !== 'channel' && (
+            <>
+              <button
+                type="button"
+                className="icon-btn hidden sm:inline-flex"
+                disabled={callPhase !== 'idle'}
+                onClick={() => {
+                  if (activeConversation.kind === 'direct' && other && online === false) {
+                    notify('Користувач не в мережі', 'Дзвінок можливий, коли співрозмовник онлайн.');
+                    return;
+                  }
+                  void startCall(activeConversation.id, 'audio');
+                }}
+                aria-label="Аудіодзвінок"
+                title={callPhase === 'idle' ? 'Аудіодзвінок' : 'Завершіть поточний дзвінок'}
+              >
+                <Phone size={19} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                disabled={callPhase !== 'idle'}
+                onClick={() => {
+                  if (activeConversation.kind === 'direct' && other && online === false) {
+                    notify('Користувач не в мережі', 'Дзвінок можливий, коли співрозмовник онлайн.');
+                    return;
+                  }
+                  void startCall(activeConversation.id, 'video');
+                }}
+                aria-label="Відеодзвінок"
+                title={callPhase === 'idle' ? 'Відеодзвінок' : 'Завершіть поточний дзвінок'}
+              >
+                <Video size={20} />
+              </button>
+            </>
+          )}
+          <button type="button" className="icon-btn relative hidden sm:inline-flex" onClick={() => setPinsOpen(true)} aria-label={`Закріплені повідомлення${pins.length ? `: ${pins.length}` : ''}`}><Pin size={19} />{pins.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-ios-blue px-1 text-[9px] font-bold leading-4 text-white">{pins.length > 9 ? '9+' : pins.length}</span>}</button>
+          <button type="button" className={`icon-btn ${showInfo ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={() => setShowInfo((value) => !value)} aria-label="Деталі розмови" aria-expanded={showInfo}><Info size={20} /></button>
+        </div>
       </header>
 
       <div ref={scrollRef} className="chat-backdrop subtle-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain py-3" style={chatBackgroundStyle}>
@@ -332,7 +337,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
               const previous = messages[index - 1];
               const newDay = !previous || new Date(previous.createdAt).toDateString() !== new Date(message.createdAt).toDateString();
               const showSender = !isSaved && activeConversation.kind !== 'direct' && (!previous || previous.senderId !== message.senderId || newDay);
-              return <div key={message.id}>{newDay && <div className="sticky top-1 z-[5] my-3 flex justify-center"><span className="rounded-full bg-slate-200/90 px-3 py-1 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur dark:bg-slate-800/90 dark:text-slate-300">{formatDay(message.createdAt)}</span></div>}<MessageBubble
+              return <div key={message.id}>{newDay && <div className="sticky top-1 z-[5] my-3 flex justify-center"><span className="ios-glass rounded-full px-3 py-1 text-[11px] font-medium text-ios-secondary shadow-sm">{formatDay(message.createdAt)}</span></div>}<MessageBubble
                 message={message}
                 showSender={showSender}
                 canEdit={message.senderId === user?.id && message.kind !== 'voice' && message.kind !== 'video_note' && message.kind !== 'sticker'}
@@ -350,13 +355,13 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
                 onJumpTo={(messageId) => void jumpToMessage(messageId)}
               /></div>;
             })}
-            {typingNames.length > 0 && <div className="flex items-center gap-2 px-6 py-3 text-xs text-slate-500"><span className="flex gap-1">{[0, 1, 2].map((dot) => <span key={dot} className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-400" style={{ animationDelay: `${dot * 120}ms` }} />)}</span>{typingNames.join(', ')} {typingNames.length === 1 ? 'друкує' : 'друкують'}</div>}
+            {typingNames.length > 0 && <div className="flex items-center gap-2 px-6 py-3 text-xs text-ios-secondary"><span className="ios-glass flex gap-1 rounded-full px-2 py-1.5">{[0, 1, 2].map((dot) => <span key={dot} className="h-1.5 w-1.5 animate-bounce rounded-full bg-ios-blue" style={{ animationDelay: `${dot * 120}ms` }} />)}</span>{typingNames.join(', ')} {typingNames.length === 1 ? 'друкує' : 'друкують'}</div>}
           </div>
         )}
       </div>
       <Composer conversationId={activeConversation.id} onSent={(message) => { appendMessage(message); if (message.senderId === user?.id) setEffectBurst((value) => value + 1); }} editing={editing} onCancelEdit={() => setEditing(null)} onEdited={applyMessage} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} members={isSaved ? [] : activeConversation.members} />
 
-      {showInfo && <aside className="absolute bottom-0 right-0 top-16 z-20 w-80 max-w-[90%] overflow-y-auto border-l bg-white p-5 shadow-soft animate-fade-in dark:bg-slate-900"><div className="flex items-center justify-between"><h2 className="font-semibold">Деталі розмови</h2><button type="button" className="icon-btn h-8 w-8" onClick={() => setShowInfo(false)} aria-label="Закрити деталі"><X size={18} /></button></div><div className="flex flex-col items-center border-b py-6 text-center"><Avatar name={activeConversation.title} src={activeConversation.avatarUrl} size="xl" online={online} square={!isSaved && activeConversation.kind !== 'direct'} cosmetics={directCosmetics} /><h3 className="mt-3 font-semibold">{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h3><p className="mt-1 text-sm text-slate-500">{subtitle}</p>{other?.bio && <p className="mt-3 text-sm leading-6 text-slate-500">{other.bio}</p>}{other && <button type="button" className="secondary-btn mt-4" onClick={() => { setShowInfo(false); onOpenUser(other.id); }}>Переглянути профіль</button>}<div className="mt-4 grid w-full gap-2"><button type="button" className="secondary-btn" onClick={() => onAction(activeConversation, 'clear')}>{isSaved ? 'Очистити нотатки' : 'Очистити історію'}</button>{activeConversation.kind !== 'channel' && <button type="button" className="secondary-btn text-rose-600 hover:text-rose-700 dark:text-rose-400" onClick={() => onAction(activeConversation, 'delete')}>{deleteLabel}</button>}{other && <button type="button" className="secondary-btn flex items-center justify-center gap-2" onClick={() => { setShowInfo(false); onReport({ userId: other.id }); }}><Flag size={15} /> Скаржитися на співрозмовника</button>}</div></div>{!isSaved && activeConversation.kind !== 'direct' && <div className="pt-5"><h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><Users size={14} /> Учасники</h3>{activeConversation.members.length ? <ul className="space-y-1">{activeConversation.members.map((member) => <li key={member.id}><button type="button" disabled={member.id === user?.id} onClick={() => { setShowInfo(false); onOpenUser(member.id); }} className="flex w-full items-center gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-slate-800"><Avatar name={member.displayName} src={member.avatarUrl} size="sm" online={presence[member.id] ?? member.online} cosmetics={member.cosmetics} /><div className="min-w-0"><p className="truncate text-sm font-medium"><StarDisplayName name={member.displayName} cosmetics={member.cosmetics} verified={member.isVerified} /></p><p className="truncate text-xs text-slate-400">@{member.username}</p></div></button></li>)}</ul> : <p className="text-sm text-slate-400">Деталі учасників недоступні.</p>}</div>}</aside>}
+      {showInfo && <aside className="ios-glass absolute bottom-0 right-0 top-16 z-20 w-80 max-w-[90%] overflow-y-auto border-l p-5 shadow-soft animate-fade-in"><div className="flex items-center justify-between"><h2 className="font-semibold">Деталі розмови</h2><button type="button" className="icon-btn h-8 w-8" onClick={() => setShowInfo(false)} aria-label="Закрити деталі"><X size={18} /></button></div><div className="flex flex-col items-center border-b py-6 text-center"><Avatar name={activeConversation.title} src={activeConversation.avatarUrl} size="xl" online={online} square={!isSaved && activeConversation.kind !== 'direct'} cosmetics={directCosmetics} /><h3 className="mt-3 font-semibold">{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h3><p className="mt-1 text-sm text-slate-500">{subtitle}</p>{other?.bio && <p className="mt-3 text-sm leading-6 text-slate-500">{other.bio}</p>}{other && <button type="button" className="secondary-btn mt-4" onClick={() => { setShowInfo(false); onOpenUser(other.id); }}>Переглянути профіль</button>}<div className="mt-4 grid w-full gap-2"><button type="button" className="secondary-btn" onClick={() => onAction(activeConversation, 'clear')}>{isSaved ? 'Очистити нотатки' : 'Очистити історію'}</button>{activeConversation.kind !== 'channel' && <button type="button" className="secondary-btn text-rose-600 hover:text-rose-700 dark:text-rose-400" onClick={() => onAction(activeConversation, 'delete')}>{deleteLabel}</button>}{other && <button type="button" className="secondary-btn flex items-center justify-center gap-2" onClick={() => { setShowInfo(false); onReport({ userId: other.id }); }}><Flag size={15} /> Скаржитися на співрозмовника</button>}</div></div>{!isSaved && activeConversation.kind !== 'direct' && <div className="pt-5"><h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><Users size={14} /> Учасники</h3>{activeConversation.members.length ? <ul className="space-y-1">{activeConversation.members.map((member) => <li key={member.id}><button type="button" disabled={member.id === user?.id} onClick={() => { setShowInfo(false); onOpenUser(member.id); }} className="flex w-full items-center gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-slate-800"><Avatar name={member.displayName} src={member.avatarUrl} size="sm" online={presence[member.id] ?? member.online} cosmetics={member.cosmetics} /><div className="min-w-0"><p className="truncate text-sm font-medium"><StarDisplayName name={member.displayName} cosmetics={member.cosmetics} verified={member.isVerified} /></p><p className="truncate text-xs text-slate-400">@{member.username}</p></div></button></li>)}</ul> : <p className="text-sm text-slate-400">Деталі учасників недоступні.</p>}</div>}</aside>}
 
       <Modal open={pinsOpen} onClose={() => setPinsOpen(false)} title="Закріплені повідомлення" description={pins.length ? `У цій розмові закріплено: ${pins.length}` : 'Тут зберігаються важливі повідомлення розмови.'} wide>
         {pinsLoading ? <Spinner label="Завантаження закріплених…" /> : pins.length === 0 ? (

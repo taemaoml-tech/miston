@@ -45,12 +45,12 @@ export function Modal({ open, onClose, title, description, children, wide = fals
 
   if (!open) return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className={`max-h-[92vh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl animate-slide-up dark:bg-slate-900 sm:rounded-3xl ${full ? 'sm:max-w-6xl' : wide ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
-        <div className="flex items-start justify-between border-b px-5 py-4 sm:px-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-0 backdrop-blur-md animate-fade-in sm:items-center sm:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className={`ios-glass max-h-[92vh] w-full overflow-hidden rounded-t-[28px] border shadow-2xl animate-slide-up sm:rounded-[28px] ${full ? 'sm:max-w-6xl' : wide ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
+        <div className="flex items-start justify-between border-b border-ios-separator/10 px-5 py-4 sm:px-6">
           <div>
-            <h2 id="modal-title" className="text-lg font-bold">{title}</h2>
-            {description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>}
+            <h2 id="modal-title" className="text-lg font-bold tracking-tight">{title}</h2>
+            {description && <p className="mt-1 text-sm text-ios-secondary">{description}</p>}
           </div>
           <button type="button" className="icon-btn -mr-2 -mt-1" onClick={onClose} aria-label="Закрити діалог"><X size={20} /></button>
         </div>

@@ -1,8 +1,8 @@
 export function Logo({ compact = false, size = 36 }: { compact?: boolean; size?: number }) {
   return (
-    <div className="flex items-center gap-2.5" aria-label="Miston">
+    <div className="flex items-center gap-2.5" aria-label="Planegram">
       <Mark size={size} />
-      {!compact && <span className="text-xl font-bold tracking-tight">Miston</span>}
+      {!compact && <span className="text-xl font-bold tracking-tight">Planegram</span>}
     </div>
   );
 }
@@ -12,9 +12,9 @@ export function Mark({ size = 36, className = 'shadow-glow' }: { size?: number; 
     <svg width={size} height={size} viewBox="0 0 64 64" className={className} role="img" aria-hidden="true">
       <defs>
         <linearGradient id="miston-mark" x1="14" y1="4" x2="50" y2="62" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#8b44d6" />
-          <stop offset=".45" stopColor="#6b21a8" />
-          <stop offset="1" stopColor="#2e0a56" />
+          <stop stopColor="#4A97FF" />
+          <stop offset=".45" stopColor="#007AFF" />
+          <stop offset="1" stopColor="#003D7D" />
         </linearGradient>
       </defs>
       <rect width="64" height="64" rx="15" fill="url(#miston-mark)" />

@@ -80,52 +80,52 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
   const filtered = useMemo(() => directConversations.filter((conversation) => `${conversation.title} ${conversation.lastMessage?.content || ''}`.toLowerCase().includes(query.toLowerCase())), [directConversations, query]);
 
   return (
-    <aside className="surface relative flex h-full min-w-0 flex-1 flex-col border-r md:w-80 md:flex-none lg:w-[340px]" aria-label="Розмови та друзі">
+    <aside className="relative flex h-full min-w-0 flex-1 flex-col border-r border-ios-separator/10 bg-ios-glass/80 backdrop-blur-xl md:w-80 md:flex-none lg:w-[340px]" aria-label="Розмови та друзі">
       <div className="flex h-16 shrink-0 items-center justify-between px-4"><Logo /><div className="flex items-center gap-1">
-        <button type="button" className="icon-btn relative bg-slate-100 text-slate-600 hover:bg-accent-50 hover:text-accent-600 dark:bg-slate-800 dark:text-slate-300" onClick={() => setInboxOpen((value) => !value)} aria-label="Системні сповіщення" aria-expanded={inboxOpen}>
+        <button type="button" className="icon-btn relative bg-ios-fill/10 text-ios-label hover:bg-ios-blue/10 hover:text-ios-blue" onClick={() => setInboxOpen((value) => !value)} aria-label="Системні сповіщення" aria-expanded={inboxOpen}>
           <Bell size={18} />
-          {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-600 px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
+          {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
         </button>
-        <button type="button" className="icon-btn bg-slate-100 text-accent-600 hover:bg-accent-50 dark:bg-slate-800 dark:text-accent-400" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
-        <button type="button" className="icon-btn bg-slate-100 text-emerald-600 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-400" onClick={() => void createMeeting()} disabled={creatingMeeting} aria-label="Створити зустріч"><Video size={20} /></button>
+        <button type="button" className="icon-btn bg-ios-blue/10 text-ios-blue hover:bg-ios-blue hover:text-white" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
+        <button type="button" className="icon-btn bg-[#34C759]/10 text-[#34C759] hover:bg-[#34C759] hover:text-white" onClick={() => void createMeeting()} disabled={creatingMeeting} aria-label="Створити зустріч"><Video size={20} /></button>
       </div></div>
       {inboxOpen && <SystemInboxPanel onClose={() => setInboxOpen(false)} />}
       {meetingLink && (
-        <div className="mx-3 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-200">
+        <div className="mx-3 mb-2 rounded-2xl border border-[#34C759]/25 bg-[#34C759]/10 p-3 text-xs text-[#248A3D] dark:text-[#30D158]">
           <p className="font-semibold">Зустріч створено</p>
           <div className="mt-1.5 flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-lg bg-white px-2 py-1 font-mono text-[11px] text-slate-800 dark:bg-slate-900 dark:text-slate-100">{meetingLink}</code>
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-ios-bg/70 px-2 py-1 font-mono text-[11px] text-ios-label">{meetingLink}</code>
             <button type="button" className="secondary-btn px-2 py-1 text-[11px]" onClick={() => void navigator.clipboard.writeText(meetingLink)}>Копіювати</button>
             <button type="button" className="secondary-btn px-2 py-1 text-[11px]" onClick={() => setMeetingLink(null)}>✕</button>
           </div>
-          <p className="mt-1.5 text-[10px] text-emerald-700 dark:text-emerald-300">Надішліть посилання учасникам — вони приєднаються до зустрічі.</p>
+          <p className="mt-1.5 text-[10px] opacity-80">Надішліть посилання учасникам — вони приєднаються до зустрічі.</p>
         </div>
       )}
       <div className="px-3 pb-2">
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Розділи">
-          <button type="button" role="tab" aria-selected={tab === 'chats'} onClick={() => setTab('chats')} className={`rounded-lg py-1.5 text-xs font-semibold transition ${tab === 'chats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>Повідомлення</button>
-          <button type="button" role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')} className={`flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition ${tab === 'friends' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>
+        <div className="grid grid-cols-2 gap-1 rounded-full bg-ios-fill/10 p-1" role="tablist" aria-label="Розділи">
+          <button type="button" role="tab" aria-selected={tab === 'chats'} onClick={() => setTab('chats')} className={`rounded-full py-1.5 text-xs font-semibold transition ${tab === 'chats' ? 'bg-ios-bg text-ios-label shadow-sm' : 'text-ios-secondary hover:text-ios-label'}`}>Повідомлення</button>
+          <button type="button" role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')} className={`flex items-center justify-center gap-1 rounded-full py-1.5 text-xs font-semibold transition ${tab === 'friends' ? 'bg-ios-bg text-ios-label shadow-sm' : 'text-ios-secondary hover:text-ios-label'}`}>
             Друзі
-            {incomingCount > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-600 px-1 text-[9px] font-bold text-white">{incomingCount > 9 ? '9+' : incomingCount}</span>}
+            {incomingCount > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{incomingCount > 9 ? '9+' : incomingCount}</span>}
           </button>
         </div>
       </div>
 
       {tab === 'chats' ? (
         <>
-          <div className="px-3 pb-3"><label className="relative block"><Search size={16} className="absolute left-3.5 top-3 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input border-transparent bg-slate-100 py-2.5 pl-10 pr-9 focus:border-accent-500 dark:bg-slate-800" placeholder="Пошук розмов" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>
-          <div className="flex items-center justify-between px-4 pb-2"><h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Повідомлення</h2><span className="text-xs text-slate-400">{directConversations.length}</span></div>
+          <div className="px-3 pb-3"><label className="relative block"><Search size={17} className="absolute left-3.5 top-2.5 text-ios-secondary" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input rounded-full border-transparent bg-ios-fill/10 py-2 pl-10 pr-9 placeholder:text-ios-secondary focus:border-ios-blue focus:bg-ios-bg" placeholder="Пошук" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-ios-secondary hover:text-ios-label" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>
+          <div className="flex items-center justify-between px-4 pb-2"><h2 className="text-[11px] font-semibold uppercase tracking-wider text-ios-secondary">Закріплене</h2><span className="text-[11px] text-ios-secondary">{directConversations.length}</span></div>
           <div className="group relative px-2 pb-1">
-            <button type="button" onClick={() => void openNotes()} disabled={openingNotes} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition disabled:opacity-70 ${savedNotes && activeConversation?.id === savedNotes.id ? 'bg-accent-50 dark:bg-accent-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'}`} aria-current={savedNotes && activeConversation?.id === savedNotes.id ? 'page' : undefined}>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-500/15 text-accent-600 dark:text-accent-400">{openingNotes ? <LoaderCircle size={17} className="animate-spin" /> : <Bookmark size={18} />}</span>
+            <button type="button" onClick={() => void openNotes()} disabled={openingNotes} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition disabled:opacity-70 ${savedNotes && activeConversation?.id === savedNotes.id ? 'bg-ios-blue/10' : 'hover:bg-ios-fill/10'}`} aria-current={savedNotes && activeConversation?.id === savedNotes.id ? 'page' : undefined}>
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ios-blue/10 text-ios-blue">{openingNotes ? <LoaderCircle size={20} className="animate-spin" /> : <Bookmark size={22} />}</span>
               <span className="min-w-0 flex-1 pr-5">
                 <span className="block truncate text-sm font-semibold">Збережені нотатки</span>
-                <span className="block truncate text-xs text-slate-400">{savedNotes?.lastMessage
+                <span className="block truncate text-xs text-ios-secondary">{savedNotes?.lastMessage
                   ? savedNotes.lastMessage.content || kindLabels[savedNotes.lastMessage.kind] || 'Повідомлення'
                   : 'Тут лишається лише ваше — ніхто не побачить'}</span>
               </span>
             </button>
-            {savedNotes && <button type="button" onClick={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); openMenu(savedNotes, bounds.right - MENU_WIDTH, bounds.bottom + 4); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 opacity-100 transition hover:bg-slate-200/80 hover:text-slate-700 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 dark:hover:bg-slate-700 dark:hover:text-slate-200" aria-label="Дії з нотатками"><MoreVertical size={15} /></button>}
+            {savedNotes && <button type="button" onClick={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); openMenu(savedNotes, bounds.right - MENU_WIDTH, bounds.bottom + 4); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-ios-secondary opacity-100 transition hover:bg-ios-fill/10 hover:text-ios-label md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100" aria-label="Дії з нотатками"><MoreVertical size={15} /></button>}
           </div>
           <div className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-2">
             {loading ? <Spinner label="Завантаження розмов…" className="py-12" /> : error ? <EmptyState icon={Users} title="Не вдалося підключитися" description={error} action={<button type="button" className="secondary-btn" onClick={() => void reload()}>Спробувати ще раз</button>} /> : filtered.length === 0 ? <EmptyState icon={MessageSquarePlus} title={query ? 'Немає збігів' : 'Розмов ще немає'} description={query ? 'Спробуйте інше ім\'я або ключове слово.' : 'Знайдіть знайому людину й почніть нову розмову.'} action={!query ? <button type="button" className="primary-btn" onClick={onNewChat}>Почати чат</button> : undefined} /> : <ul className="space-y-0.5">{filtered.map((conversation) => {
@@ -134,14 +134,14 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
               const last = conversation.lastMessage;
               const preview = last ? `${last.senderId === user?.id ? 'Ви: ' : conversation.kind !== 'direct' ? `${last.sender?.displayName?.split(' ')[0] || 'Учасник'}: ` : ''}${last.content || (last.kind === 'text' ? 'Повідомлення' : kindLabels[last.kind] || 'Вкладення')}` : 'Повідомлень ще немає';
               return <li key={conversation.id} className="group relative" onContextMenu={(event) => { event.preventDefault(); openMenu(conversation, event.clientX, event.clientY); }}>
-                <button type="button" onClick={() => selectConversation(conversation.id)} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition ${active ? 'bg-accent-50 dark:bg-accent-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'}`} aria-current={active ? 'page' : undefined}>
-                  <Avatar name={conversation.title} src={conversation.avatarUrl} online={other ? presence[other.id] ?? other.online : undefined} square={conversation.kind !== 'direct'} cosmetics={other?.cosmetics} />
+                <button type="button" onClick={() => selectConversation(conversation.id)} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition ${active ? 'bg-ios-blue/10' : 'hover:bg-ios-fill/10'}`} aria-current={active ? 'page' : undefined}>
+                  <Avatar name={conversation.title} src={conversation.avatarUrl} online={other ? presence[other.id] ?? other.online : undefined} cosmetics={other?.cosmetics} />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2 pr-7"><span className={`min-w-0 flex-1 truncate text-sm ${conversation.unreadCount ? 'font-bold' : 'font-semibold'}`}>{conversation.kind === 'direct' ? <StarDisplayName name={conversation.title} cosmetics={other?.cosmetics} verified={other?.isVerified} /> : conversation.title}</span><time className={`shrink-0 text-[11px] ${conversation.unreadCount ? 'font-semibold text-accent-600 dark:text-accent-400' : 'text-slate-400'}`} dateTime={last?.createdAt}>{formatConversationTime(last?.createdAt || conversation.updatedAt)}</time></span>
-                    <span className="mt-1 flex items-center gap-2"><span className={`min-w-0 flex-1 truncate text-xs ${conversation.unreadCount ? 'font-medium text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}>{preview}</span>{conversation.unreadCount > 0 && <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent-600 px-1.5 text-[10px] font-bold text-white">{conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}</span>}</span>
+                    <span className="flex items-center gap-2 pr-7"><span className={`min-w-0 flex-1 truncate text-sm ${conversation.unreadCount ? 'font-bold' : 'font-semibold'}`}>{conversation.kind === 'direct' ? <StarDisplayName name={conversation.title} cosmetics={other?.cosmetics} verified={other?.isVerified} /> : conversation.title}</span><time className={`shrink-0 text-[11px] ${conversation.unreadCount ? 'font-semibold text-ios-blue' : 'text-ios-secondary'}`} dateTime={last?.createdAt}>{formatConversationTime(last?.createdAt || conversation.updatedAt)}</time></span>
+                    <span className="mt-1 flex items-center gap-2"><span className={`min-w-0 flex-1 truncate text-xs ${conversation.unreadCount ? 'font-medium text-ios-label' : 'text-ios-secondary'}`}>{preview}</span>{conversation.unreadCount > 0 && <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-ios-blue px-1.5 text-[10px] font-bold text-white">{conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}</span>}</span>
                   </span>
                 </button>
-                <button type="button" onClick={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); openMenu(conversation, bounds.right - MENU_WIDTH, bounds.bottom + 4); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 opacity-100 transition hover:bg-slate-200/80 hover:text-slate-700 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 dark:hover:bg-slate-700 dark:hover:text-slate-200" aria-label={`Дії з розмовою «${conversation.title}»`}><MoreVertical size={15} /></button>
+                <button type="button" onClick={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); openMenu(conversation, bounds.right - MENU_WIDTH, bounds.bottom + 4); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-ios-secondary opacity-100 transition hover:bg-ios-fill/10 hover:text-ios-label md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100" aria-label={`Дії з розмовою «${conversation.title}»`}><MoreVertical size={15} /></button>
               </li>;
             })}</ul>}
           </div>

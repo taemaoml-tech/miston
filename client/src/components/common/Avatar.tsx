@@ -38,12 +38,12 @@ export function Avatar({ name, src, size = 'md', online, square = false, cosmeti
       style={style}
     >
       <div className={`h-full w-full ${radius} ${hasFrame ? 'p-[2px]' : ''} ${animated ? 'avatar-frame-animated' : ''}`} style={hasFrame ? { backgroundSize: animated ? '200% 200%' : undefined } : undefined}>
-        <div className={`flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-400 to-violet-600 font-semibold text-white ${radius}`}>
+        <div className={`flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#4A97FF] to-[#007AFF] font-semibold text-white ${radius}`}>
           {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : initials(name)}
         </div>
       </div>
       {online !== undefined && (
-        <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900 ${online ? 'bg-emerald-500' : 'bg-slate-400'}`} aria-label={online ? 'Онлайн' : 'Офлайн'} />
+        <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-black ${online ? 'bg-[#34C759]' : 'bg-ios-secondary'}`} aria-label={online ? 'Онлайн' : 'Офлайн'} />
       )}
     </div>
   );

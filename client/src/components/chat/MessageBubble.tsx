@@ -76,14 +76,14 @@ export function MessageBubble({
     ? message.content.split(/(@[a-zA-Z0-9_]{3,32})/g).map((part, index) => {
       if (!part.startsWith('@') || !mentionSet.has(part.slice(1).toLocaleLowerCase('uk-UA'))) return part;
       return (
-        <span key={index} className={own ? 'rounded bg-white/25 px-0.5 font-semibold' : 'rounded bg-accent-100 px-0.5 font-semibold text-accent-700 dark:bg-accent-500/20 dark:text-accent-300'}>
+        <span key={index} className={own ? 'rounded bg-white/25 px-0.5 font-semibold' : 'rounded bg-ios-blue/10 px-0.5 font-semibold text-ios-blue'}>
           {part}
         </span>
       );
     })
     : null;
   const forwardLabel = message.forwardedFrom ? (
-    <p className={`mb-1 flex items-center gap-1.5 text-[11px] font-semibold ${own ? 'text-white/85' : 'text-accent-600 dark:text-accent-400'}`}>
+    <p className={`mb-1 flex items-center gap-1.5 text-[11px] font-semibold ${own ? 'text-white/85' : 'text-ios-blue'}`}>
       <Forward size={12} className="shrink-0" aria-hidden />
       <span className="truncate">
         Переслано від {message.forwardedFrom.displayName}
@@ -96,9 +96,9 @@ export function MessageBubble({
       type="button"
       onClick={() => { if (message.replyTo) onJumpTo?.(message.replyTo.id); }}
       title="Перейти до повідомлення"
-      className={`mb-1.5 block w-full rounded-lg border-l-2 px-2 py-1 text-left text-xs transition ${own ? 'border-white/70 bg-white/10 hover:bg-white/15' : 'border-accent-400 bg-slate-100/80 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700'}`}
+      className={`mb-1.5 block w-full rounded-lg border-l-2 px-2 py-1 text-left text-xs transition ${own ? 'border-white/70 bg-white/10 hover:bg-white/15' : 'border-ios-blue/50 bg-ios-fill/10 hover:bg-ios-fill/20'}`}
     >
-      <span className={`block truncate font-semibold ${own ? 'text-white' : 'text-accent-600 dark:text-accent-400'}`}>{message.replyTo.senderName}</span>
+      <span className={`block truncate font-semibold ${own ? 'text-white' : 'text-ios-blue'}`}>{message.replyTo.senderName}</span>
       <span className={`block truncate ${own ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
         {message.replyTo.deleted ? 'Повідомлення видалено' : message.replyTo.content || 'Вкладення'}
       </span>
@@ -109,21 +109,21 @@ export function MessageBubble({
     <div data-message-id={message.id} className={`group flex items-end gap-2 px-3 py-0.5 sm:px-6 ${own ? 'flex-row-reverse' : ''}`}>
       {!own && showSender ? <Avatar name={sender?.displayName || 'Учасник'} src={sender?.avatarUrl} size="sm" cosmetics={cosmetics} /> : !own ? <div className="w-8 shrink-0" /> : null}
       <div className={`min-w-0 max-w-[82%] sm:max-w-[70%] lg:max-w-[62%] ${own ? 'items-end' : ''}`}>
-        {!own && showSender && <p className="mb-1 ml-1 text-xs font-semibold text-accent-600 dark:text-accent-400"><StarDisplayName name={sender?.displayName || 'Учасник'} cosmetics={cosmetics} verified={sender?.isVerified} /></p>}
+        {!own && showSender && <p className="mb-1 ml-1 text-xs font-semibold text-ios-blue"><StarDisplayName name={sender?.displayName || 'Учасник'} cosmetics={cosmetics} verified={sender?.isVerified} /></p>}
         <div className="relative flex flex-col">
           <button
             type="button"
             onClick={() => setMenuOpen((value) => !value)}
             aria-label="Дії з повідомленням"
             aria-expanded={menuOpen}
-            className={`absolute -top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border bg-white text-slate-500 shadow-sm transition hover:text-accent-600 focus:opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-accent-400 ${own ? 'right-1' : 'left-1'} ${menuOpen ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}
+            className={`ios-glass absolute -top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full shadow-sm transition hover:text-ios-blue focus:opacity-100 ${own ? 'right-1' : 'left-1'} ${menuOpen ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}
           >
             <MoreHorizontal size={16} />
           </button>
           {menuOpen && (
             <>
               <button type="button" className="fixed inset-0 z-20 cursor-default" tabIndex={-1} aria-label="Закрити меню дій" onClick={closeMenu} />
-              <div className={`absolute top-full z-30 mt-1 w-64 rounded-2xl border bg-white p-1.5 shadow-soft animate-slide-up dark:border-slate-700 dark:bg-slate-800 ${own ? 'right-0' : 'left-0'}`}>
+              <div className={`ios-glass absolute top-full z-30 mt-1 w-64 rounded-[20px] p-1.5 shadow-soft animate-slide-up ${own ? 'right-0' : 'left-0'}`}>
                 <div className="flex items-center justify-between gap-0.5">
                   {REACTION_EMOJIS.map((emoji) => (
                     <button key={emoji} type="button" onClick={() => react(emoji)} title={REACTION_LABELS[emoji]} aria-label={REACTION_LABELS[emoji]} className="flex h-8 w-8 items-center justify-center rounded-lg text-lg transition hover:bg-slate-100 dark:hover:bg-slate-700">{emoji}</button>
@@ -165,7 +165,7 @@ export function MessageBubble({
               <div className="mt-1 flex items-center gap-1 px-1 text-[10px] text-slate-400 dark:text-slate-500">
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
                 <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-                {own && (isRead ? <CheckCheck size={14} aria-label="Прочитано" /> : <Check size={14} aria-label="Надіслано" />)}
+                {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>
           ) : isVideoNote && fileUrl ? (
@@ -176,11 +176,11 @@ export function MessageBubble({
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
                 {message.editedAt && <span className="italic">змінено</span>}
                 <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-                {own && (isRead ? <CheckCheck size={14} aria-label="Прочитано" /> : <Check size={14} aria-label="Надіслано" />)}
+                {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>
           ) : (
-            <div className={`rounded-2xl px-3 py-2 shadow-sm ${own ? 'rounded-br-md bg-gradient-to-br from-accent-500 to-accent-700 text-white' : 'rounded-bl-md border bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'} ${highlight ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900' : ''}`}>
+            <div className={`relative rounded-[18px] px-3.5 py-2 text-[15px] leading-5 shadow-sm after:pointer-events-none after:absolute after:-bottom-0.5 after:h-3 after:w-3 after:content-[''] ${own ? 'rounded-br-[6px] bg-ios-blue text-white after:right-[-5px] after:rounded-br-[11px] after:bg-ios-blue' : 'rounded-bl-[6px] bg-ios-incoming text-ios-label after:left-[-5px] after:rounded-bl-[11px] after:bg-ios-incoming'} ${highlight ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-ios-bg' : ''}`}>
               {replyQuote}
               {forwardLabel}
               {attachment()}
@@ -189,7 +189,7 @@ export function MessageBubble({
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
                 {message.editedAt && <span className="italic">змінено</span>}
                 <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-                {own && (isRead ? <CheckCheck size={14} aria-label="Прочитано" /> : <Check size={14} aria-label="Надіслано" />)}
+                {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>
           )}
@@ -204,7 +204,7 @@ export function MessageBubble({
                     onClick={() => onReact(reaction.emoji)}
                     aria-pressed={mine}
                     aria-label={`${REACTION_LABELS[reaction.emoji] ?? reaction.emoji}: ${reaction.userIds.length}`}
-                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition ${mine ? 'border-accent-400 bg-accent-50 text-accent-700 dark:border-accent-500/60 dark:bg-accent-500/15 dark:text-accent-300' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
+                    className={`ios-glass flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition ${mine ? 'text-ios-blue ring-1 ring-ios-blue/30' : 'text-ios-secondary hover:text-ios-label'}`}
                   >
                     <span>{reaction.emoji}</span>
                     <span className="tabular-nums">{reaction.userIds.length}</span>

@@ -93,27 +93,27 @@ export function LoginConfirmation() {
   }
 
   return (
-    <main className="relative flex min-h-full items-center justify-center overflow-hidden bg-slate-50 p-5 dark:bg-slate-950">
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl" />
+    <main className="relative flex min-h-full items-center justify-center overflow-hidden bg-ios-bg p-5">
+      <div className="pointer-events-none absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/[.07] blur-3xl" />
 
-      <div className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/95 p-6 shadow-soft backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 sm:p-8">
+      <div className="ios-glass relative w-full max-w-md rounded-[32px] border p-6 shadow-soft sm:p-8">
         <div className="mb-6 flex items-center justify-between">
           <Logo />
           <button
             type="button"
             onClick={cancelLogin}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 transition hover:text-accent-600"
+            className="flex items-center gap-1.5 text-xs font-semibold text-ios-secondary transition hover:text-ios-blue"
           >
             <ArrowLeft size={14} /> Інший акаунт
           </button>
         </div>
 
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 dark:bg-accent-500/10 dark:text-accent-400">
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-[18px] bg-ios-blue text-white shadow-glow">
           {viaMiston ? <MessageSquareText size={22} /> : <Smartphone size={22} />}
         </div>
         <h2 className="text-2xl font-bold tracking-tight">Підтвердіть вхід</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm leading-6 text-ios-secondary">
           {viaMiston
             ? 'Ми надіслали 8-значний код у Miston — у чат із ботом Miston. Відкрийте застосунок на іншому пристрої, щоб побачити його.'
             : viaEmail
@@ -122,7 +122,7 @@ export function LoginConfirmation() {
         </p>
 
         {pendingLogin.deliveryError && (
-          <div role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+          <div role="status" className="mt-4 ios-glass rounded-2xl border border-amber-500/25 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-300">
             {pendingLogin.deliveryError}
             {viaMiston ? ' Код також є в чаті Miston.' : ''}
           </div>
@@ -130,7 +130,7 @@ export function LoginConfirmation() {
 
         {pendingTwoFactor ? (
           <form onSubmit={submit2fa} className="mt-6 space-y-4">
-            <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <div role="status" className="ios-glass rounded-2xl border border-[#34C759]/25 px-3.5 py-3 text-sm text-[#248A3D] dark:text-[#30D158]">
               Код підтвердження правильний. Введіть пароль двоетапної перевірки.
             </div>
             <label className="block">
@@ -146,7 +146,7 @@ export function LoginConfirmation() {
               />
             </label>
             {error && (
-              <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">
+              <div role="alert" className="ios-glass rounded-2xl border border-rose-500/25 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">
                 {error}
               </div>
             )}
@@ -173,17 +173,17 @@ export function LoginConfirmation() {
             </label>
 
             {pendingLogin.smsDebugCode && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+              <div className="ios-glass rounded-2xl border border-amber-500/25 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-300">
                 Тестовий код: <span className="font-mono text-base font-bold tracking-widest">{pendingLogin.smsDebugCode}</span>
               </div>
             )}
             {notice && (
-              <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <div role="status" className="ios-glass rounded-2xl border border-[#34C759]/25 px-3.5 py-3 text-sm text-[#248A3D] dark:text-[#30D158]">
                 {notice}
               </div>
             )}
             {error && (
-              <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">
+              <div role="alert" className="ios-glass rounded-2xl border border-rose-500/25 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">
                 {error}
               </div>
             )}
@@ -200,7 +200,7 @@ export function LoginConfirmation() {
               type="button"
               onClick={() => void toEmail()}
               disabled={loading || cooldown > 0}
-              className="font-semibold text-accent-600 transition hover:text-accent-500 disabled:text-slate-400 dark:text-accent-400"
+              className="font-semibold text-ios-blue transition hover:text-accent-500 disabled:text-ios-secondary"
             >
               Немає доступу до Miston? Надіслати код на email
             </button>
@@ -210,7 +210,7 @@ export function LoginConfirmation() {
               type="button"
               onClick={() => void resend()}
               disabled={loading || cooldown > 0}
-              className="font-semibold text-slate-500 underline transition hover:text-slate-800 disabled:text-slate-400 dark:hover:text-slate-200"
+              className="font-semibold text-ios-secondary underline transition hover:text-ios-label disabled:opacity-50"
             >
               {cooldown > 0
                 ? `Надіслати ще раз через ${cooldown} с`

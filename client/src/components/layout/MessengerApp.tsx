@@ -38,7 +38,7 @@ function MessengerLayout() {
   const openUser = (id: string) => setPreviewUserId(id);
   const openChatAction = (conversation: Conversation, action: ConversationAction) => setChatAction({ conversation, action });
   return (
-    <div className="flex h-dvh min-h-0 overflow-hidden bg-white dark:bg-slate-900">
+    <div className="flex h-dvh min-h-0 overflow-hidden bg-ios-bg text-ios-label">
       <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full`}><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} onStar={() => setModal('star')} /></div>
       <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} min-w-0 flex-1 md:flex-none`}>
         {activeServer ? <ChannelSidebar onCreateChannel={() => setModal('channel')} onAddMember={() => setModal('member')} onProfile={() => setModal('profile')} /> : <ConversationSidebar onNewChat={() => setModal('newChat')} onProfile={() => setModal('profile')} onOpenUser={openUser} onAction={openChatAction} onReportUser={(userId) => setReport({ userId })} />}

@@ -3,8 +3,8 @@ import type { StarCategory, StarRarity } from '../types/models';
 export const ACCENT_SCALES = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
 export const DEFAULT_ACCENT = [
-  '#eef2ff', '#e0e7ff', '#c7d2fe', '#a5b4fc', '#818cf8',
-  '#6366f1', '#4f46e5', '#4338ca', '#3730a3', '#312e81', '#1e1b4b',
+  '#e5f1ff', '#cde4ff', '#a9d0ff', '#7ab6ff', '#4a97ff',
+  '#007aff', '#0069e0', '#0058bc', '#00499a', '#003d7d', '#001f42',
 ];
 
 export function hexToRgb(value: string): string | null {

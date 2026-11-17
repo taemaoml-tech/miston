@@ -3,51 +3,88 @@
 @tailwind utilities;
 
 :root {
-  --accent-50: 238 242 255;
-  --accent-100: 224 231 255;
-  --accent-200: 199 210 254;
-  --accent-300: 165 180 252;
-  --accent-400: 129 140 248;
-  --accent-500: 99 102 241;
-  --accent-600: 79 70 229;
-  --accent-700: 67 56 202;
-  --accent-800: 55 48 163;
-  --accent-900: 49 46 129;
-  --accent-950: 30 27 75;
+  /* iOS blue accent. Star cosmetics can rewrite these channels at runtime. */
+  --accent-50: 229 241 255;
+  --accent-100: 205 228 255;
+  --accent-200: 169 208 255;
+  --accent-300: 122 182 255;
+  --accent-400: 74 151 255;
+  --accent-500: 0 122 255;
+  --accent-600: 0 105 224;
+  --accent-700: 0 88 188;
+  --accent-800: 0 73 154;
+  --accent-900: 0 61 125;
+  --accent-950: 0 31 66;
+
+  /* Semantic iOS colors. */
+  --ios-bg: 255 255 255;
+  --ios-surface: 255 255 255;
+  --ios-glass: 255 255 255;
+  --ios-separator: 60 60 67;
+  --ios-label: 0 0 0;
+  --ios-secondary: 138 138 142;
+  --ios-fill: 118 118 128;
+  --ios-incoming: 233 233 235;
+  --ios-blue: 0 122 255;
+}
+
+.dark {
+  --ios-bg: 0 0 0;
+  --ios-surface: 28 28 30;
+  --ios-glass: 28 28 30;
+  --ios-separator: 84 84 88;
+  --ios-label: 255 255 255;
+  --ios-secondary: 142 142 147;
+  --ios-fill: 58 58 60;
+  --ios-incoming: 38 37 42;
 }
 
 @layer base {
-  * { @apply border-slate-200 dark:border-slate-800; }
+  * { @apply border-ios-separator/15; }
   html { @apply h-full antialiased; }
-  body { @apply m-0 h-full bg-slate-100 font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-100; }
+  body {
+    @apply m-0 h-full bg-ios-bg font-sans text-ios-label;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   #root { @apply h-full; }
   button, input, textarea, select { font: inherit; }
   button, a { -webkit-tap-highlight-color: transparent; }
   button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-    @apply outline-none ring-2 ring-accent-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+    @apply outline-none ring-2 ring-ios-blue/60 ring-offset-2 ring-offset-ios-bg;
   }
   ::selection { @apply bg-accent-200 text-accent-950 dark:bg-accent-700 dark:text-white; }
 }
 
 @layer components {
-  .icon-btn { @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white; }
-  .primary-btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-50; }
-  .secondary-btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[.98] disabled:pointer-events-none disabled:opacity-50 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800; }
-  .text-input { @apply w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-accent-500 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500; }
-  .field-label { @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300; }
-  .surface { @apply bg-white dark:bg-slate-900; }
-  .subtle-scrollbar { scrollbar-width: thin; scrollbar-color: rgb(148 163 184 / .45) transparent; }
+  .ios-glass {
+    background-color: rgb(var(--ios-glass) / .72);
+    border-color: rgb(var(--ios-separator) / .16);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+  .dark .ios-glass {
+    background-color: rgb(var(--ios-glass) / .68);
+    border-color: rgb(var(--ios-separator) / .34);
+  }
+  .icon-btn { @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ios-secondary transition hover:bg-ios-fill/10 hover:text-ios-label active:scale-95 disabled:pointer-events-none disabled:opacity-40; }
+  .primary-btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-ios-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-600 active:scale-[.98] disabled:pointer-events-none disabled:opacity-50; }
+  .secondary-btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-ios-separator/15 bg-ios-fill/10 px-4 py-2 text-sm font-semibold text-ios-label transition hover:bg-ios-fill/20 active:scale-[.98] disabled:pointer-events-none disabled:opacity-50; }
+  .text-input { @apply w-full rounded-xl border border-ios-separator/15 bg-ios-fill/10 px-3.5 py-2.5 text-sm text-ios-label placeholder:text-ios-secondary transition focus:border-ios-blue focus:bg-ios-bg; }
+  .field-label { @apply mb-1.5 block text-sm font-medium text-ios-label; }
+  .surface { @apply bg-ios-bg; }
+  .subtle-scrollbar { scrollbar-width: thin; scrollbar-color: rgb(var(--ios-fill) / .35) transparent; }
   .subtle-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-  .subtle-scrollbar::-webkit-scrollbar-thumb { @apply rounded-full bg-slate-300 dark:bg-slate-700; }
+  .subtle-scrollbar::-webkit-scrollbar-thumb { @apply rounded-full bg-ios-fill/30; }
 }
 
 .chat-backdrop {
-  background-color: #f1f5f9;
-  background-image: var(--chat-image-light, radial-gradient(circle at 12% 15%, rgb(99 102 241 / .07) 0, transparent 28%), radial-gradient(circle at 90% 85%, rgb(139 92 246 / .06) 0, transparent 30%));
+  background-color: #f7f7f9;
+  background-image: var(--chat-image-light, radial-gradient(circle at 12% 15%, rgb(0 122 255 / .06) 0, transparent 28%), radial-gradient(circle at 90% 85%, rgb(0 122 255 / .05) 0, transparent 30%));
 }
 .dark .chat-backdrop {
-  background-color: #0b1120;
-  background-image: var(--chat-image-dark, radial-gradient(circle at 12% 15%, rgb(99 102 241 / .09) 0, transparent 30%), radial-gradient(circle at 90% 85%, rgb(139 92 246 / .07) 0, transparent 30%));
+  background-color: #000000;
+  background-image: var(--chat-image-dark, radial-gradient(circle at 12% 15%, rgb(0 122 255 / .10) 0, transparent 30%), radial-gradient(circle at 90% 85%, rgb(0 122 255 / .07) 0, transparent 30%));
 }
 
 .avatar-frame-animated {
@@ -123,7 +160,7 @@
 }
 
 .media-frame img, .media-frame video { display: block; max-width: 100%; }
-.message-content a { @apply text-accent-600 underline dark:text-accent-400; }
+.message-content a { @apply text-ios-blue underline; }
 
 .splash-mark { animation: miston-float 2.6s ease-in-out infinite; }
 .splash-halo { animation: miston-halo 2.6s ease-in-out infinite; }

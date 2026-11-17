@@ -96,29 +96,29 @@ export function PhoneVerification() {
   }
 
   return (
-    <main className="relative flex min-h-full items-center justify-center overflow-hidden bg-slate-50 p-5 dark:bg-slate-950">
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl" />
+    <main className="relative flex min-h-full items-center justify-center overflow-hidden bg-ios-bg p-5">
+      <div className="pointer-events-none absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/[.07] blur-3xl" />
 
-      <div className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/95 p-6 shadow-soft backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 sm:p-8">
+      <div className="ios-glass relative w-full max-w-md rounded-[32px] border p-6 shadow-soft sm:p-8">
         <div className="mb-6 flex items-center justify-between">
           <Logo />
           <button
             type="button"
             onClick={() => void logout()}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 transition hover:text-rose-500"
+            className="flex items-center gap-1.5 text-xs font-semibold text-ios-secondary transition hover:text-rose-500"
           >
             <LogOut size={14} /> Вийти
           </button>
         </div>
 
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 dark:bg-accent-500/10 dark:text-accent-400">
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-[18px] bg-ios-blue text-white shadow-glow">
           {step === 'phone' ? <Phone size={22} /> : <ShieldCheck size={22} />}
         </div>
         <h2 className="text-2xl font-bold tracking-tight">
           {step === 'phone' ? 'Додайте номер телефону' : 'Підтвердіть номер'}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm leading-6 text-ios-secondary">
           {step === 'phone'
             ? 'Для безпеки акаунта прив’яжіть номер телефону. Ми надішлемо 8-значний код через SMS.'
             : <>Код із 8 цифр надіслано на <span className="font-semibold text-slate-700 dark:text-slate-200">{maskedPhone}</span>.</>}
@@ -142,7 +142,7 @@ export function PhoneVerification() {
                 placeholder="+380 50 123 45 67"
               />
             </label>
-            {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">{error}</div>}
+            {error && <div role="alert" className="ios-glass rounded-2xl border border-rose-500/25 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">{error}</div>}
             <button type="submit" className="primary-btn w-full py-3" disabled={loading}>
               {loading ? <Spinner label="Надсилаємо код" className="text-white" /> : <>Надіслати код <ArrowRight size={17} /></>}
             </button>
@@ -165,24 +165,24 @@ export function PhoneVerification() {
               />
             </label>
             {debugCode && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+              <div className="ios-glass rounded-2xl border border-amber-500/25 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-300">
                 <MessageSquareText size={15} className="mr-1 inline" /> Тестовий код: <span className="font-mono text-base font-bold tracking-widest">{debugCode}</span>
               </div>
             )}
-            {notice && !debugCode && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">{notice}</div>}
-            {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">{error}</div>}
+            {notice && !debugCode && <div role="status" className="ios-glass rounded-2xl border border-[#34C759]/25 px-3.5 py-3 text-sm text-[#248A3D] dark:text-[#30D158]">{notice}</div>}
+            {error && <div role="alert" className="ios-glass rounded-2xl border border-rose-500/25 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">{error}</div>}
             <button type="submit" className="primary-btn w-full py-3" disabled={loading || code.length !== 8}>
               {loading ? <Spinner label="Перевіряємо" className="text-white" /> : <>Підтвердити <ShieldCheck size={17} /></>}
             </button>
             <div className="flex items-center justify-between gap-3 pt-1 text-xs">
-              <button type="button" onClick={() => { setStep('phone'); setError(''); setNotice(''); }} className="font-semibold text-slate-500 underline transition hover:text-slate-800 dark:hover:text-slate-200">
+              <button type="button" onClick={() => { setStep('phone'); setError(''); setNotice(''); }} className="font-semibold text-ios-secondary underline transition hover:text-ios-label">
                 Змінити номер
               </button>
               <button
                 type="button"
                 onClick={() => void sendCode()}
                 disabled={loading || cooldown > 0}
-                className="font-semibold text-accent-600 transition hover:text-accent-500 disabled:text-slate-400 dark:text-accent-400"
+                className="font-semibold text-ios-blue transition hover:text-accent-500 disabled:text-ios-secondary"
               >
                 {cooldown > 0 ? `Надіслати ще раз через ${cooldown} с` : 'Надіслати код ще раз'}
               </button>

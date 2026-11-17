@@ -4,7 +4,21 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', 'Inter', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        ios: {
+          bg: 'rgb(var(--ios-bg) / <alpha-value>)',
+          surface: 'rgb(var(--ios-surface) / <alpha-value>)',
+          glass: 'rgb(var(--ios-glass) / <alpha-value>)',
+          separator: 'rgb(var(--ios-separator) / <alpha-value>)',
+          label: 'rgb(var(--ios-label) / <alpha-value>)',
+          secondary: 'rgb(var(--ios-secondary) / <alpha-value>)',
+          fill: 'rgb(var(--ios-fill) / <alpha-value>)',
+          incoming: 'rgb(var(--ios-incoming) / <alpha-value>)',
+          blue: '#007AFF',
+        },
         // Theme cosmetics rewrite these RGB channels at runtime.
         accent: {
           50: 'rgb(var(--accent-50) / <alpha-value>)',
@@ -21,8 +35,8 @@ export default {
         },
       },
       boxShadow: {
-        soft: '0 12px 40px -16px rgb(15 23 42 / 0.18)',
-        glow: '0 8px 24px -8px rgb(99 102 241 / 0.55)',
+        soft: '0 12px 40px -18px rgb(0 0 0 / 0.22)',
+        glow: '0 8px 24px -8px rgb(0 122 255 / 0.55)',
       },
       animation: {
         'fade-in': 'fade-in 180ms ease-out',
