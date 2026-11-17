@@ -111,7 +111,7 @@ async function issuePhoneCode(userId: string, phone: string): Promise<IssuedPhon
   };
 }
 
-function authPayload(user: Record<string, unknown>, refreshToken: string) {
+export function authPayload(user: Record<string, unknown>, refreshToken: string) {
   const serialized = serializeUser(user);
   return {
     token: signAccessToken(serialized.id, serialized.role),

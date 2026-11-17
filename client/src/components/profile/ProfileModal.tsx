@@ -1,6 +1,6 @@
 import {
   BatteryCharging, BellRing, Bot, Camera, CheckCircle2, ChevronLeft, ChevronRight, Copy, Database,
-  Folder, Languages, LockKeyhole, LogOut, MessageSquare, MonitorSmartphone,
+  Folder, Languages, LockKeyhole, LogOut, Mail, MessageSquare, MonitorSmartphone,
   ShieldCheck, Smartphone, UserRound,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -18,11 +18,13 @@ import { Avatar } from '../common/Avatar';
 import { INFO_LINKS } from '../info/infoLinks';
 import { Modal } from '../common/Modal';
 import { NotificationSettings } from './NotificationSettings';
+import { MistIdCard } from './MistIdCard';
+import { MistIdInbox } from './MistIdInbox';
 import { StarDisplayName } from '../star/StarDisplayName';
 
 type Section =
   | 'root' | 'account' | 'chats' | 'privacy' | 'notifications'
-  | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots';
+  | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots' | 'mistInbox';
 
 const SECTION_TITLES: Record<Section, string> = {
   root: 'Налаштування',
@@ -36,6 +38,7 @@ const SECTION_TITLES: Record<Section, string> = {
   energy: 'Економія енергії',
   language: 'Мова',
   bots: 'Боти',
+  mistInbox: 'Пошта Mist ID',
 };
 
 function maskPhone(phone: string): string {
@@ -228,6 +231,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           </div>
 
           <div className="divide-y overflow-hidden rounded-2xl border bg-white dark:border-slate-800 dark:bg-slate-900">
+            <SettingsRow icon={<Mail size={19} />} color="bg-indigo-500" title="Пошта Mist ID" subtitle="Системні повідомлення акаунту" onClick={() => setSection('mistInbox')} />
             <SettingsRow icon={<UserRound size={19} />} color="bg-sky-500" title="Акаунт" subtitle="Номер, ім'я користувача, «Про себе»" onClick={() => setSection('account')} />
             <SettingsRow icon={<MessageSquare size={19} />} color="bg-orange-500" title="Налаштування чатів" subtitle="Тема, анімації, вигляд повідомлень" onClick={() => setSection('chats')} />
             <SettingsRow icon={<LockKeyhole size={19} />} color="bg-emerald-500" title="Приватність і безпека" subtitle="Підтвердження входу, номер телефону, сесії" onClick={() => setSection('privacy')} />
@@ -255,7 +259,11 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
         <div>
           <BackButton onClick={() => setSection('root')} />
           {section === 'account' && (
-            <form onSubmit={saveAccount}>
+            <>
+              <div className="mb-4">
+                <MistIdCard mistId={user.mistId || `${user.username}@mist.id`} displayName={user.displayName} avatarUrl={user.avatarUrl} />
+              </div>
+              <form onSubmit={saveAccount}>
               <div
                 className="mb-4 rounded-2xl border"
                 style={backgroundGradient.length >= 2 ? { backgroundImage: `linear-gradient(135deg, ${backgroundGradient.join(', ')})` } : undefined}
@@ -277,6 +285,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                 <label className="block"><span className="field-label">Показуване ім'я</span><input required maxLength={60} className="text-input" value={form.displayName} onChange={(e) => { setForm({ ...form, displayName: e.target.value }); setSaved(false); }} /></label>
                 <label className="block"><span className="field-label">Ім'я користувача</span><div className="relative"><span className="absolute left-3.5 top-2.5 text-sm text-slate-400">@</span><input required minLength={3} pattern="[a-zA-Z0-9_]+" className="text-input pl-8" value={form.username} onChange={(e) => { setForm({ ...form, username: e.target.value }); setSaved(false); }} /></div></label>
                 <label className="block"><span className="field-label">Про себе</span><textarea className="text-input min-h-24 resize-none" maxLength={240} value={form.bio} onChange={(e) => { setForm({ ...form, bio: e.target.value }); setSaved(false); }} placeholder="Трохи про себе…" /><span className="mt-1 block text-right text-xs text-slate-400">{form.bio.length}/240</span></label>
+                <div><span className="field-label">Mist ID</span><div className="rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">{user.mistId || `${user.username}@mist.id`}</div></div>
                 <div><span className="field-label">Електронна пошта</span><div className="rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">{user.email}</div></div>
                 <div>
                   <span className="field-label">Номер телефону</span>
@@ -294,6 +303,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                 <button type="submit" className="primary-btn" disabled={saving || !form.displayName.trim() || !form.username.trim()}>{saving ? 'Збереження…' : 'Зберегти зміни'}</button>
               </div>
             </form>
+            </>
           )}
 
           {section === 'chats' && (
@@ -414,6 +424,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           )}
 
           {section === 'notifications' && <NotificationSettings />}
+          {section === 'mistInbox' && <MistIdInbox />}
 
           {section === 'data' && (
             <div className="space-y-4">

@@ -15,11 +15,17 @@ export function AuthPage() {
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [notice, setNotice] = useState('');
+  const [savedAccount, setSavedAccount] = useState<string | null>(null);
   useEffect(() => {
     const value = sessionStorage.getItem(SESSION_NOTICE_KEY);
-    if (!value) return;
-    sessionStorage.removeItem(SESSION_NOTICE_KEY);
-    setNotice(value);
+    if (value) {
+      sessionStorage.removeItem(SESSION_NOTICE_KEY);
+      setNotice(value);
+    }
+    try {
+      const last = localStorage.getItem('relay.lastUsername');
+      if (last) setSavedAccount(last);
+    } catch { /* ignore */ }
   }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,8 +42,13 @@ export function AuthPage() {
     if (form.password.length < 8) { setError('Пароль має містити щонайменше 8 символів.'); return; }
     setLoading(true);
     try {
-      if (mode === 'login') await login(form.identifier.trim(), form.password);
-      else await register(form.email.trim(), form.username.trim(), form.displayName.trim(), form.password, form.phone.trim());
+      if (mode === 'login') {
+        await login(form.identifier.trim(), form.password);
+        try { localStorage.setItem('relay.lastUsername', form.identifier.trim()); } catch { /* ignore */ }
+      } else {
+        await register(form.email.trim(), form.username.trim(), form.displayName.trim(), form.password, form.phone.trim());
+        try { localStorage.setItem('relay.lastUsername', form.username.trim()); } catch { /* ignore */ }
+      }
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -85,6 +96,15 @@ export function AuthPage() {
               <h2 className="text-2xl font-bold tracking-tight">{mode === 'login' ? 'З поверненням' : 'Створіть акаунт'}</h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{mode === 'login' ? 'Продовжте з того місця, де зупинилися.' : 'Ваша наступна розмова починається тут.'}</p>
             </div>
+            {savedAccount && mode === 'login' && (
+              <div className="mb-5 rounded-2xl border border-accent-200 bg-accent-50 p-4 dark:border-accent-500/30 dark:bg-accent-950/30">
+                <p className="text-sm font-semibold text-accent-700 dark:text-accent-300">Увійти за допомогою Mist ID</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{savedAccount}@mist.id</p>
+                <button type="button" className="primary-btn mt-3 w-full py-2.5" onClick={() => { setForm((f) => ({ ...f, identifier: savedAccount })); }}>
+                  Продовжити
+                </button>
+              </div>
+            )}
             {notice && (
               <div role="status" className="mb-5 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
                 <span className="flex min-w-0 items-start gap-2"><ShieldAlert size={16} className="mt-0.5 shrink-0" /><span>{notice}</span></span>
@@ -98,7 +118,7 @@ export function AuthPage() {
             </div>
             <form onSubmit={submit} className="space-y-4">
               {mode === 'login' ? (
-                <label className="block"><span className="field-label">Електронна пошта або ім'я користувача</span><input className="text-input" autoComplete="username" required autoFocus value={form.identifier} onChange={(e) => update('identifier', e.target.value)} placeholder="you@example.com" /></label>
+                <label className="block"><span className="field-label">Mist ID, логін або email</span><input className="text-input" autoComplete="username" required autoFocus value={form.identifier} onChange={(e) => update('identifier', e.target.value)} placeholder="username@mist.id" /></label>
               ) : (
                 <>
                   <label className="block"><span className="field-label">Показуване ім'я</span><input className="text-input" autoComplete="name" required maxLength={60} value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="Олена Коваль" /></label>

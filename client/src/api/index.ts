@@ -200,6 +200,10 @@ export const api = {
     markRead: (id: string) => request<{ ok: boolean }>(`/mist-inbox/${id}/read`, { method: 'POST' }),
     markAllRead: () => request<{ ok: boolean }>('/mist-inbox/read-all', { method: 'POST' }),
   },
+  mistQr: {
+    generate: () => request<{ token: string; expiresAt: string }>('/mist-qr/generate', { method: 'POST' }),
+    verify: (token: string) => request<AuthResponse>('/mist-qr/verify', { method: 'POST', body: { token } }),
+  },
 };
 
 export type { ConversationKind };

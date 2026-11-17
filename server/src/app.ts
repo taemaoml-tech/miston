@@ -17,6 +17,7 @@ import adminRoutes from './routes/admin';
 import complaintRoutes from './routes/complaints';
 import meetingRoutes from './routes/meetings';
 import mistInboxRoutes from './routes/mistInbox';
+import mistQrRoutes from './routes/mistQr';
 import notificationRoutes from './routes/notifications';
 import starRoutes from './routes/star';
 import stickerRoutes from './routes/stickers';
@@ -96,6 +97,7 @@ export function createApp(): express.Express {
   app.use('/api/admin', adminRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/mist-inbox', mistInboxRoutes);
+app.use('/api/mist-qr', mistQrRoutes);
 
   if (config.CLIENT_DIR) {
     const clientDir = path.resolve(config.CLIENT_DIR);
