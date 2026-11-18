@@ -262,3 +262,20 @@ html.android.dark .ios-glass {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Режим економії енергії: вимикаємо анімації, переходи та GPU-розмиття скляних панелей. */
+html.energy-saving *,
+html.energy-saving *::before,
+html.energy-saving *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.energy-saving .ios-glass {
+  background-color: rgb(var(--ios-bg) / .98) !important;
+}
+html.energy-saving.dark .ios-glass {
+  background-color: rgb(20 20 22 / .98) !important;
+}

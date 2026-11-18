@@ -1,8 +1,9 @@
-import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, Menu, MessageSquarePlus, MoreVertical, Search, Trash2, Users, X } from 'lucide-react';
+import { Bell, Bookmark, Check, Eraser, Flag, Folder, LoaderCircle, LogOut, Menu, MessageSquarePlus, MoreVertical, Search, Trash2, Users, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFriends } from '../../contexts/FriendsContext';
+import { useFolders } from '../../contexts/FoldersContext';
 import { useMessenger } from '../../contexts/MessengerContext';
 import type { Conversation } from '../../types/models';
 import { formatConversationTime } from '../../utils/format';
@@ -19,7 +20,11 @@ import { StarDisplayName } from '../star/StarDisplayName';
 const kindLabels: Record<string, string> = { image: 'Фото', video: 'Відео', video_note: 'Відеокружечок', document: 'Документ', voice: 'Голосове повідомлення', sticker: 'Стікер' };
 
 const MENU_WIDTH = 224;
-const MENU_HEIGHT = 172;
+const MENU_HEIGHT = 208;
+const FOLDER_COLORS: Record<string, string> = {
+  blue: '#007AFF', green: '#34C759', purple: '#AF52DE',
+  amber: '#FF9F0A', rose: '#FF2D55', cyan: '#32ADE6',
+};
 
 interface RowMenu {
   conversation: Conversation;
@@ -38,13 +43,16 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
   const { user } = useAuth();
   const { conversations, activeConversation, selectConversation, loading, error, reload, presence, systemUnread, savedNotes, openSavedNotes } = useMessenger();
   const { incomingCount } = useFriends();
+  const { folders, activeFolderId, setActiveFolderId, addConversation, removeConversation } = useFolders();
   const [tab, setTab] = useState<'chats' | 'friends'>('chats');
   const [inboxOpen, setInboxOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<RowMenu | null>(null);
+  const [folderMenu, setFolderMenu] = useState<RowMenu | null>(null);
   const [openingNotes, setOpeningNotes] = useState(false);
 
   useAndroidBack(() => {
+    if (folderMenu) { setFolderMenu(null); return true; }
     if (menu) { setMenu(null); return true; }
     if (inboxOpen) { setInboxOpen(false); return true; }
     if (tab === 'friends') { setTab('chats'); return true; }
@@ -64,12 +72,23 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
   function closeMenu() {
     setMenu(null);
   }
+
+  function openFolderMenu(conversation: Conversation, x: number, y: number) {
+    setFolderMenu({ conversation, x: Math.max(8, Math.min(x, window.innerWidth - MENU_WIDTH - 8)), y: Math.max(8, Math.min(y, window.innerHeight - 180)) });
+  }
+
   // Нотатки живуть окремим закріпленим рядком угорі, а не в спільному списку.
   const directConversations = useMemo(
     () => conversations.filter((conversation) => conversation.kind !== 'channel' && conversation.kind !== 'saved'),
     [conversations],
   );
-  const filtered = useMemo(() => directConversations.filter((conversation) => `${conversation.title} ${conversation.lastMessage?.content || ''}`.toLowerCase().includes(query.toLowerCase())), [directConversations, query]);
+  const folderConversations = useMemo(() => {
+    if (!activeFolderId) return directConversations;
+    const folder = folders.find((item) => item.id === activeFolderId);
+    if (!folder) return directConversations;
+    return directConversations.filter((conversation) => folder.conversationIds.includes(conversation.id));
+  }, [directConversations, activeFolderId, folders]);
+  const filtered = useMemo(() => folderConversations.filter((conversation) => `${conversation.title} ${conversation.lastMessage?.content || ''}`.toLowerCase().includes(query.toLowerCase())), [folderConversations, query]);
 
   return (
     <aside className="relative flex h-full min-w-0 flex-1 flex-col border-r border-ios-separator/10 bg-ios-glass/80 backdrop-blur-xl md:w-80 md:flex-none lg:w-[340px]" aria-label="Розмови та друзі">
@@ -95,6 +114,18 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
       {tab === 'chats' ? (
         <>
           <div className="px-3 pb-2 pt-0.5"><label className="relative block"><Search size={17} className="absolute left-3.5 top-2.5 text-ios-secondary" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input rounded-full border-transparent bg-ios-fill/10 py-2 pl-10 pr-9 placeholder:text-ios-secondary focus:border-ios-blue focus:bg-ios-bg" placeholder="Пошук" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-ios-secondary hover:text-ios-label" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>
+          {folders.length > 0 && (
+            <div className="subtle-scrollbar flex shrink-0 items-center gap-1.5 overflow-x-auto px-3 pb-2" aria-label="Папки чатів">
+              <button type="button" onClick={() => setActiveFolderId(null)} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeFolderId ? 'bg-ios-fill/10 text-ios-secondary hover:bg-ios-fill/20' : 'bg-ios-blue text-white'}`}>Усі чати</button>
+              {folders.map((folder) => (
+                <button type="button" key={folder.id} onClick={() => setActiveFolderId(activeFolderId === folder.id ? null : folder.id)} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${activeFolderId === folder.id ? 'bg-ios-blue text-white' : 'bg-ios-fill/10 text-ios-secondary hover:bg-ios-fill/20'}`}>
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue }} />
+                  <span className="max-w-[110px] truncate">{folder.name}</span>
+                  <span className="opacity-60">{folder.conversationIds.length}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="group relative px-2 pb-1">
             <button type="button" onClick={() => void openNotes()} disabled={openingNotes} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition disabled:opacity-70 ${savedNotes && activeConversation?.id === savedNotes.id ? 'bg-ios-blue/10' : 'hover:bg-ios-fill/10'}`} aria-current={savedNotes && activeConversation?.id === savedNotes.id ? 'page' : undefined}>
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ios-blue/10 text-ios-blue">{openingNotes ? <LoaderCircle size={20} className="animate-spin" /> : <Bookmark size={22} />}</span>
@@ -130,6 +161,29 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
         <FriendsPanel onOpenUser={onOpenUser} onChatStarted={() => setTab('chats')} />
       )}
 
+      {folderMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setFolderMenu(null)} onContextMenu={(event) => { event.preventDefault(); setFolderMenu(null); }} aria-hidden="true" />
+          <div className="fixed z-50 w-56 overflow-hidden rounded-2xl border bg-white p-1 shadow-xl animate-fade-in dark:border-slate-700 dark:bg-slate-800" style={{ left: folderMenu.x, top: folderMenu.y }} role="menu" aria-label="Папки для чату">
+            <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ios-secondary">Папки</p>
+            {folders.length === 0 && <p className="px-3 py-2 text-xs text-ios-secondary">Спочатку створіть папку в Налаштуваннях.</p>}
+            {folders.map((folder) => {
+              const assigned = folder.conversationIds.includes(folderMenu.conversation.id);
+              return (
+                <button type="button" role="menuitem" key={folder.id} onClick={() => {
+                  void (assigned ? removeConversation(folder.id, folderMenu.conversation.id) : addConversation(folder.id, folderMenu.conversation.id));
+                  setFolderMenu(null);
+                }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue }} />
+                  <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+                  {assigned && <Check size={14} className="shrink-0 text-ios-blue" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       {menu && (() => {
         const role = menu.conversation.members.find((member) => member.id === user?.id)?.role;
         const isGroup = menu.conversation.kind === 'group';
@@ -140,6 +194,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
           <>
             <div className="fixed inset-0 z-40" onClick={closeMenu} onContextMenu={(event) => { event.preventDefault(); closeMenu(); }} aria-hidden="true" />
             <div className="fixed z-50 w-56 overflow-hidden rounded-2xl border bg-white p-1 shadow-xl animate-fade-in dark:border-slate-700 dark:bg-slate-800" style={{ left: menu.x, top: menu.y }} role="menu" aria-label={`Дії з розмовою «${menu.conversation.title}»`}>
+              <Menuitem icon={Folder} label="Додати до папки" onSelect={() => { const bounds = { right: menu.x + MENU_WIDTH, bottom: menu.y + 88 }; setMenu(null); openFolderMenu(menu.conversation, bounds.right - MENU_WIDTH, bounds.bottom); }} />
               <Menuitem icon={Eraser} label={isSaved ? 'Очистити нотатки' : 'Очистити історію'} onSelect={() => { closeMenu(); onAction(menu.conversation, 'clear'); }} />
               <Menuitem icon={isGroup && !canDeleteForAll ? LogOut : Trash2} label={isGroup ? (canDeleteForAll ? 'Видалити гру' : 'Покинути гру') : isSaved ? 'Видалити нотатки' : 'Видалити чат'} danger onSelect={() => { closeMenu(); onAction(menu.conversation, 'delete'); }} />
               {otherMember && <Menuitem icon={Flag} label="Скаржитися на співрозмовника" onSelect={() => { closeMenu(); onReportUser(otherMember.id); }} />}

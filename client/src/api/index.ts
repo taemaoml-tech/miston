@@ -1,4 +1,4 @@
-import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, CallInfo, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
+import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, BotAccount, CallInfo, ChatFolder, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
 import { request, tokenStore } from './client';
 
 export const api = {
@@ -51,7 +51,19 @@ export const api = {
   },
   bots: {
     father: () => request<{ user: { id: string; username: string; displayName: string } }>('/bots/father'),
-    mine: () => request<{ bots: Array<{ id: string; userId: string; ownerId: string; username: string; displayName: string; description: string; token: string; avatarUrl: string | null; funMode: boolean; isActive: boolean; createdAt: string }> }>('/bots/mine'),
+    mine: () => request<{ bots: BotAccount[] }>('/bots/mine'),
+    connect: (token: string) => request<{ bot: BotAccount }>('/bots/connect', { method: 'POST', body: { token } }),
+    update: (username: string, data: { funMode?: boolean; description?: string; displayName?: string }) => request<{ bot: BotAccount }>(`/bots/${encodeURIComponent(username)}`, { method: 'PATCH', body: data }),
+    remove: (username: string) => request<{ ok: true }>(`/bots/${encodeURIComponent(username)}`, { method: 'DELETE' }),
+  },
+  folders: {
+    list: () => request<{ folders: ChatFolder[] }>('/chat-folders'),
+    create: (name: string, color?: string) => request<{ folder: ChatFolder }>('/chat-folders', { method: 'POST', body: { name, color } }),
+    rename: (id: string, data: { name?: string; color?: string }) => request<{ folder: ChatFolder }>(`/chat-folders/${id}`, { method: 'PATCH', body: data }),
+    remove: (id: string) => request<{ ok: true }>(`/chat-folders/${id}`, { method: 'DELETE' }),
+    addConversation: (id: string, conversationId: string) => request<{ ok: true }>(`/chat-folders/${id}/conversations`, { method: 'POST', body: { conversationId } }),
+    removeConversation: (id: string, conversationId: string) => request<{ ok: true }>(`/chat-folders/${id}/conversations/${conversationId}`, { method: 'DELETE' }),
+    setConversations: (id: string, conversationIds: string[]) => request<{ ok: true }>(`/chat-folders/${id}/conversations`, { method: 'PUT', body: { conversationIds } }),
   },
   push: {
     register: (token: string, platform: string) => request<void>('/push/register', { method: 'POST', body: { token, platform } }),

@@ -347,6 +347,28 @@ export interface Conversation {
   serverId?: string | null;
 }
 
+export interface ChatFolder {
+  id: string;
+  name: string;
+  color: string;
+  conversationIds: string[];
+  createdAt: string;
+}
+
+export interface BotAccount {
+  id: string;
+  userId: string;
+  ownerId: string;
+  username: string;
+  displayName: string;
+  description: string;
+  token: string;
+  avatarUrl?: string | null;
+  funMode: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface Channel {
   id: string;
   serverId?: string;

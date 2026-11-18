@@ -22,6 +22,7 @@ import notificationRoutes from './routes/notifications';
 import starRoutes from './routes/star';
 import stickerRoutes from './routes/stickers';
 import botRoutes from './routes/bots';
+import chatFolderRoutes from './routes/chatFolders';
 import pushRoutes from './routes/push';
 import supportRoutes from './routes/support';
 import { AppError } from './utils/errors';
@@ -91,7 +92,15 @@ export function createApp(): express.Express {
   app.use('/api/stickers', stickerRoutes);
   app.use('/api/complaints', complaintRoutes);
   app.use('/api/support', supportRoutes);
+  const folderLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 120,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: { code: 'RATE_LIMITED', message: 'Забагато запитів до папок. Спробуйте пізніше.' } },
+  });
   app.use('/api', botRoutes);
+  app.use('/api/chat-folders', folderLimiter, chatFolderRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/push', pushRoutes);
   app.use('/api/admin', adminRoutes);

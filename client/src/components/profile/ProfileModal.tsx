@@ -1,19 +1,22 @@
 import {
-  BatteryCharging, BellRing, Bot, Camera, CheckCircle2, ChevronLeft, ChevronRight, Copy, Database,
-  Folder, Languages, LockKeyhole, LogOut, Mail, MessageSquare, MonitorSmartphone, Palette,
-  QrCode, ShieldCheck, Smartphone, UserRound,
+  BatteryCharging, BellRing, Bot, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, Copy, Database,
+  Folder, Languages, LockKeyhole, LogOut, Mail, MessageSquare, MonitorSmartphone, Palette, Pencil, Plus,
+  QrCode, ShieldCheck, Smartphone, Trash2, UserRound,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEnergy } from '../../contexts/EnergyContext';
+import { useFolders } from '../../contexts/FoldersContext';
+import { LANGUAGES, useLanguage } from '../../contexts/LanguageContext';
 import { useMessenger } from '../../contexts/MessengerContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { infoHref } from '../../router/infoRoute';
 import { errorMessage } from '../../utils/format';
 import { configStringArray } from '../../utils/star';
-import type { LoginSession } from '../../types/models';
+import type { BotAccount, LoginSession } from '../../types/models';
 import { Avatar } from '../common/Avatar';
 import { INFO_LINKS } from '../info/infoLinks';
 import { Modal } from '../common/Modal';
@@ -44,6 +47,22 @@ const SECTION_TITLES: Record<Section, string> = {
   mistInbox: 'Пошта Mist ID',
   qrLogin: 'Вхід через QR код',
 };
+
+const SECTION_I18N_KEYS: Record<Section, string> = {
+  root: 'settings', account: 'account', appearance: 'appearance', chats: 'chats',
+  privacy: 'privacy', notifications: 'notifications', data: 'data', folders: 'folders',
+  devices: 'devices', energy: 'energy', language: 'language', bots: 'bots',
+  mistInbox: 'mistInbox', qrLogin: 'qrLogin',
+};
+
+const FOLDER_COLOR_OPTIONS = [
+  { value: 'blue', label: 'Блакитний', hex: '#007AFF' },
+  { value: 'green', label: 'Зелений', hex: '#34C759' },
+  { value: 'purple', label: 'Фіолетовий', hex: '#AF52DE' },
+  { value: 'amber', label: 'Оранжевий', hex: '#FF9F0A' },
+  { value: 'rose', label: 'Рожевий', hex: '#FF2D55' },
+  { value: 'cyan', label: 'Бірюзовий', hex: '#32ADE6' },
+];
 
 function maskPhone(phone: string): string {
   if (phone.length <= 6) return phone;
@@ -91,22 +110,25 @@ function SettingsRow({
   );
 }
 
-function BackButton({ onClick }: { onClick: () => void }) {
+function BackButton({ onClick, label = 'Налаштування' }: { onClick: () => void; label?: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-ios-blue transition hover:text-accent-500"
     >
-      <ChevronLeft size={17} /> Налаштування
+      <ChevronLeft size={17} /> {label}
     </button>
   );
 }
 
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, updateUser, logout } = useAuth();
-  const { selectConversation } = useMessenger();
+  const { conversations, selectConversation } = useMessenger();
   const { theme, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
+  const { energySaving, setEnergySaving } = useEnergy();
+  const { folders, loading: foldersLoading, error: foldersError, refresh: refreshFolders, createFolder, renameFolder, deleteFolder, addConversation, removeConversation } = useFolders();
   const fileRef = useRef<HTMLInputElement>(null);
   const [section, setSection] = useState<Section>('root');
   const [form, setForm] = useState({ displayName: '', username: '', bio: '' });
@@ -118,9 +140,16 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   const [sessions, setSessions] = useState<LoginSession[] | null>(null);
   const [sessionsError, setSessionsError] = useState('');
   const [cache, setCache] = useState('');
-  const [myBots, setMyBots] = useState<Array<{ id: string; username: string; displayName: string; token: string; funMode: boolean }>>([]);
+  const [myBots, setMyBots] = useState<BotAccount[]>([]);
   const [botsError, setBotsError] = useState('');
   const [botsLoading, setBotsLoading] = useState(false);
+  const [botToken, setBotToken] = useState('');
+  const [botsBusy, setBotsBusy] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [folderColor, setFolderColor] = useState('blue');
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [folderBusy, setFolderBusy] = useState(false);
+  const [folderError, setFolderError] = useState('');
   const [tfStatus, setTfStatus] = useState<{ enabled: boolean; hint: string | null } | null>(null);
   const [tfCurrent, setTfCurrent] = useState('');
   const [tfNew, setTfNew] = useState('');
@@ -158,6 +187,11 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   }, [open, section]);
 
   useEffect(() => {
+    if (!open || section !== 'folders') return;
+    void refreshFolders();
+  }, [open, section, refreshFolders]);
+
+  useEffect(() => {
     if (!open || section !== 'bots') return;
     let active = true;
     setBotsLoading(true);
@@ -181,6 +215,42 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
       .catch(() => { if (active) setCache('невідомо'); });
     return () => { active = false; };
   }, [open, section]);
+
+  async function submitFolder(event: FormEvent) {
+    event.preventDefault();
+    const name = folderName.trim();
+    if (!name) return;
+    setFolderBusy(true);
+    setFolderError('');
+    try {
+      if (editingFolderId) await renameFolder(editingFolderId, { name, color: folderColor });
+      else await createFolder(name, folderColor);
+      setFolderName('');
+      setFolderColor('blue');
+      setEditingFolderId(null);
+    } catch (cause) {
+      setFolderError(errorMessage(cause));
+    } finally {
+      setFolderBusy(false);
+    }
+  }
+
+  async function connectBot(event: FormEvent) {
+    event.preventDefault();
+    const token = botToken.trim();
+    if (!token) return;
+    setBotsBusy(true);
+    setBotsError('');
+    try {
+      const result = await api.bots.connect(token);
+      setMyBots((current) => [...current.filter((bot) => bot.id !== result.bot.id), result.bot]);
+      setBotToken('');
+    } catch (cause) {
+      setBotsError(errorMessage(cause));
+    } finally {
+      setBotsBusy(false);
+    }
+  }
 
   if (!user) return null;
 
@@ -216,7 +286,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={SECTION_TITLES[section]} wide={section !== 'root'}>
+    <Modal open={open} onClose={onClose} title={t(SECTION_I18N_KEYS[section], SECTION_TITLES[section])} wide={section !== 'root'}>
       {section === 'root' ? (
         <>
           <div className="flex flex-col items-center pb-5">
@@ -235,19 +305,19 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           </div>
 
           <div className="divide-y divide-ios-separator/10 overflow-hidden rounded-[22px] border border-ios-separator/10 bg-ios-bg/70">
-            <SettingsRow icon={<QrCode size={19} />} color="bg-blue-500" title="Вхід через QR код" subtitle="Відскануйте код з іншого пристрою" onClick={() => setSection('qrLogin')} />
-            <SettingsRow icon={<Mail size={19} />} color="bg-indigo-500" title="Пошта Mist ID" subtitle="Системні повідомлення акаунту" onClick={() => setSection('mistInbox')} />
-            <SettingsRow icon={<UserRound size={19} />} color="bg-sky-500" title="Акаунт" subtitle="Номер, ім'я користувача, «Про себе»" onClick={() => setSection('account')} />
-            <SettingsRow icon={<Palette size={19} />} color="bg-pink-500" title="Кастомізація профілю" subtitle="Рамки, колір імені, значки — безкоштовно" onClick={() => setSection('appearance')} />
-            <SettingsRow icon={<MessageSquare size={19} />} color="bg-orange-500" title="Налаштування чатів" subtitle="Тема, анімації, вигляд повідомлень" onClick={() => setSection('chats')} />
-            <SettingsRow icon={<LockKeyhole size={19} />} color="bg-emerald-500" title="Приватність і безпека" subtitle="Підтвердження входу, номер телефону, сесії" onClick={() => setSection('privacy')} />
-            <SettingsRow icon={<BellRing size={19} />} color="bg-rose-500" title="Сповіщення" subtitle="SMS про нові повідомлення" onClick={() => setSection('notifications')} />
-            <SettingsRow icon={<Database size={19} />} color="bg-indigo-500" title="Дані та сховище" subtitle="Кеш застосунку та медіа" onClick={() => setSection('data')} />
-            <SettingsRow icon={<Folder size={19} />} color="bg-blue-500" title="Папки для чатів" subtitle="Сортування чатів по папках" onClick={() => setSection('folders')} />
-            <SettingsRow icon={<MonitorSmartphone size={19} />} color="bg-cyan-500" title="Пристрої" subtitle="Керування під'єднаними сесіями" onClick={() => setSection('devices')} />
-            <SettingsRow icon={<Bot size={19} />} color="bg-purple-500" title="Боти" subtitle="Створення та керування ботами через BotFather" onClick={() => setSection('bots')} />
-            <SettingsRow icon={<BatteryCharging size={19} />} color="bg-amber-500" title="Економія енергії" subtitle="Менше анімацій за низького заряду" onClick={() => setSection('energy')} />
-            <SettingsRow icon={<Languages size={19} />} color="bg-violet-500" title="Мова" subtitle="Українська" onClick={() => setSection('language')} />
+            <SettingsRow icon={<QrCode size={19} />} color="bg-blue-500" title={t('qrLogin', 'Вхід через QR код')} subtitle={t('qrLoginSub', 'Відскануйте код з іншого пристрою')} onClick={() => setSection('qrLogin')} />
+            <SettingsRow icon={<Mail size={19} />} color="bg-indigo-500" title={t('mistInbox', 'Пошта Mist ID')} subtitle={t('mistInboxSub', 'Системні повідомлення акаунту')} onClick={() => setSection('mistInbox')} />
+            <SettingsRow icon={<UserRound size={19} />} color="bg-sky-500" title={t('account', 'Акаунт')} subtitle={t('accountSub', 'Номер, ім\'я користувача, «Про себе»')} onClick={() => setSection('account')} />
+            <SettingsRow icon={<Palette size={19} />} color="bg-pink-500" title={t('appearance', 'Кастомізація профілю')} subtitle={t('appearanceSub', 'Рамки, колір імені, значки — безкоштовно')} onClick={() => setSection('appearance')} />
+            <SettingsRow icon={<MessageSquare size={19} />} color="bg-orange-500" title={t('chats', 'Налаштування чатів')} subtitle={t('chatsSub', 'Тема, анімації, вигляд повідомлень')} onClick={() => setSection('chats')} />
+            <SettingsRow icon={<LockKeyhole size={19} />} color="bg-emerald-500" title={t('privacy', 'Приватність і безпека')} subtitle={t('privacySub', 'Підтвердження входу, номер телефону, сесії')} onClick={() => setSection('privacy')} />
+            <SettingsRow icon={<BellRing size={19} />} color="bg-rose-500" title={t('notifications', 'Сповіщення')} subtitle={t('notificationsSub', 'SMS про нові повідомлення')} onClick={() => setSection('notifications')} />
+            <SettingsRow icon={<Database size={19} />} color="bg-indigo-500" title={t('data', 'Дані та сховище')} subtitle={t('dataSub', 'Кеш застосунку та медіа')} onClick={() => setSection('data')} />
+            <SettingsRow icon={<Folder size={19} />} color="bg-blue-500" title={t('folders', 'Папки для чатів')} subtitle={t('foldersSub', 'Сортування чатів по папках')} onClick={() => setSection('folders')} />
+            <SettingsRow icon={<MonitorSmartphone size={19} />} color="bg-cyan-500" title={t('devices', 'Пристрої')} subtitle={t('devicesSub', 'Керування під\'єднаними сесіями')} onClick={() => setSection('devices')} />
+            <SettingsRow icon={<Bot size={19} />} color="bg-purple-500" title={t('bots', 'Боти')} subtitle={t('botsSub', 'Створення та керування ботами через BotFather')} onClick={() => setSection('bots')} />
+            <SettingsRow icon={<BatteryCharging size={19} />} color="bg-amber-500" title={t('energy', 'Економія енергії')} subtitle={t('energySub', 'Менше анімацій за низького заряду')} onClick={() => setSection('energy')} />
+            <SettingsRow icon={<Languages size={19} />} color="bg-violet-500" title={t('language', 'Мова')} subtitle={LANGUAGES.find((item) => item.code === language)?.label || 'Українська'} onClick={() => setSection('language')} />
           </div>
 
           <div className="mt-5 flex items-center justify-between gap-3 border-t pt-5">
@@ -263,7 +333,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
         </>
       ) : (
         <div>
-          <BackButton onClick={() => setSection('root')} />
+          <BackButton onClick={() => setSection('root')} label={t('settings', 'Налаштування')} />
           {section === 'account' && (
             <>
               <div className="mb-4">
@@ -446,7 +516,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                   onClick={() => {
                     if (!window.confirm('Очистити локальний кеш і перезавантажити Miston?')) return;
                     for (const key of Object.keys(localStorage)) {
-                      if (key.startsWith('miston.') && key !== 'miston.energySaver') localStorage.removeItem(key);
+                      if (key.startsWith('miston.') && key !== 'miston.energySaver' && key !== 'miston.activeFolder') localStorage.removeItem(key);
                     }
                     window.location.reload();
                   }}
@@ -461,11 +531,69 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           )}
 
           {section === 'folders' && (
-            <div className="rounded-2xl border p-5 text-center dark:border-slate-800">
-              <Folder size={30} className="mx-auto text-blue-500" />
-              <p className="mt-3 font-semibold">Папки для чатів</p>
-              <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Сортування чатів по папках з'явиться в наступному оновленні. Поки що чати впорядковані за останнім повідомленням.
+            <div className="space-y-4">
+              <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                {t('foldersIntro', 'Створюйте папки й розкладайте чати, щоб швидко знаходити потрібні розмови.')}
+              </p>
+              <form onSubmit={(event) => { void submitFolder(event); }} className="space-y-3 rounded-2xl border border-ios-separator/15 p-4">
+                <div>
+                  <label className="field-label" htmlFor="folder-name">{t('folderName', 'Назва папки')}</label>
+                  <input id="folder-name" value={folderName} onChange={(event) => setFolderName(event.target.value)} maxLength={60} className="text-input" placeholder={t('folderName', 'Назва папки')} />
+                </div>
+                <div>
+                  <p className="field-label">{t('folderColor', 'Колір')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {FOLDER_COLOR_OPTIONS.map((option) => (
+                      <button type="button" key={option.value} onClick={() => setFolderColor(option.value)} aria-label={option.label} aria-pressed={folderColor === option.value} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition ${folderColor === option.value ? 'border-ios-label scale-110' : 'border-transparent'}`} style={{ backgroundColor: option.hex }}>
+                        {folderColor === option.value && <Check size={15} className="text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="submit" disabled={folderBusy || !folderName.trim()} className="primary-btn">
+                    {editingFolderId ? <Check size={16} /> : <Plus size={16} />}
+                    {editingFolderId ? t('saved', 'Зберегти') : t('createFolder', 'Створити папку')}
+                  </button>
+                  {editingFolderId && <button type="button" className="secondary-btn" onClick={() => { setEditingFolderId(null); setFolderName(''); setFolderColor('blue'); }}>{t('cancel', 'Скасувати')}</button>}
+                </div>
+                {(folderError || foldersError) && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{folderError || foldersError}</p>}
+              </form>
+              <div className="space-y-2">
+                {foldersLoading && <p className="text-sm text-ios-secondary">Завантаження…</p>}
+                {!foldersLoading && folders.length === 0 && (
+                  <p className="rounded-2xl border border-dashed p-5 text-center text-sm text-ios-secondary">{t('noFolders', 'Папок ще немає. Створіть першу, щоб відсортувати чати.')}</p>
+                )}
+                {folders.map((folder) => {
+                  const assignedIds = folder.conversationIds;
+                  return (
+                    <div key={folder.id} className="rounded-2xl border border-ios-separator/15 p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: FOLDER_COLOR_OPTIONS.find((item) => item.value === folder.color)?.hex || '#007AFF' }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-ios-label">{folder.name}</p>
+                          <p className="text-xs text-ios-secondary">{assignedIds.length} {t('chatsCount', 'чатів')}</p>
+                        </div>
+                        <button type="button" className="icon-btn !h-8 !w-8" aria-label={t('rename', 'Перейменувати')} onClick={() => { setEditingFolderId(folder.id); setFolderName(folder.name); setFolderColor(folder.color); }}><Pencil size={15} /></button>
+                        <button type="button" className="icon-btn !h-8 !w-8 text-rose-600 dark:text-rose-400" aria-label={t('delete', 'Видалити')} onClick={() => { void deleteFolder(folder.id).catch((cause) => setFolderError(errorMessage(cause))); }}><Trash2 size={15} /></button>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {conversations.filter((conversation) => conversation.kind !== 'saved' && conversation.kind !== 'channel').map((conversation) => {
+                          const assigned = assignedIds.includes(conversation.id);
+                          return (
+                            <button type="button" key={conversation.id} onClick={() => { void (assigned ? removeConversation(folder.id, conversation.id) : addConversation(folder.id, conversation.id)).catch((cause) => setFolderError(errorMessage(cause))); }} className={`inline-flex max-w-[180px] items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${assigned ? 'bg-ios-blue/15 text-ios-blue' : 'bg-ios-fill/10 text-ios-secondary hover:bg-ios-fill/20'}`}>
+                              <span className="truncate">{conversation.title}</span>
+                              {assigned && <Check size={12} className="shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs leading-5 text-ios-secondary">
+                {t('assign', 'Додати до папки')}: {t('allChats', 'Усі чати')} → {t('folders', 'Папки для чатів')}.
               </p>
             </div>
           )}
@@ -503,7 +631,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             </div>
           )}
 
-          {false && (
+          {section === 'bots' && (
             <div className="space-y-4">
               <button
                 type="button"
@@ -517,40 +645,59 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                   }).catch((cause) => setBotsError(errorMessage(cause)));
                 }}
               >
-                <Bot size={16} /> Відкрити BotFather
+                <Bot size={16} /> {t('openBotFather', 'Відкрити BotFather')}
               </button>
-              <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-                У чаті з BotFather створюйте ботів командою <span className="font-mono">/newbot Назва usernamebot</span>, отримуйте API-токени, вмикайте режим «Веселун» та керуйте ботами.
+              <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                {t('botsIntro', 'Створюйте ботів у чаті з BotFather або підключіть готовий бот за токеном.')}
+                {' '}{t('botCommand', 'У чаті з BotFather напишіть /newbot Назва usernamebot, щоб створити бота.')}
               </p>
-              {botsLoading && <p className="text-sm text-slate-400">Завантажуємо ботів…</p>}
+              <form onSubmit={(event) => { void connectBot(event); }} className="space-y-2 rounded-2xl border border-ios-separator/15 p-4">
+                <label className="field-label" htmlFor="bot-token">{t('botToken', 'Токен бота')}</label>
+                <input id="bot-token" value={botToken} onChange={(event) => setBotToken(event.target.value)} className="text-input font-mono text-xs" placeholder={t('tokenPlaceholder', 'Вставте токен від BotFather')} />
+                <button type="submit" disabled={botsBusy || !botToken.trim()} className="primary-btn">
+                  <Plus size={16} /> {t('connect', 'Підключити')}
+                </button>
+              </form>
+              {botsLoading && <p className="text-sm text-ios-secondary">Завантажуємо ботів…</p>}
               {botsError && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{botsError}</p>}
               {!botsLoading && myBots.length === 0 && (
-                <p className="text-sm text-slate-400">У вас ще немає ботів.</p>
+                <p className="rounded-2xl border border-dashed p-5 text-center text-sm text-ios-secondary">{t('noBots', 'У вас ще немає ботів. Створіть бота через BotFather або підключіть за токеном.')}</p>
               )}
+              {myBots.length > 0 && <p className="text-sm font-semibold text-ios-label">{t('myBots', 'Мої боти')}</p>}
               {myBots.map((bot) => (
-                <div key={bot.id} className="rounded-2xl border p-4 dark:border-slate-800">
+                <div key={bot.id} className="rounded-2xl border border-ios-separator/15 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">@{bot.username}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-400">{bot.displayName}{bot.funMode ? ' · 🎉 Веселун' : ''}</p>
+                      <p className="mt-0.5 truncate text-xs text-ios-secondary">{bot.displayName}{bot.funMode ? ` · 🎉 ${t('funMode', 'Веселун')}` : ''}</p>
                     </div>
                     <button
                       type="button"
                       className="text-xs font-semibold text-rose-600 hover:underline dark:text-rose-400"
                       onClick={() => {
-                        void api.bots.mine().then(() => setMyBots((current) => current.filter((item) => item.id !== bot.id)));
+                        void api.bots.remove(bot.username)
+                          .then(() => setMyBots((current) => current.filter((item) => item.id !== bot.id)))
+                          .catch((cause) => setBotsError(errorMessage(cause)));
                       }}
                     >
-                      Видалити
+                      {t('delete', 'Видалити')}
                     </button>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+                  <label className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-ios-fill/10 px-3 py-2">
+                    <span className="text-xs font-medium text-ios-label">🎉 {t('funMode', 'Веселун')}</span>
+                    <input type="checkbox" checked={bot.funMode} onChange={(event) => {
+                      void api.bots.update(bot.username, { funMode: event.target.checked })
+                        .then((result) => setMyBots((current) => current.map((item) => item.id === bot.id ? result.bot : item)))
+                        .catch((cause) => setBotsError(errorMessage(cause)));
+                    }} className="h-5 w-5 accent-ios-blue" aria-label={t('funMode', 'Веселун')} />
+                  </label>
+                  <div className="mt-3 flex items-center gap-2 rounded-xl bg-ios-fill/10 px-3 py-2">
                     <code className="min-w-0 flex-1 truncate text-xs text-slate-600 dark:text-slate-300">{bot.token}</code>
                     <button
                       type="button"
-                      className="shrink-0 text-slate-400 hover:text-accent-600"
+                      className="shrink-0 text-ios-secondary hover:text-accent-600"
                       onClick={() => { void navigator.clipboard?.writeText(bot.token); }}
-                      aria-label="Скопіювати токен"
+                      aria-label={t('copyToken', 'Скопіювати токен')}
                     >
                       <Copy size={14} />
                     </button>
@@ -560,18 +707,45 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             </div>
           )}
 
+          {section === 'energy' && (
+            <div className="space-y-4">
+              <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                {t('energyIntro', 'Режим економії вимикає анімації та скляні ефекти, щоб зберегти заряд батареї.')}
+              </p>
+              <div className="rounded-2xl border border-ios-separator/15 p-4">
+                <label className="flex items-center justify-between gap-4">
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-ios-label">{t('energy', 'Економія енергії')}</span>
+                    <span className="mt-1 block text-xs leading-5 text-ios-secondary">{t('energyHint', 'Анімації та розмиття лишатимуться вимкненими, доки ви не вимкнете цей режим.')}</span>
+                  </span>
+                  <input type="checkbox" checked={energySaving} onChange={(event) => setEnergySaving(event.target.checked)} className="h-6 w-6 shrink-0 accent-ios-blue" aria-label={t('energy', 'Економія енергії')} />
+                </label>
+              </div>
+              <ul className="space-y-2 rounded-2xl bg-ios-fill/10 p-4 text-sm text-ios-secondary">
+                <li className="flex items-center gap-2"><Check size={15} className="shrink-0 text-emerald-500" />{t('energyEffect1', 'Без анімацій переходів')}</li>
+                <li className="flex items-center gap-2"><Check size={15} className="shrink-0 text-emerald-500" />{t('energyEffect2', 'Без скляного розмиття')}</li>
+                <li className="flex items-center gap-2"><Check size={15} className="shrink-0 text-emerald-500" />{t('energyEffect3', 'Менше оновлень екрана')}</li>
+              </ul>
+              <p className="text-xs leading-5 text-ios-secondary">Налаштування зберігається на цьому пристрої.</p>
+            </div>
+          )}
+
           {section === 'language' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-2xl border p-4 dark:border-slate-800">
-                <div>
-                  <p className="text-sm font-semibold">Українська</p>
-                  <p className="mt-1 text-xs text-slate-400">Мова інтерфейсу Miston</p>
-                </div>
-                <CheckCircle2 size={20} className="text-emerald-500" />
-              </div>
-              <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-                Інші мови з'являться пізніше. Зараз інтерфейс повністю українською.
+              <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                {t('languageIntro', 'Оберіть мову інтерфейсу. Неперекладені повідомлення лишаються українською.')}
               </p>
+              <div className="divide-y divide-ios-separator/10 overflow-hidden rounded-2xl border border-ios-separator/15">
+                {LANGUAGES.map((item) => (
+                  <button type="button" key={item.code} onClick={() => setLanguage(item.code)} className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-ios-fill/10" aria-pressed={language === item.code}>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-ios-label">{item.label}</span>
+                      <span className="mt-0.5 block text-xs text-ios-secondary">{t('interfaceLanguage', 'Мова інтерфейсу Miston')}</span>
+                    </span>
+                    {language === item.code && <CheckCircle2 size={20} className="shrink-0 text-emerald-500" />}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
