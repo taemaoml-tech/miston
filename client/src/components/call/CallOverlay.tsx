@@ -203,7 +203,7 @@ function ActiveCall({ call }: { call: CallInfo }) {
 
   return (
     <div className="fixed inset-0 z-[80] flex h-dvh flex-col bg-slate-950 text-white" role="dialog" aria-modal="true" aria-label={`${call.kind === 'video' ? 'Відеодзвінок' : 'Аудіодзвінок'} з ${title}`}>
-      <header className="flex shrink-0 items-center gap-3 px-4 pb-2 pt-[calc(env(safe-area-inset-top)+1rem)] sm:px-6">
+      <header className="safe-call-top flex shrink-0 items-center gap-3 px-4 pb-2 sm:px-6">
         <Avatar name={title} src={avatar} size="md" square={call.conversation.kind !== 'direct'} />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-semibold sm:text-lg">{title}</h1>
@@ -263,7 +263,7 @@ function ActiveCall({ call }: { call: CallInfo }) {
 
       </main>
 
-      <footer className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-3 sm:px-6">
+      <footer className="safe-call-bottom shrink-0 px-4 pt-3 sm:px-6">
         <div className="mx-auto flex max-w-lg items-start justify-center gap-3 sm:gap-5">
           <div className="flex flex-col items-center gap-1.5">
             <ControlButton label={micOn ? 'Вимкнути мікрофон' : 'Увімкнути мікрофон'} onClick={toggleMic} active={!micOn}>
