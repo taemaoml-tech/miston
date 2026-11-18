@@ -93,18 +93,16 @@
   /* Повноекранні оверлеї не отримують padding від body, тому камера/home bar
      перекривають їх окремо. */
   .overlay-safe {
-    /* Fixed-оверлеї живуть у layout viewport; коли Android показує клавіатуру,
-       тримаємо їх у межах видимої області, інакше панель ховається під нею. */
-    top: var(--miston-visual-top, 0px) !important;
-    height: var(--miston-visual-height, 100%) !important;
+    /* З adjustResize сам layout viewport зменшується разом із клавіатурою,
+       тому Fixed-оверлею досить inset-0. Додаткові top/height змушували
+       панелі стискатися і показувати порожній фон замість контенту. */
     padding-top: var(--miston-safe-top-adjusted) !important;
     padding-bottom: var(--miston-safe-bottom-adjusted) !important;
   }
 
-  /* Екрани входу мусять підлаштовуватися під видиму область, коли Android
-     показує клавіатуру. --miston-visual-height оновлює main.tsx. */
+  /* body вже враховує safe-area, тому тут не віднімаємо її вдруге. */
   .auth-viewport {
-    height: calc(var(--miston-visual-height, 100%) - var(--miston-safe-top-adjusted) - var(--miston-safe-bottom-adjusted));
+    height: 100%;
     min-height: 0;
   }
 }
@@ -116,10 +114,16 @@
 }
 
 /* Android System WebView 153/154 іноді малює backdrop-filter суцільною плямою.
-   На Android залишаємо зовнішній вигляд скляним, але без GPU-blur. */
-html.android .ios-glass {
+   Особливо помітно при відкритті клавіатури: весь видимий екран стає білим або
+   чорним залежно від теми. Вимикаємо GPU-blur для всіх шарів, а не лише для
+   .ios-glass — інакше оверлеї з backdrop-blur-md/sm лишають артефакт. */
+html.android *,
+html.android *::before,
+html.android *::after {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+html.android .ios-glass {
   background-color: rgb(var(--ios-bg) / .96) !important;
 }
 html.android.dark .ios-glass {

@@ -1,4 +1,4 @@
-import { BadgeCheck, Coins, LockKeyhole, MessageCircle, Mic, Sticker, Users, Video, Waypoints } from 'lucide-react';
+import { BadgeCheck, LockKeyhole, MessageCircle, Mic, Palette, Sticker, Users, Video, Waypoints } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { infoHref } from '../../router/infoRoute';
 import { SLOGAN } from '../common/Splash';
@@ -11,7 +11,7 @@ const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
   { icon: Video, title: 'Дзвінки й демонстрація екрана', text: 'Аудіо- та відеодзвінки на WebRTC з перемиканням камеры та показом вікна.' },
   { icon: Mic, title: 'Відеокружечки', text: 'Короткі відеоповідомлення-«кружечки», як у Telegram: запис у один дотик.' },
   { icon: Sticker, title: 'Стікери та емодзі', text: 'Каталог стікерів за категоріями, власні набори, улюблені та панель емодзі.' },
-  { icon: Coins, title: 'Магазин Star', text: 'Внутрішня валюта, косметика для профілю та чатів, щоденні нагороди та досягнення.' },
+  { icon: Palette, title: 'Кастомізація профілю', text: 'Рамки, колір імені, значки та фон профілю — безкоштовно, з налаштувань акаунта.' },
   { icon: BadgeCheck, title: 'Прозорі ролі', text: 'USER, MODERATOR і OWNER із чіткою матрицею прав, верифікованими акаунтами та журналом дій.' },
   { icon: LockKeyhole, title: 'Безпека акаунта', text: 'Сесії з короткоживучими токенами, блокування акаунтів, скарги та опрацювання звернень.' },
 ];

@@ -14,10 +14,13 @@ if (/android/i.test(navigator.userAgent)) document.documentElement.classList.add
 
 // Нативний міст віддає реальні встави камери/статусбара: частина Android WebView
 // не підтримує env(safe-area-inset-top) навіть з viewport-fit=cover.
-const nativeSafeArea = (window as unknown as {
-  MistonNative?: { top?: () => number; bottom?: () => number };
-}).MistonNative;
-if (nativeSafeArea) {
+// Міст додається з Java в onResume/onWindowFocusChanged, тому на холодному
+// старті його може ще не бути — перечитуємо його на focus/resize.
+function syncNativeSafeArea() {
+  const nativeSafeArea = (window as unknown as {
+    MistonNative?: { top?: () => number; bottom?: () => number };
+  }).MistonNative;
+  if (!nativeSafeArea) return;
   if (typeof nativeSafeArea.top === 'function') {
     document.documentElement.style.setProperty('--miston-safe-top', `${nativeSafeArea.top()}px`);
   }
@@ -25,16 +28,35 @@ if (nativeSafeArea) {
     document.documentElement.style.setProperty('--miston-safe-bottom', `${nativeSafeArea.bottom()}px`);
   }
 }
+syncNativeSafeArea();
+window.addEventListener('focus', syncNativeSafeArea);
+window.addEventListener('focusin', syncNativeSafeArea);
+window.addEventListener('resize', syncNativeSafeArea);
 
 // Коли Android відкриває клавіатуру, layout viewport лишається повним, а
 // видимий — меншим. Без цього поля входу опиняються під клавіатурою й
 // залишається порожня область угорі.
+let visualFrame = 0;
+let lastVisualHeight = -1;
+let lastVisualTop = -1;
 function syncVisualViewport() {
-  const visual = window.visualViewport;
-  const height = visual?.height || window.innerHeight;
-  const top = visual?.offsetTop || 0;
-  document.documentElement.style.setProperty('--miston-visual-height', `${height}px`);
-  document.documentElement.style.setProperty('--miston-visual-top', `${top}px`);
+  // resize/scroll можуть приходити пачкою; без rAF і перевірки на повтор
+  // зміна CSS-змінних здатна викликати новий resize і закільцюватися.
+  if (visualFrame) window.cancelAnimationFrame(visualFrame);
+  visualFrame = window.requestAnimationFrame(() => {
+    visualFrame = 0;
+    const visual = window.visualViewport;
+    const height = visual?.height && visual.height > 0 ? visual.height : window.innerHeight;
+    const top = visual?.offsetTop ?? 0;
+    if (height !== lastVisualHeight) {
+      lastVisualHeight = height;
+      document.documentElement.style.setProperty('--miston-visual-height', `${height}px`);
+    }
+    if (top !== lastVisualTop) {
+      lastVisualTop = top;
+      document.documentElement.style.setProperty('--miston-visual-top', `${top}px`);
+    }
+  });
 }
 syncVisualViewport();
 window.visualViewport?.addEventListener('resize', syncVisualViewport);
@@ -67,7 +89,9 @@ try {
       </ThemeProvider>
     </StrictMode>,
   );
-  removeBootSplash();
+  // render() асинхронний: чекаємо два кадри, щоб не лишити порожній екран
+  // між зникненням splash і першим малюнком React на віддаленому WebView.
+  window.requestAnimationFrame(() => window.requestAnimationFrame(removeBootSplash));
 } catch (error) {
   console.error('Failed to mount React app', error);
   removeBootSplash();

@@ -25,7 +25,7 @@ export const SUPPORT_TOPIC_LABELS: Record<SupportTopic, string> = {
   account: 'Акаунт і доступ',
   technical: 'Технічна проблема',
   report: 'Порушення правил',
-  star: 'Star і магазин',
+  star: 'Оформлення профілю',
   feedback: 'Ідея чи відгук',
   other: 'Інше',
 };

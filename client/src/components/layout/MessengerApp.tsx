@@ -23,12 +23,11 @@ import { ConversationSidebar } from './ConversationSidebar';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { ServerRail } from './ServerRail';
 
-// Адмін-панель і магазин Star — найбільші бандли, які потрібні не всім і не відразу,
-// тому вантажаться окремим чанком після першого відкриття.
+// Адмін-панель — найбільший бандл, який потрібен не всім і не відразу,
+// тому вантажиться окремим чанком після першого відкриття.
 const AdminPanel = lazy(() => import('../admin/AdminPanel').then((m) => ({ default: m.AdminPanel })));
-const StarShop = lazy(() => import('../star/StarShop').then((m) => ({ default: m.StarShop })));
 
-type ModalName = 'profile' | 'newChat' | 'server' | 'channel' | 'member' | 'admin' | 'star' | null;
+type ModalName = 'profile' | 'newChat' | 'server' | 'channel' | 'member' | 'admin' | null;
 
 function MessengerLayout() {
   const [modal, setModal] = useState<ModalName>(null);
@@ -63,7 +62,7 @@ function MessengerLayout() {
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden bg-ios-bg text-ios-label">
-      <div className="hidden h-full md:flex"><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} onStar={() => setModal('star')} /></div>
+      <div className="hidden h-full md:flex"><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} /></div>
       <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} min-w-0 flex-1 md:flex-none`}>
         {activeServer ? <ChannelSidebar onCreateChannel={() => setModal('channel')} onAddMember={() => setModal('member')} onProfile={() => setModal('profile')} /> : <ConversationSidebar onNewChat={() => setModal('newChat')} onProfile={() => setModal('profile')} onOpenMenu={() => setMenuOpen(true)} onOpenUser={openUser} onAction={openChatAction} onReportUser={(userId) => setReport({ userId })} />}
       </div>
@@ -76,7 +75,6 @@ function MessengerLayout() {
         onCreateServer={() => setModal('server')}
         onProfile={() => setModal('profile')}
         onAdmin={() => setModal('admin')}
-        onStar={() => setModal('star')}
       />
       {chatAction && <ConversationActionModal target={chatAction} onClose={() => setChatAction(null)} />}
       <ProfileModal open={modal === 'profile'} onClose={close} />
@@ -87,10 +85,9 @@ function MessengerLayout() {
       <CreateChannelModal open={modal === 'channel'} onClose={close} />
       <AddMemberModal open={modal === 'member'} onClose={close} />
       {/* Монтуємо лише на відкриття, інакше лінивий чанк завантажувався б одразу. */}
-      {(modal === 'admin' || modal === 'star') && (
+      {modal === 'admin' && (
         <Suspense fallback={<Spinner label="Завантаження розділу…" className="fixed inset-x-0 bottom-6 z-[65]" />}>
-          {modal === 'admin' && <AdminPanel open onClose={close} />}
-          {modal === 'star' && <StarShop open onClose={close} />}
+          <AdminPanel open onClose={close} />
         </Suspense>
       )}
       <ToastStack notifications={notifications} onDismiss={dismissNotification} onOpen={openNotification} />

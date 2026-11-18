@@ -1,6 +1,6 @@
 import {
   BatteryCharging, BellRing, Bot, Camera, CheckCircle2, ChevronLeft, ChevronRight, Copy, Database,
-  Folder, Languages, LockKeyhole, LogOut, Mail, MessageSquare, MonitorSmartphone,
+  Folder, Languages, LockKeyhole, LogOut, Mail, MessageSquare, MonitorSmartphone, Palette,
   ShieldCheck, Smartphone, UserRound,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -18,17 +18,19 @@ import { Avatar } from '../common/Avatar';
 import { INFO_LINKS } from '../info/infoLinks';
 import { Modal } from '../common/Modal';
 import { NotificationSettings } from './NotificationSettings';
+import { ProfileCustomization } from './ProfileCustomization';
 import { MistIdCard } from './MistIdCard';
 import { MistIdInbox } from './MistIdInbox';
 import { StarDisplayName } from '../star/StarDisplayName';
 
 type Section =
-  | 'root' | 'account' | 'chats' | 'privacy' | 'notifications'
+  | 'root' | 'account' | 'appearance' | 'chats' | 'privacy' | 'notifications'
   | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots' | 'mistInbox';
 
 const SECTION_TITLES: Record<Section, string> = {
   root: 'Налаштування',
   account: 'Акаунт',
+  appearance: 'Кастомізація профілю',
   chats: 'Налаштування чатів',
   privacy: 'Приватність і безпека',
   notifications: 'Сповіщення',
@@ -233,6 +235,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           <div className="divide-y divide-ios-separator/10 overflow-hidden rounded-[22px] border border-ios-separator/10 bg-ios-bg/70">
             <SettingsRow icon={<Mail size={19} />} color="bg-indigo-500" title="Пошта Mist ID" subtitle="Системні повідомлення акаунту" onClick={() => setSection('mistInbox')} />
             <SettingsRow icon={<UserRound size={19} />} color="bg-sky-500" title="Акаунт" subtitle="Номер, ім'я користувача, «Про себе»" onClick={() => setSection('account')} />
+            <SettingsRow icon={<Palette size={19} />} color="bg-pink-500" title="Кастомізація профілю" subtitle="Рамки, колір імені, значки — безкоштовно" onClick={() => setSection('appearance')} />
             <SettingsRow icon={<MessageSquare size={19} />} color="bg-orange-500" title="Налаштування чатів" subtitle="Тема, анімації, вигляд повідомлень" onClick={() => setSection('chats')} />
             <SettingsRow icon={<LockKeyhole size={19} />} color="bg-emerald-500" title="Приватність і безпека" subtitle="Підтвердження входу, номер телефону, сесії" onClick={() => setSection('privacy')} />
             <SettingsRow icon={<BellRing size={19} />} color="bg-rose-500" title="Сповіщення" subtitle="SMS про нові повідомлення" onClick={() => setSection('notifications')} />
@@ -305,6 +308,8 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             </form>
             </>
           )}
+
+          {section === 'appearance' && <ProfileCustomization />}
 
           {section === 'chats' && (
             <div className="space-y-4">

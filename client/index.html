@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
-    <meta name="description" content="Miston — твій сучасний месенджер. Чати, групи, канали, дзвінки, стікери та Star в одному простому інтерфейсі." />
+    <meta name="description" content="Miston — твій сучасний месенджер. Чати, групи, канали, дзвінки та стікери в одному простому інтерфейсі." />
     <meta property="og:title" content="Miston — твій сучасний месенджер" />
     <meta property="og:description" content="Спілкування з друзями, командами та спільнотами: миттєві чати, дзвінки й демонстрація екрана." />
     <meta property="og:type" content="website" />
@@ -15,6 +15,21 @@
     <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <title>Miston</title>
+    <script>
+      // Стартовий екран має збігатися зі збереженою темою ще до монтування React.
+      (function () {
+        try {
+          var saved = localStorage.getItem('relay.theme');
+          var dark = saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) {
+            document.documentElement.classList.add('dark');
+            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#000000');
+          }
+        } catch (error) {
+          // localStorage може бути недоступний у приватному режимі.
+        }
+      })();
+    </script>
     <style>
       #boot-splash {
         position: fixed;
@@ -26,14 +41,13 @@
         gap: 22px;
         box-sizing: border-box;
         padding-top: max(0px, calc(var(--miston-safe-top, env(safe-area-inset-top, 0px)) - 1cm - 5mm));
-        padding-bottom: max(0px, calc(var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px)) - 5mm));
         background: #ffffff;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
         color: #000000;
       }
-      @media (prefers-color-scheme: dark) {
-        #boot-splash { background: #000000; color: #ffffff; }
-      }
+      html.dark #boot-splash { background: #000000; color: #ffffff; }
+      html.dark #boot-splash .boot-slogan { color: #94a3b8; }
+      html.dark #boot-splash .boot-track { background: #1e293b; }
       #boot-splash svg { animation: boot-float 2.6s ease-in-out infinite; border-radius: 22px; }
       #boot-splash .boot-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
       #boot-splash .boot-slogan { margin-top: -14px; font-size: 13px; color: #64748b; }

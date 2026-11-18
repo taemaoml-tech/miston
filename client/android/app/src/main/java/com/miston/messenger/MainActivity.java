@@ -8,6 +8,7 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 
@@ -80,8 +81,13 @@ public class MainActivity extends BridgeActivity {
         int top = 0;
         int bottom = 0;
         if (insets != null) {
-            top = insets.getSystemWindowInsetTop();
-            bottom = insets.getSystemWindowInsetBottom();
+            // systemBars містить лише статусбар, навігацію та виріз камери.
+            // getSystemWindowInsetBottom() на частині Android додає ще й высоту
+            // клавіатури — тоді CSS-змінна safe-bottom роздувається і весь екран
+            // виглядає суцільно білим/чорним, коли відкривається IME.
+            WindowInsetsCompat compat = WindowInsetsCompat.toWindowInsetsCompat(insets);
+            top = compat.getInsets(WindowInsetsCompat.Type.systemBars()).top;
+            bottom = compat.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 DisplayCutout cutout = insets.getDisplayCutout();
                 if (cutout != null) {

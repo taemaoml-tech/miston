@@ -1,7 +1,6 @@
-import { LifeBuoy, MessageCircle, Moon, Plus, ShieldCheck, Star, Sun } from 'lucide-react';
+import { LifeBuoy, MessageCircle, Moon, Plus, ShieldCheck, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMessenger } from '../../contexts/MessengerContext';
-import { useStar } from '../../contexts/StarContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { openInfo } from '../../router/infoRoute';
 import { Avatar } from '../common/Avatar';
@@ -11,14 +10,10 @@ interface ServerRailProps {
   onCreateServer: () => void;
   onProfile: () => void;
   onAdmin: () => void;
-  onStar: () => void;
 }
 
-const starNumber = new Intl.NumberFormat('uk-UA');
-
-export function ServerRail({ onCreateServer, onProfile, onAdmin, onStar }: ServerRailProps) {
+export function ServerRail({ onCreateServer, onProfile, onAdmin }: ServerRailProps) {
   const { user } = useAuth();
-  const { overview } = useStar();
   const { servers, activeServerId, selectHome, selectServer } = useMessenger();
   const { theme, toggleTheme } = useTheme();
   if (!user) return null;
@@ -31,13 +26,6 @@ export function ServerRail({ onCreateServer, onProfile, onAdmin, onStar }: Serve
         <div className="group relative"><button type="button" onClick={onCreateServer} className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-ios-separator/25 text-ios-secondary transition hover:border-ios-blue hover:bg-ios-blue/10 hover:text-ios-blue" aria-label="Створити сервер"><Plus size={21} /></button><RailLabel>Створити сервер</RailLabel></div>
       </div>
       <div className="my-1 h-px w-8 bg-ios-separator/15" />
-      <div className="group relative">
-        <button type="button" onClick={onStar} className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 text-amber-500 ring-1 ring-inset ring-amber-400/30 transition hover:from-amber-400/25 hover:to-orange-500/20" aria-label={`Магазин зірок. Баланс: ${overview?.wallet.balance ?? 0}`}>
-          <Star size={20} fill="currentColor" />
-          <span className="absolute -bottom-1 -right-1 min-w-[20px] rounded-full bg-amber-400 px-1 text-[9px] font-bold leading-4 text-white shadow">{overview ? starNumber.format(overview.wallet.balance) : '…'}</span>
-        </button>
-        <RailLabel>Магазин Star</RailLabel>
-      </div>
       <div className="group relative"><button type="button" onClick={() => openInfo('support')} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-ios-fill/10 hover:text-ios-label" aria-label="Підтримка та сторінки проєкту"><LifeBuoy size={20} /></button><RailLabel>Підтримка та меню Miston</RailLabel></div>
       {isStaffRole(user.role) && <div className="group relative"><button type="button" onClick={onAdmin} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-ios-fill/10 hover:text-ios-label" aria-label="Адміністративна панель"><ShieldCheck size={20} /></button><RailLabel>{user.role === 'owner' ? 'Адмінпанель' : 'Модерація'}</RailLabel></div>}
       <div className="group relative"><button type="button" onClick={toggleTheme} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-ios-fill/10 hover:text-ios-label" aria-label={`Увімкнути ${theme === 'dark' ? 'світлу' : 'темну'} тему`}>{theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}</button><RailLabel>{theme === 'dark' ? 'Світла тема' : 'Темна тема'}</RailLabel></div>

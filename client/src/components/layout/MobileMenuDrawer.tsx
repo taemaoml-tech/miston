@@ -1,9 +1,8 @@
-import { LifeBuoy, MessageCircle, Moon, Plus, ShieldCheck, Star, Sun, X } from 'lucide-react';
+import { LifeBuoy, MessageCircle, Moon, Plus, ShieldCheck, Sun, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMessenger } from '../../contexts/MessengerContext';
-import { useStar } from '../../contexts/StarContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAndroidBack } from '../../utils/androidBack';
 import { isStaffRole } from '../../utils/moderation';
@@ -17,14 +16,10 @@ interface MobileMenuDrawerProps {
   onCreateServer: () => void;
   onProfile: () => void;
   onAdmin: () => void;
-  onStar: () => void;
 }
 
-const starNumber = new Intl.NumberFormat('uk-UA');
-
-export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onAdmin, onStar }: MobileMenuDrawerProps) {
+export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onAdmin }: MobileMenuDrawerProps) {
   const { user } = useAuth();
-  const { overview } = useStar();
   const { servers, activeServerId, selectHome, selectServer } = useMessenger();
   const { theme, toggleTheme } = useTheme();
 
@@ -57,7 +52,6 @@ export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onA
 
         <div className="px-2">
           <DrawerRow icon={MessageCircle} label="Повідомлення" active={!activeServerId} onClick={() => run(selectHome)} />
-          <DrawerRow icon={Star} label="Магазин Star" detail={overview ? starNumber.format(overview.wallet.balance) : undefined} onClick={() => run(onStar)} />
         </div>
 
         <div className="subtle-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
@@ -98,10 +92,9 @@ function DrawerSection({ title }: { title: string }) {
   return <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-ios-secondary">{title}</p>;
 }
 
-function DrawerRow({ icon: Icon, label, detail, active = false, onClick, avatar }: {
+function DrawerRow({ icon: Icon, label, active = false, onClick, avatar }: {
   icon?: LucideIcon;
   label: string;
-  detail?: string;
   active?: boolean;
   onClick: () => void;
   avatar?: { name: string; src?: string | null; square?: boolean };
@@ -112,7 +105,6 @@ function DrawerRow({ icon: Icon, label, detail, active = false, onClick, avatar 
         ? <Avatar name={avatar.name} src={avatar.src} square={avatar.square} />
         : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ios-fill/10">{Icon && <Icon size={19} />}</span>}
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
-      {detail && <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold text-amber-500">{detail}</span>}
     </button>
   );
 }

@@ -46,15 +46,15 @@ export function Modal({ open, onClose, title, description, children, wide = fals
   if (!open) return null;
   return createPortal(
     <div className="overlay-safe fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-0 backdrop-blur-md animate-fade-in sm:items-center sm:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className={`ios-glass max-h-full w-full overflow-hidden rounded-t-[28px] border shadow-2xl animate-slide-up sm:max-h-[92vh] sm:rounded-[28px] ${full ? 'sm:max-w-6xl' : wide ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
-        <div className="flex items-start justify-between border-b border-ios-separator/10 px-5 py-4 sm:px-6">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className={`ios-glass flex max-h-full w-full flex-col overflow-hidden rounded-t-[28px] border shadow-2xl animate-slide-up sm:rounded-[28px] ${full ? 'sm:max-w-6xl' : wide ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
+        <div className="flex shrink-0 items-start justify-between border-b border-ios-separator/10 px-5 py-4 sm:px-6">
           <div>
             <h2 id="modal-title" className="text-lg font-bold tracking-tight">{title}</h2>
             {description && <p className="mt-1 text-sm text-ios-secondary">{description}</p>}
           </div>
           <button type="button" className="icon-btn -mr-2 -mt-1" onClick={onClose} aria-label="Закрити діалог"><X size={20} /></button>
         </div>
-        <div className="subtle-scrollbar max-h-[calc(92vh-77px)] overflow-y-auto p-5 sm:p-6">{children}</div>
+        <div className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">{children}</div>
       </div>
     </div>,
     document.body,

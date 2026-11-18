@@ -122,7 +122,7 @@ export function ContactPage({ variant }: { variant: 'public' | 'overlay' }) {
         <div className="space-y-4">
           <SideCard title="Швидше, якщо…">
             <ul className="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              <li>Позначте, чи проблема в акаунті, чаті, дзвінку, Star чи модерації.</li>
+              <li>Позначте, чи проблема в акаунті, чаті, дзвінку, оформленні профілю чи модерації.</li>
               <li>Додайте час, пристрій і браузер — це допомагає знайти причину.</li>
               <li>Не вставляйте пароль чи код підтвердження в текст звернення.</li>
             </ul>
