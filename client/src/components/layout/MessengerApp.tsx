@@ -3,6 +3,7 @@ import type { Conversation } from '../../types/models';
 import { CallProvider } from '../../contexts/CallContext';
 import { FriendsProvider } from '../../contexts/FriendsContext';
 import { MessengerProvider, useMessenger } from '../../contexts/MessengerContext';
+import { useAndroidBack } from '../../utils/androidBack';
 import { StarProvider } from '../../contexts/StarContext';
 import { CallOverlay } from '../call/CallOverlay';
 import { ChatPlaceholder } from '../chat/ChatPlaceholder';
@@ -33,10 +34,26 @@ function MessengerLayout() {
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const [report, setReport] = useState<ReportTarget | null>(null);
   const [chatAction, setChatAction] = useState<ConversationTarget | null>(null);
-  const { activeServer, activeConversation, mobileChatOpen, notifications, dismissNotification, openNotification } = useMessenger();
+  const { activeServer, activeConversation, mobileChatOpen, selectHome, notifications, dismissNotification, openNotification } = useMessenger();
   const close = () => setModal(null);
   const openUser = (id: string) => setPreviewUserId(id);
   const openChatAction = (conversation: Conversation, action: ConversationAction) => setChatAction({ conversation, action });
+
+  // Пріоритети: спочатку закриваємо модалки, потім повертаємося з чату/сервера
+  // на головне меню. Порожній headroom означає, що ми вже на головній.
+  useAndroidBack(() => {
+    if (chatAction) { setChatAction(null); return true; }
+    if (report) { setReport(null); return true; }
+    if (previewUserId) { setPreviewUserId(null); return true; }
+    if (modal) { close(); return true; }
+    return false;
+  }, 150);
+  useAndroidBack(() => {
+    if (!activeConversation && !activeServer && !mobileChatOpen) return false;
+    selectHome();
+    return true;
+  }, 0);
+
   return (
     <div className="flex h-dvh min-h-0 overflow-hidden bg-ios-bg text-ios-label">
       <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full`}><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} onStar={() => setModal('star')} /></div>

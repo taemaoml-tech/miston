@@ -11,6 +11,7 @@ import type { Message, TypingEvent } from '../../types/models';
 import type { Conversation } from '../../types/models';
 import { errorMessage, formatDay, formatTime } from '../../utils/format';
 import { configString } from '../../utils/star';
+import { useAndroidBack } from '../../utils/androidBack';
 import { Avatar } from '../common/Avatar';
 import { EmptyState } from '../common/EmptyState';
 import { Modal } from '../common/Modal';
@@ -46,6 +47,15 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [forwarding, setForwarding] = useState<Message | null>(null);
   const [forwardingTo, setForwardingTo] = useState('');
+
+  useAndroidBack(() => {
+    if (pinsOpen) { setPinsOpen(false); return true; }
+    if (forwarding) { setForwarding(null); return true; }
+    if (pendingDelete && !deleting) { setPendingDelete(null); return true; }
+    if (showInfo) { setShowInfo(false); return true; }
+    return false;
+  }, 100);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousId = useRef<string | null>(null);
   const lastReadId = useRef<string | null>(null);
@@ -286,7 +296,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
             <p className={`mt-0.5 truncate text-[11px] ${!connected ? 'text-amber-600 dark:text-amber-400' : typingNames.length || online ? 'text-ios-blue' : 'text-ios-secondary'}`}>{!connected ? 'Підключення…' : subtitle}</p>
           </span>
         </button>
-        <div className="flex items-center justify-end gap-0.5">
+        <div className="flex translate-y-1 items-center justify-end gap-0.5 md:translate-y-0">
           {!isSaved && activeConversation.kind !== 'channel' && (
             <>
               <button

@@ -1,4 +1,4 @@
-import { ArrowUp, Camera, Check, FileText, Film, Image, Mic, Plus, Reply, SmilePlus, Square, X } from 'lucide-react';
+import { ArrowUp, Check, FileText, Film, Image, Mic, Plus, Reply, SmilePlus, Square, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { api } from '../../api';
@@ -8,7 +8,6 @@ import type { ConversationMember, Message, MessageKind, Sticker } from '../../ty
 import { errorMessage, formatBytes, formatDuration } from '../../utils/format';
 import { Avatar } from '../common/Avatar';
 import { PickerPanel } from './PickerPanel';
-import { VideoNoteRecorder } from './VideoNoteRecorder';
 
 interface ComposerProps {
   conversationId: string;
@@ -43,7 +42,6 @@ export function Composer({
   const [error, setError] = useState('');
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [videoNoteOpen, setVideoNoteOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -71,7 +69,7 @@ export function Composer({
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
   useEffect(() => {
-    setText(''); setFile(null); setError(''); setMenuOpen(false); setVideoNoteOpen(false); setCaret(0); setMentionIndex(0); setPickerOpen(false);
+    setText(''); setFile(null); setError(''); setMenuOpen(false); setCaret(0); setMentionIndex(0); setPickerOpen(false);
     return () => { if (typingTimer.current) window.clearTimeout(typingTimer.current); };
   }, [conversationId]);
   const previousEditingId = useRef<string | null>(null);
@@ -308,10 +306,8 @@ export function Composer({
             )}
           </div>
         )}
-        {!recording && !editing && <button type="button" className="icon-btn h-9 w-9 text-ios-blue hover:bg-ios-blue/10" onClick={() => setVideoNoteOpen(true)} aria-label="Записати відеокружечок" title="Відеокружечок"><Camera size={20} /></button>}
         {recording ? <button type="button" className="primary-btn h-9 w-9 rounded-full p-0" onClick={() => stopRecording(false)} aria-label="Зупинити й надіслати голосове повідомлення"><Square size={16} fill="currentColor" /></button> : editing ? <button type="button" className="primary-btn h-9 w-9 rounded-full p-0 shadow-glow" onClick={() => void send()} disabled={sending || !text.trim()} aria-label="Зберегти зміни">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Check size={18} />}</button> : text.trim() || file ? <button type="button" className="primary-btn h-9 w-9 rounded-full p-0 shadow-glow" onClick={() => void send()} disabled={sending} aria-label="Надіслати повідомлення">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <ArrowUp size={20} />}</button> : <button type="button" className="icon-btn h-9 w-9 text-ios-blue hover:bg-ios-blue/10" onClick={() => void startRecording()} aria-label="Записати голосове повідомлення"><Mic size={20} /></button>}
       </div>
-      {videoNoteOpen && <VideoNoteRecorder conversationId={conversationId} replyToId={replyTo?.id} onSent={(message) => { onSent(message); onCancelReply?.(); }} onClose={() => setVideoNoteOpen(false)} />}
     </div>
   );
 }

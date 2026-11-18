@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { goHome, INFO_ROUTES, infoHref, openInfo } from '../../router/infoRoute';
+import { useAndroidBack } from '../../utils/androidBack';
 import type { InfoRoute } from '../../router/infoRoute';
 import { Mark } from '../common/Logo';
 import { SLOGAN } from '../common/Splash';
@@ -27,6 +28,12 @@ export function InfoShell({ route, variant, children }: InfoShellProps) {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useAndroidBack(() => {
+    if (!menuOpen) return false;
+    setMenuOpen(false);
+    return true;
+  }, 210);
 
   useEffect(() => {
     setMenuOpen(false);

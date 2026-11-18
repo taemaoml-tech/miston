@@ -7,6 +7,7 @@ import { useMessenger } from '../../contexts/MessengerContext';
 import { api } from '../../api';
 import type { Conversation } from '../../types/models';
 import { formatConversationTime } from '../../utils/format';
+import { useAndroidBack } from '../../utils/androidBack';
 import { Avatar } from '../common/Avatar';
 import { EmptyState } from '../common/EmptyState';
 import { Logo } from '../common/Logo';
@@ -45,6 +46,13 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
   const [meetingLink, setMeetingLink] = useState<string | null>(null);
   const [creatingMeeting, setCreatingMeeting] = useState(false);
 
+  useAndroidBack(() => {
+    if (menu) { setMenu(null); return true; }
+    if (inboxOpen) { setInboxOpen(false); return true; }
+    if (meetingLink) { setMeetingLink(null); return true; }
+    return false;
+  }, 110);
+
   async function openNotes() {
     if (savedNotes) { selectConversation(savedNotes.id); return; }
     setOpeningNotes(true);
@@ -81,7 +89,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
 
   return (
     <aside className="relative flex h-full min-w-0 flex-1 flex-col border-r border-ios-separator/10 bg-ios-glass/80 backdrop-blur-xl md:w-80 md:flex-none lg:w-[340px]" aria-label="Розмови та друзі">
-      <div className="flex h-16 shrink-0 items-center justify-between px-4"><Logo /><div className="flex items-center gap-1">
+      <div className="flex h-16 shrink-0 items-center justify-between px-4"><Logo /><div className="flex translate-y-1.5 items-center gap-1 md:translate-y-0">
         <button type="button" className="icon-btn relative bg-ios-fill/10 text-ios-label hover:bg-ios-blue/10 hover:text-ios-blue" onClick={() => setInboxOpen((value) => !value)} aria-label="Системні сповіщення" aria-expanded={inboxOpen}>
           <Bell size={18} />
           {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}

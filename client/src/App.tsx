@@ -4,11 +4,20 @@ import { Splash } from './components/common/Splash';
 import { InfoRouter } from './components/info/InfoRouter';
 import { MessengerApp } from './components/layout/MessengerApp';
 import { useAuth } from './contexts/AuthContext';
-import { useInfoRoute } from './router/infoRoute';
+import { goHome, useInfoRoute } from './router/infoRoute';
+import { useAndroidBack } from './utils/androidBack';
 
 export default function App() {
   const { user, loading, pendingLogin } = useAuth();
   const route = useInfoRoute();
+
+  // Системна стрілка Android спочатку закриває інфосторінку, а вже потім —
+  // панелі й чати всередині месенджера.
+  useAndroidBack(() => {
+    if (!route) return false;
+    goHome();
+    return true;
+  }, 200);
 
   if (loading) return <main className="h-full"><Splash hint="Відновлюємо сесію…" /></main>;
 
