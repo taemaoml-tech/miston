@@ -44,6 +44,11 @@
   html { @apply h-full antialiased; }
   body {
     @apply m-0 h-full bg-ios-bg font-sans text-ios-label;
+    /* Android 15 (targetSdk 35) малює WebView edge-to-edge, тому контент
+       залазить під фронтальну камеру/статусбар. Відступи safe-area
+       повертають шапку й поле вводу у видиму зону. */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

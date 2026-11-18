@@ -301,7 +301,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
             <>
               <button
                 type="button"
-                className="icon-btn hidden sm:inline-flex"
+                className="icon-btn"
                 disabled={callPhase !== 'idle'}
                 onClick={() => {
                   if (activeConversation.kind === 'direct' && other && online === false) {
