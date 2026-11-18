@@ -1,4 +1,4 @@
-import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, MessageSquarePlus, MoreVertical, Search, Trash2, Users, Video, X } from 'lucide-react';
+import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, Menu, MessageSquarePlus, MoreVertical, Search, Trash2, Users, Video, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,9 +28,10 @@ interface RowMenu {
   y: number;
 }
 
-export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction, onReportUser }: {
+export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUser, onAction, onReportUser }: {
   onNewChat: () => void;
   onProfile: () => void;
+  onOpenMenu: () => void;
   onOpenUser: (id: string) => void;
   onAction: (conversation: Conversation, action: ConversationAction) => void;
   onReportUser: (userId: string) => void;
@@ -50,6 +51,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
     if (menu) { setMenu(null); return true; }
     if (inboxOpen) { setInboxOpen(false); return true; }
     if (meetingLink) { setMeetingLink(null); return true; }
+    if (tab === 'friends') { setTab('chats'); return true; }
     return false;
   }, 110);
 
@@ -89,14 +91,25 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
 
   return (
     <aside className="relative flex h-full min-w-0 flex-1 flex-col border-r border-ios-separator/10 bg-ios-glass/80 backdrop-blur-xl md:w-80 md:flex-none lg:w-[340px]" aria-label="Розмови та друзі">
-      <div className="flex h-16 shrink-0 items-center justify-between px-4"><Logo /><div className="flex translate-y-1.5 items-center gap-1 md:translate-y-0">
-        <button type="button" className="icon-btn relative bg-ios-fill/10 text-ios-label hover:bg-ios-blue/10 hover:text-ios-blue" onClick={() => setInboxOpen((value) => !value)} aria-label="Системні сповіщення" aria-expanded={inboxOpen}>
-          <Bell size={18} />
-          {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
-        </button>
-        <button type="button" className="icon-btn bg-ios-blue/10 text-ios-blue hover:bg-ios-blue hover:text-white" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
-        <button type="button" className="icon-btn bg-[#34C759]/10 text-[#34C759] hover:bg-[#34C759] hover:text-white" onClick={() => void createMeeting()} disabled={creatingMeeting} aria-label="Створити зустріч"><Video size={20} /></button>
-      </div></div>
+      <div className="flex h-14 shrink-0 items-center justify-between gap-1 px-2 sm:px-3">
+        <div className="flex min-w-0 items-center gap-1">
+          <button type="button" className="icon-btn md:hidden" onClick={onOpenMenu} aria-label="Відкрити меню"><Menu size={20} /></button>
+          <span className="sm:hidden"><Logo compact size={30} /></span>
+          <span className="hidden sm:block"><Logo size={32} /></span>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button type="button" className={`icon-btn relative ${tab === 'friends' ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={() => setTab((current) => current === 'friends' ? 'chats' : 'friends')} aria-label="Друзі" aria-pressed={tab === 'friends'}>
+            <Users size={19} />
+            {incomingCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{incomingCount > 9 ? '9+' : incomingCount}</span>}
+          </button>
+          <button type="button" className="icon-btn relative" onClick={() => setInboxOpen((value) => !value)} aria-label="Системні сповіщення" aria-expanded={inboxOpen}>
+            <Bell size={19} />
+            {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
+          </button>
+          <button type="button" className="icon-btn text-ios-blue hover:bg-ios-blue hover:text-white" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
+          <button type="button" className="icon-btn text-[#34C759] hover:bg-[#34C759] hover:text-white" onClick={() => void createMeeting()} disabled={creatingMeeting} aria-label="Створити зустріч"><Video size={20} /></button>
+        </div>
+      </div>
       {inboxOpen && <SystemInboxPanel onClose={() => setInboxOpen(false)} />}
       {meetingLink && (
         <div className="mx-3 mb-2 rounded-2xl border border-[#34C759]/25 bg-[#34C759]/10 p-3 text-xs text-[#248A3D] dark:text-[#30D158]">
@@ -109,20 +122,9 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenUser, onAction
           <p className="mt-1.5 text-[10px] opacity-80">Надішліть посилання учасникам — вони приєднаються до зустрічі.</p>
         </div>
       )}
-      <div className="px-3 pb-2">
-        <div className="grid grid-cols-2 gap-1 rounded-full bg-ios-fill/10 p-1" role="tablist" aria-label="Розділи">
-          <button type="button" role="tab" aria-selected={tab === 'chats'} onClick={() => setTab('chats')} className={`rounded-full py-1.5 text-xs font-semibold transition ${tab === 'chats' ? 'bg-ios-bg text-ios-label shadow-sm' : 'text-ios-secondary hover:text-ios-label'}`}>Повідомлення</button>
-          <button type="button" role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')} className={`flex items-center justify-center gap-1 rounded-full py-1.5 text-xs font-semibold transition ${tab === 'friends' ? 'bg-ios-bg text-ios-label shadow-sm' : 'text-ios-secondary hover:text-ios-label'}`}>
-            Друзі
-            {incomingCount > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{incomingCount > 9 ? '9+' : incomingCount}</span>}
-          </button>
-        </div>
-      </div>
-
       {tab === 'chats' ? (
         <>
-          <div className="px-3 pb-3"><label className="relative block"><Search size={17} className="absolute left-3.5 top-2.5 text-ios-secondary" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input rounded-full border-transparent bg-ios-fill/10 py-2 pl-10 pr-9 placeholder:text-ios-secondary focus:border-ios-blue focus:bg-ios-bg" placeholder="Пошук" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-ios-secondary hover:text-ios-label" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>
-          <div className="flex items-center justify-between px-4 pb-2"><h2 className="text-[11px] font-semibold uppercase tracking-wider text-ios-secondary">Закріплене</h2><span className="text-[11px] text-ios-secondary">{directConversations.length}</span></div>
+          <div className="px-3 pb-2 pt-0.5"><label className="relative block"><Search size={17} className="absolute left-3.5 top-2.5 text-ios-secondary" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input rounded-full border-transparent bg-ios-fill/10 py-2 pl-10 pr-9 placeholder:text-ios-secondary focus:border-ios-blue focus:bg-ios-bg" placeholder="Пошук" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-ios-secondary hover:text-ios-label" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>
           <div className="group relative px-2 pb-1">
             <button type="button" onClick={() => void openNotes()} disabled={openingNotes} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition disabled:opacity-70 ${savedNotes && activeConversation?.id === savedNotes.id ? 'bg-ios-blue/10' : 'hover:bg-ios-fill/10'}`} aria-current={savedNotes && activeConversation?.id === savedNotes.id ? 'page' : undefined}>
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ios-blue/10 text-ios-blue">{openingNotes ? <LoaderCircle size={20} className="animate-spin" /> : <Bookmark size={22} />}</span>

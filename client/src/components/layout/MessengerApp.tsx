@@ -20,6 +20,7 @@ import { UserProfileModal } from '../profile/UserProfileModal';
 import { AddMemberModal, CreateChannelModal, CreateServerModal } from '../servers/ServerDialogs';
 import { ChannelSidebar } from '../servers/ChannelSidebar';
 import { ConversationSidebar } from './ConversationSidebar';
+import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { ServerRail } from './ServerRail';
 
 // Адмін-панель і магазин Star — найбільші бандли, які потрібні не всім і не відразу,
@@ -31,6 +32,7 @@ type ModalName = 'profile' | 'newChat' | 'server' | 'channel' | 'member' | 'admi
 
 function MessengerLayout() {
   const [modal, setModal] = useState<ModalName>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const [report, setReport] = useState<ReportTarget | null>(null);
   const [chatAction, setChatAction] = useState<ConversationTarget | null>(null);
@@ -49,6 +51,11 @@ function MessengerLayout() {
     return false;
   }, 150);
   useAndroidBack(() => {
+    if (!menuOpen) return false;
+    setMenuOpen(false);
+    return true;
+  }, 120);
+  useAndroidBack(() => {
     if (!activeConversation && !activeServer && !mobileChatOpen) return false;
     selectHome();
     return true;
@@ -56,13 +63,21 @@ function MessengerLayout() {
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden bg-ios-bg text-ios-label">
-      <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full`}><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} onStar={() => setModal('star')} /></div>
+      <div className="hidden h-full md:flex"><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} onStar={() => setModal('star')} /></div>
       <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} min-w-0 flex-1 md:flex-none`}>
-        {activeServer ? <ChannelSidebar onCreateChannel={() => setModal('channel')} onAddMember={() => setModal('member')} onProfile={() => setModal('profile')} /> : <ConversationSidebar onNewChat={() => setModal('newChat')} onProfile={() => setModal('profile')} onOpenUser={openUser} onAction={openChatAction} onReportUser={(userId) => setReport({ userId })} />}
+        {activeServer ? <ChannelSidebar onCreateChannel={() => setModal('channel')} onAddMember={() => setModal('member')} onProfile={() => setModal('profile')} /> : <ConversationSidebar onNewChat={() => setModal('newChat')} onProfile={() => setModal('profile')} onOpenMenu={() => setMenuOpen(true)} onOpenUser={openUser} onAction={openChatAction} onReportUser={(userId) => setReport({ userId })} />}
       </div>
       <main className={`${mobileChatOpen ? 'flex' : 'hidden md:flex'} min-w-0 flex-1`}>
         {activeConversation ? <ChatWindow onOpenUser={openUser} onReport={setReport} onAction={openChatAction} /> : <ChatPlaceholder onNewChat={() => setModal('newChat')} onCreateChannel={() => setModal('channel')} />}
       </main>
+      <MobileMenuDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onCreateServer={() => setModal('server')}
+        onProfile={() => setModal('profile')}
+        onAdmin={() => setModal('admin')}
+        onStar={() => setModal('star')}
+      />
       {chatAction && <ConversationActionModal target={chatAction} onClose={() => setChatAction(null)} />}
       <ProfileModal open={modal === 'profile'} onClose={close} />
       <UserProfileModal userId={previewUserId} onClose={() => setPreviewUserId(null)} onReport={setReport} />

@@ -12,6 +12,20 @@ import './index.css';
 // щоб на iOS/windows залишався повний Apple-glass еfect.
 if (/android/i.test(navigator.userAgent)) document.documentElement.classList.add('android');
 
+// Нативний міст віддає реальні встави камери/статусбара: частина Android WebView
+// не підтримує env(safe-area-inset-top) навіть з viewport-fit=cover.
+const nativeSafeArea = (window as unknown as {
+  MistonNative?: { top?: () => number; bottom?: () => number };
+}).MistonNative;
+if (nativeSafeArea) {
+  if (typeof nativeSafeArea.top === 'function') {
+    document.documentElement.style.setProperty('--miston-safe-top', `${nativeSafeArea.top()}px`);
+  }
+  if (typeof nativeSafeArea.bottom === 'function') {
+    document.documentElement.style.setProperty('--miston-safe-bottom', `${nativeSafeArea.bottom()}px`);
+  }
+}
+
 function removeBootSplash() {
   const boot = document.getElementById('boot-splash');
   if (!boot) return;
