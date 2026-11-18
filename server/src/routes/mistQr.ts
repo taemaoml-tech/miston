@@ -137,13 +137,27 @@ router.post('/session/status', asyncHandler(async (req, res) => {
   const row = result.rows[0];
   if (!row) throw new AppError(404, 'QR_NOT_FOUND', 'QR-код не знайдено.');
   if (new Date(row.expires_at).getTime() <= Date.now()) throw new AppError(400, 'QR_EXPIRED', 'Термін дії QR-коду минув.');
-  if (row.status !== 'approved' || !row.user_id) {
+  if (row.status === 'pending') {
     res.json({ status: 'pending' });
     return;
   }
+  if (row.status !== 'approved' || !row.user_id) {
+    throw new AppError(400, 'QR_ALREADY_USED', 'Цей QR-код уже використано.');
+  }
+
+  // Атомарно спалюємо код: навіть протягом 5 хвилин його не можна використати двічі.
+  const consumed = await query<{ user_id: string }>(
+    `UPDATE mist_qr_login_sessions
+     SET status = 'consumed'
+     WHERE token = $1 AND status = 'approved' AND expires_at > now()
+     RETURNING user_id`,
+    [token],
+  );
+  const userId = consumed.rows[0]?.user_id;
+  if (!userId) throw new AppError(400, 'QR_ALREADY_USED', 'Цей QR-код уже використано.');
 
   const meta = clientMeta(req);
-  res.json({ status: 'approved', auth: await issueSession(row.user_id, meta.userAgent, meta.ip) });
+  res.json({ status: 'approved', auth: await issueSession(userId, meta.userAgent, meta.ip) });
 }));
 
 export default router;
