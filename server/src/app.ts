@@ -97,7 +97,13 @@ export function createApp(): express.Express {
   app.use('/api/admin', adminRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/mist-inbox', mistInboxRoutes);
-app.use('/api/mist-qr', mistQrRoutes);
+  app.use('/api/mist-qr', rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 120,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: { code: 'RATE_LIMITED', message: 'Забагато QR-запитів. Спробуйте пізніше.' } },
+  }), mistQrRoutes);
 
   if (config.CLIENT_DIR) {
     const clientDir = path.resolve(config.CLIENT_DIR);

@@ -1,7 +1,7 @@
 import {
   BatteryCharging, BellRing, Bot, Camera, CheckCircle2, ChevronLeft, ChevronRight, Copy, Database,
   Folder, Languages, LockKeyhole, LogOut, Mail, MessageSquare, MonitorSmartphone, Palette,
-  ShieldCheck, Smartphone, UserRound,
+  QrCode, ShieldCheck, Smartphone, UserRound,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -21,11 +21,12 @@ import { NotificationSettings } from './NotificationSettings';
 import { ProfileCustomization } from './ProfileCustomization';
 import { MistIdCard } from './MistIdCard';
 import { MistIdInbox } from './MistIdInbox';
+import { QrLoginScanner } from './QrLoginScanner';
 import { StarDisplayName } from '../star/StarDisplayName';
 
 type Section =
   | 'root' | 'account' | 'appearance' | 'chats' | 'privacy' | 'notifications'
-  | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots' | 'mistInbox';
+  | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots' | 'mistInbox' | 'qrLogin';
 
 const SECTION_TITLES: Record<Section, string> = {
   root: 'Налаштування',
@@ -41,6 +42,7 @@ const SECTION_TITLES: Record<Section, string> = {
   language: 'Мова',
   bots: 'Боти',
   mistInbox: 'Пошта Mist ID',
+  qrLogin: 'Вхід через QR код',
 };
 
 function maskPhone(phone: string): string {
@@ -233,6 +235,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           </div>
 
           <div className="divide-y divide-ios-separator/10 overflow-hidden rounded-[22px] border border-ios-separator/10 bg-ios-bg/70">
+            <SettingsRow icon={<QrCode size={19} />} color="bg-blue-500" title="Вхід через QR код" subtitle="Відскануйте код з іншого пристрою" onClick={() => setSection('qrLogin')} />
             <SettingsRow icon={<Mail size={19} />} color="bg-indigo-500" title="Пошта Mist ID" subtitle="Системні повідомлення акаунту" onClick={() => setSection('mistInbox')} />
             <SettingsRow icon={<UserRound size={19} />} color="bg-sky-500" title="Акаунт" subtitle="Номер, ім'я користувача, «Про себе»" onClick={() => setSection('account')} />
             <SettingsRow icon={<Palette size={19} />} color="bg-pink-500" title="Кастомізація профілю" subtitle="Рамки, колір імені, значки — безкоштовно" onClick={() => setSection('appearance')} />
@@ -430,6 +433,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
 
           {section === 'notifications' && <NotificationSettings />}
           {section === 'mistInbox' && <MistIdInbox />}
+          {section === 'qrLogin' && <QrLoginScanner />}
 
           {section === 'data' && (
             <div className="space-y-4">

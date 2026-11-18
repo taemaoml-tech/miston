@@ -202,7 +202,12 @@ export const api = {
   },
   mistQr: {
     generate: () => request<{ token: string; expiresAt: string }>('/mist-qr/generate', { method: 'POST' }),
-    verify: (token: string) => request<AuthResponse>('/mist-qr/verify', { method: 'POST', body: { token } }),
+    verify: (token: string) => request<AuthResponse>('/mist-qr/verify', { method: 'POST', body: { token }, auth: false }),
+    /** Новий пристрій створює короткоживучий запит і показує його як QR. */
+    createLoginSession: () => request<{ token: string; expiresAt: string }>('/mist-qr/session', { method: 'POST', auth: false }),
+    loginSessionStatus: (token: string) => request<{ status: 'pending' | 'approved'; auth?: AuthResponse }>('/mist-qr/session/status', { method: 'POST', body: { token }, auth: false }),
+    /** Телефон, де вже увійшли, підтверджує сканований QR. */
+    approveLoginSession: (token: string) => request<{ ok: boolean }>('/mist-qr/session/approve', { method: 'POST', body: { token } }),
   },
 };
 

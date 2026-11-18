@@ -12,6 +12,8 @@ interface AuthContextValue {
   pendingTwoFactor: string | null;
   login: (identifier: string, password: string) => Promise<void>;
   loginWithQr: (token: string) => Promise<void>;
+  /** Застосувати вже підтверджену QR-сесію, отриману опитуванням нового пристрою. */
+  applySession: (session: AuthResponse) => void;
   confirmLogin: (code: string) => Promise<void>;
   completeTwoFactor: (password: string) => Promise<void>;
   resendLogin: () => Promise<void>;
@@ -110,6 +112,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(await api.mistQr.verify(token));
   }, [saveSession]);
 
+  const applySession = useCallback((session: AuthResponse) => {
+    saveSession(session);
+  }, [saveSession]);
+
   const confirmLogin = useCallback(async (code: string) => {
     if (!pendingLogin) throw new Error('Немає запиту на вхід');
     const result = await api.auth.loginVerify(pendingLogin.challengeId, code);
@@ -164,9 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, pendingLogin, pendingTwoFactor, login, loginWithQr, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin,
+    user, loading, pendingLogin, pendingTwoFactor, login, loginWithQr, applySession, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin,
     register, logout, endSession, updateUser: setUser,
-  }), [user, loading, pendingLogin, pendingTwoFactor, login, loginWithQr, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin, register, logout, endSession]);
+  }), [user, loading, pendingLogin, pendingTwoFactor, login, loginWithQr, applySession, confirmLogin, completeTwoFactor, resendLogin, requestLoginEmail, cancelLogin, register, logout, endSession]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

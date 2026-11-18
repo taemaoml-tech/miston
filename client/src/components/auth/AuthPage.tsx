@@ -1,19 +1,27 @@
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, MessageCircle, Moon, QrCode, ShieldAlert, ShieldCheck, Sun, Users, Video } from 'lucide-react';
+import { ArrowRight, Check, Copy, Eye, EyeOff, LockKeyhole, Mail, MessageCircle, Moon, QrCode, RefreshCw, ShieldAlert, ShieldCheck, Sun, Users, Video } from 'lucide-react';
+import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { api } from '../../api';
 import { SESSION_NOTICE_KEY, useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { infoHref } from '../../router/infoRoute';
 import { errorMessage } from '../../utils/format';
 import { INFO_LINKS } from '../info/infoLinks';
 import { AppDownload } from '../common/AppDownload';
-import { Logo } from '../common/Logo';
+import { Logo, Mark } from '../common/Logo';
 import { Spinner } from '../common/Spinner';
 
 type AuthMode = 'login' | 'register' | 'qr';
 
+interface QrSession {
+  token: string;
+  expiresAt: string;
+  dataUrl: string;
+}
+
 export function AuthPage() {
-  const { login, loginWithQr, register } = useAuth();
+  const { login, loginWithQr, applySession, register } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState<AuthMode>('login');
   const [notice, setNotice] = useState('');
@@ -22,6 +30,12 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [qrInput, setQrInput] = useState('');
+  const [qrSession, setQrSession] = useState<QrSession | null>(null);
+  const [qrStatus, setQrStatus] = useState<'idle' | 'pending' | 'approved'>('idle');
+  const [qrError, setQrError] = useState('');
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [form, setForm] = useState({ identifier: '', email: '', username: '', displayName: '', phone: '', password: '', confirm: '' });
 
   useEffect(() => {
@@ -43,7 +57,91 @@ export function AuthPage() {
   }, []);
 
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  const switchMode = (next: AuthMode) => { setMode(next); setError(''); };
+  const switchMode = (next: AuthMode) => {
+    setMode(next);
+    setError('');
+    setQrError('');
+    if (next !== 'qr') {
+      setQrSession(null);
+      setQrStatus('idle');
+    }
+  };
+
+  async function createQrSession() {
+    setQrLoading(true);
+    setQrError('');
+    setQrCopied(false);
+    try {
+      const result = await api.mistQr.createLoginSession();
+      const dataUrl = await QRCode.toDataURL(result.token, {
+        width: 240,
+        margin: 2,
+        color: { dark: '#111827', light: '#ffffff' },
+      });
+      setQrSession({ ...result, dataUrl });
+      setQrStatus('pending');
+      setNow(Date.now());
+    } catch (cause) {
+      setQrError(errorMessage(cause));
+      setQrStatus('idle');
+    } finally {
+      setQrLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (mode !== 'qr' || qrSession) return;
+    void createQrSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  useEffect(() => {
+    if (qrStatus !== 'pending' || !qrSession) return;
+    let active = true;
+    let timer: number | undefined;
+    const poll = async () => {
+      try {
+        const result = await api.mistQr.loginSessionStatus(qrSession.token);
+        if (!active) return;
+        if (result.status === 'approved' && result.auth) {
+          setQrStatus('approved');
+          applySession(result.auth);
+          return;
+        }
+      } catch (cause) {
+        if (!active) return;
+        setQrError(errorMessage(cause));
+        return;
+      }
+      if (active) timer = window.setTimeout(() => void poll(), 2000);
+    };
+    timer = window.setTimeout(() => void poll(), 1000);
+    return () => { active = false; if (timer) window.clearTimeout(timer); };
+  }, [qrSession, qrStatus, applySession]);
+
+  useEffect(() => {
+    if (qrStatus !== 'pending') return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [qrStatus]);
+
+  useEffect(() => {
+    if (!qrCopied) return;
+    const timer = window.setTimeout(() => setQrCopied(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [qrCopied]);
+
+  const qrRemaining = qrSession ? Math.max(0, Math.ceil((new Date(qrSession.expiresAt).getTime() - now) / 1000)) : 0;
+
+  async function copyQrToken() {
+    if (!qrSession) return;
+    try {
+      await navigator.clipboard.writeText(qrSession.token);
+      setQrCopied(true);
+    } catch {
+      setQrError('Не вдалося скопіювати код.');
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -81,7 +179,7 @@ export function AuthPage() {
 
   const title = mode === 'qr' ? 'Увійти за QR-кодом' : mode === 'login' ? 'Увійти з Mist ID' : 'Створіть Mist ID';
   const subtitle = mode === 'qr'
-    ? 'Відскануйте QR-код з іншого пристрою або введіть його код.'
+    ? 'Покажіть цей код на телефоні у Miston — вхід відбудеться без пароля.'
     : mode === 'login'
       ? 'Ваш Mist ID — це адреса для входу та пошти в Miston.'
       : 'Одна адреса для чатів, друзів і пошти Mist ID.';
@@ -126,7 +224,7 @@ export function AuthPage() {
           <div className="w-full max-w-md rounded-[32px] border border-ios-separator/10 bg-ios-glass/80 p-6 shadow-soft backdrop-blur-2xl sm:p-8">
             <div className="mb-6 flex items-center justify-between lg:hidden"><Logo /><span className="text-[11px] font-semibold text-ios-secondary">Mist ID</span></div>
             <div className="mb-7 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[20px] bg-ios-blue text-white shadow-glow"><MessageCircle size={30} /></div>
+              <div className="mx-auto mb-4"><Mark size={56} className="rounded-[18px] shadow-glow" /></div>
               <h2 className="text-[28px] font-bold tracking-tight">{title}</h2>
               <p className="mt-2 text-sm leading-6 text-ios-secondary">{subtitle}</p>
             </div>
@@ -159,17 +257,58 @@ export function AuthPage() {
             </div>
 
             {mode === 'qr' ? (
-              <form onSubmit={submitQr} className="space-y-4">
+              <div className="space-y-4">
                 <div className="ios-glass flex items-start gap-3 rounded-[20px] border p-4 text-sm text-ios-secondary">
                   <QrCode size={20} className="mt-0.5 shrink-0 text-ios-blue" />
-                  <p>Відкрийте <b>Профіль → Mist ID → QR-код для входу</b> на пристрої, де ви вже увійшли. Відскануйте код або скопіюйте його та введіть нижче.</p>
+                  <p>Відкрийте <b>Налаштування → Вхід через QR-код</b> у Miston на телефоні, де ви вже увійшли, і відскануйте цей код. Пароль і підтвердження не потрібні.</p>
                 </div>
-                <label className="block"><span className="field-label">Код входу Mist ID</span><input className="text-input" autoComplete="off" required minLength={10} maxLength={64} value={qrInput} onChange={(e) => setQrInput(e.target.value)} placeholder="Наприклад, 48 символів з QR-коду" /></label>
+
+                <div className="flex flex-col items-center rounded-[24px] border border-ios-separator/10 bg-ios-bg/60 p-5">
+                  {qrLoading && !qrSession ? (
+                    <Spinner label="Створення коду…" className="py-10" />
+                  ) : qrSession?.dataUrl ? (
+                    <img src={qrSession.dataUrl} alt="QR-код для входу в Miston" className="h-48 w-48 rounded-2xl bg-white p-2 shadow-sm" />
+                  ) : (
+                    <div className="flex h-48 w-48 items-center justify-center rounded-2xl bg-ios-fill/10 text-ios-secondary"><QrCode size={48} /></div>
+                  )}
+
+                  <p className="mt-3 text-xs font-semibold text-ios-secondary" role="status">
+                    {qrStatus === 'approved' ? 'Готово — виконуємо вхід…'
+                      : qrStatus === 'pending' ? `Код дійсний ще ${qrRemaining} с`
+                        : 'Не вдалося створити код'}
+                  </p>
+                  <div className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-ios-fill/15">
+                    <span className="block h-full rounded-full bg-ios-blue transition-all" style={{ width: `${qrRemaining > 0 ? Math.min(100, (qrRemaining / 300) * 100) : 0}%` }} />
+                  </div>
+                  {qrSession && (
+                    <>
+                      <p className="mt-4 text-[11px] text-ios-secondary">Або скопіюйте код і введіть його на телефоні вручну</p>
+                      <code className="mt-1.5 max-w-full break-all rounded-lg bg-ios-fill/10 px-2 py-1 text-[10px] text-ios-secondary">{qrSession.token}</code>
+                      <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                        <button type="button" className="secondary-btn text-xs" onClick={() => void copyQrToken()}>
+                          {qrCopied ? <Check size={15} /> : <Copy size={15} />} {qrCopied ? 'Скопійовано' : 'Копіювати'}
+                        </button>
+                        <button type="button" className="secondary-btn text-xs" onClick={() => void createQrSession()} disabled={qrLoading}>
+                          <RefreshCw size={15} /> Новий код
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {qrError && <div role="alert" className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-300">{qrError}</div>}
                 {errorBlock}
-                <button type="submit" className="primary-btn mt-2 w-full py-3" disabled={loading}>
-                  {loading ? <Spinner label="Вхід…" className="text-white" /> : <>Увійти за QR-кодом<ArrowRight size={17} /></>}
-                </button>
-              </form>
+
+                <details className="ios-glass rounded-[20px] border px-4 py-3 text-sm">
+                  <summary className="cursor-pointer font-medium text-ios-secondary">Ввести код вручну</summary>
+                  <form onSubmit={submitQr} className="mt-3 space-y-3">
+                    <label className="block"><span className="field-label">Код входу Mist ID</span><input className="text-input" autoComplete="off" required minLength={10} maxLength={96} value={qrInput} onChange={(e) => setQrInput(e.target.value)} placeholder="mistlogin:… або 48 символів" /></label>
+                    <button type="submit" className="primary-btn w-full py-2.5" disabled={loading}>
+                      {loading ? <Spinner label="Вхід…" className="text-white" /> : <>Увійти за кодом<ArrowRight size={17} /></>}
+                    </button>
+                  </form>
+                </details>
+              </div>
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 {mode === 'login' ? (
