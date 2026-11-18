@@ -27,11 +27,16 @@
   --ios-incoming: 233 233 235;
   --ios-blue: 0 122 255;
 
-  /* Коригуємо нативні встави під фактичний вигляд: користувацький запит —
-     зверху ще на 5 мм вище (разом 1 см + 5 мм), знизу на ~5 мм менше,
-     але не нижче нуля. */
-  --miston-safe-top-adjusted: max(0px, calc(var(--miston-safe-top, env(safe-area-inset-top, 0px)) - 1cm - 5mm));
-  --miston-safe-bottom-adjusted: max(0px, calc(var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px)) - 5mm));
+  /* Безпечні відступи з гарантованим мінімумом і м'яким обмеженням максимуму,
+     щоб на різних моделях телефонів не з'являлись великі порожні смуги.
+     Користувацький запит: мінімум 1 см зверху, 5 мм знизу. */
+  --miston-safe-top-raw: var(--miston-safe-top, env(safe-area-inset-top, 0px));
+  --miston-safe-bottom-raw: var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px));
+  --miston-safe-top-adjusted: clamp(1cm, calc(var(--miston-safe-top-raw) + 2mm), 2cm);
+  --miston-safe-bottom-adjusted: clamp(5mm, calc(var(--miston-safe-bottom-raw) + 1mm), 1.2cm);
+  /* Масштаб інтерфейсу адаптується до ширини екрана: компактні телефони
+     отримують трохи менші елементи, великі — трохи більші, без різких стрибків. */
+  --miston-ui-scale: clamp(0.9, calc(100vw / 390px), 1.12);
 }
 
 .dark {
@@ -66,6 +71,16 @@
   }
   ::selection { @apply bg-accent-200 text-accent-950 dark:bg-accent-700 dark:text-white; }
 }
+
+/* Адаптивний розмір під модель телефону: головна шапка, бульбашки та поле
+   вводу масштабуються плавно без великих порожніх ліній між елементами.
+   Поза @layer, щоб перекрити Tailwind utility-класи (text-[15px] тощо). */
+.chat-header { min-height: calc(3.5rem * var(--miston-ui-scale)); }
+.message-bubble { font-size: calc(0.9375rem * var(--miston-ui-scale)) !important; line-height: calc(1.25rem * var(--miston-ui-scale)) !important; }
+.message-time { font-size: calc(0.625rem * var(--miston-ui-scale)) !important; }
+.composer-root { padding-block: calc(0.5rem * var(--miston-ui-scale)) !important; }
+.composer-input { font-size: calc(0.9375rem * var(--miston-ui-scale)) !important; min-height: calc(2.5rem * var(--miston-ui-scale)) !important; }
+.day-separator { margin-block: calc(0.5rem * var(--miston-ui-scale)) !important; }
 
 @layer components {
   .ios-glass {
@@ -112,6 +127,20 @@
   .subtle-scrollbar { scrollbar-width: none; }
   .subtle-scrollbar::-webkit-scrollbar { display: none; }
 }
+
+/* Компактні телефони (iPhone SE тощо) — щільніший інтерфейс без великих
+   порожніх ліній. Великі телефони/планшети отримують трохи більший масштаб. */
+@media (max-width: 360px) {
+  :root { --miston-ui-scale: 0.9; }
+  .message-bubble { padding-inline: 0.625rem !important; }
+}
+@media (min-width: 361px) and (max-width: 429px) {
+  :root { --miston-ui-scale: 1; }
+}
+@media (min-width: 430px) and (max-width: 767px) {
+  :root { --miston-ui-scale: 1.08; }
+}
+
 
 /* Android System WebView 153/154 іноді малює backdrop-filter суцільною плямою.
    Особливо помітно при відкритті клавіатури: весь видимий екран стає білим або

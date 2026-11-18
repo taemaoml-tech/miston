@@ -152,7 +152,7 @@ export function MessageBubble({
               <GameCard message={message} />
               <div className="mt-1 flex items-center gap-1 px-1 text-[10px] text-slate-400 dark:text-slate-500">
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
-                <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
+                <time className="message-time" dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
                 {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>
@@ -175,7 +175,7 @@ export function MessageBubble({
               )}
               <div className="mt-1 flex items-center gap-1 px-1 text-[10px] text-slate-400 dark:text-slate-500">
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
-                <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
+                <time className="message-time" dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
                 {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>
@@ -186,12 +186,12 @@ export function MessageBubble({
               <div className="mt-1 flex items-center gap-1 px-1 text-[10px] text-slate-400 dark:text-slate-500">
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
                 {message.editedAt && <span className="italic">змінено</span>}
-                <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
+                <time className="message-time" dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
                 {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>
           ) : (
-            <div className={`relative rounded-[18px] px-3.5 py-2 text-[15px] leading-5 shadow-sm after:pointer-events-none after:absolute after:-bottom-0.5 after:h-3 after:w-3 after:content-[''] ${own ? 'rounded-br-[6px] bg-ios-blue text-white after:right-[-5px] after:rounded-br-[11px] after:bg-ios-blue' : 'rounded-bl-[6px] bg-ios-incoming text-ios-label after:left-[-5px] after:rounded-bl-[11px] after:bg-ios-incoming'} ${highlight ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-ios-bg' : ''}`}>
+            <div className={`message-bubble relative rounded-[18px] px-3.5 py-2 text-[15px] leading-5 shadow-sm after:pointer-events-none after:absolute after:-bottom-0.5 after:h-3 after:w-3 after:content-[''] ${own ? 'rounded-br-[6px] bg-ios-blue text-white after:right-[-5px] after:rounded-br-[11px] after:bg-ios-blue' : 'rounded-bl-[6px] bg-ios-incoming text-ios-label after:left-[-5px] after:rounded-bl-[11px] after:bg-ios-incoming'} ${highlight ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-ios-bg' : ''}`}>
               {replyQuote}
               {forwardLabel}
               {attachment()}
@@ -199,7 +199,7 @@ export function MessageBubble({
               <div className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] ${own ? 'text-white/65' : 'text-slate-400 dark:text-slate-500'}`}>
                 {pinned && <Pin size={11} aria-label="Закріплено" />}
                 {message.editedAt && <span className="italic">змінено</span>}
-                <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
+                <time className="message-time" dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
                 {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
               </div>
             </div>

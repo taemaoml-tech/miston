@@ -287,7 +287,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
 
   return (
     <section className="relative flex h-full min-w-0 flex-1 flex-col" aria-label={`Розмова з ${activeConversation.title}`}>
-      <header className="ios-glass relative z-20 grid h-14 shrink-0 grid-cols-[minmax(40px,1fr)_auto_minmax(40px,1fr)] items-center gap-1 border-b px-2 sm:px-4">
+      <header className="chat-header ios-glass relative z-20 grid h-14 shrink-0 grid-cols-[minmax(40px,1fr)_auto_minmax(40px,1fr)] items-center gap-1 border-b px-2 sm:px-4">
         <div className="flex items-center justify-start">
           <button type="button" className="icon-btn md:hidden" onClick={closeMobileChat} aria-label="Назад до розмов"><ArrowLeft size={21} /></button>
         </div>
@@ -350,7 +350,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
               const previous = messages[index - 1];
               const newDay = !previous || new Date(previous.createdAt).toDateString() !== new Date(message.createdAt).toDateString();
               const showSender = !isSaved && activeConversation.kind !== 'direct' && (!previous || previous.senderId !== message.senderId || newDay);
-              return <div key={message.id}>{newDay && <div className="sticky top-1 z-[5] my-3 flex justify-center"><span className="ios-glass rounded-full px-3 py-1 text-[11px] font-medium text-ios-secondary shadow-sm">{formatDay(message.createdAt)}</span></div>}<MessageBubble
+              return <div key={message.id}>{newDay && <div className="day-separator sticky top-1 z-[5] my-3 flex justify-center"><span className="ios-glass rounded-full px-3 py-1 text-[11px] font-medium text-ios-secondary shadow-sm">{formatDay(message.createdAt)}</span></div>}<MessageBubble
                 message={message}
                 showSender={showSender}
                 canEdit={message.senderId === user?.id && message.kind !== 'voice' && message.kind !== 'video_note' && message.kind !== 'sticker' && message.kind !== 'game'}

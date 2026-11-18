@@ -231,7 +231,7 @@ export function Composer({
   };
 
   return (
-    <div className="border-t border-ios-separator/10 bg-ios-glass/70 px-3 pb-3 pt-2 backdrop-blur-xl sm:px-5 sm:pb-4">
+    <div className="composer-root border-t border-ios-separator/10 bg-ios-glass/70 px-3 pb-3 pt-2 backdrop-blur-xl sm:px-5 sm:pb-4">
       {error && <div role="alert" className="ios-glass mx-auto mb-2 flex max-w-4xl items-center justify-between gap-2 rounded-2xl px-3 py-2 text-xs text-rose-600 dark:text-rose-300"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Закрити помилку"><X size={14} /></button></div>}
       {editing && <div className="mx-auto mb-2 flex max-w-4xl items-center justify-between gap-3 rounded-2xl border-l-[3px] border-ios-blue bg-ios-blue/10 px-3 py-2 text-xs text-ios-blue"><div className="min-w-0"><p className="font-semibold">Редагування повідомлення</p><p className="truncate opacity-80">{editing.content || 'Без тексту'}</p></div><button type="button" className="icon-btn h-7 w-7 shrink-0" onClick={() => onCancelEdit?.()} aria-label="Скасувати редагування"><X size={15} /></button></div>}
       {replyTo && !editing && (
@@ -273,7 +273,7 @@ export function Composer({
               ref={textareaRef}
               rows={1}
               maxLength={4000}
-              className="subtle-scrollbar max-h-32 min-h-9 w-full resize-none border-0 bg-transparent px-1 py-2 text-[15px] leading-5 text-ios-label placeholder:text-ios-secondary focus:border-0 focus:outline-none focus:ring-0"
+              className="composer-input subtle-scrollbar max-h-32 min-h-9 w-full resize-none border-0 bg-transparent px-1 py-2 text-[15px] leading-5 text-ios-label placeholder:text-ios-secondary focus:border-0 focus:outline-none focus:ring-0"
               value={text}
               onChange={(event) => onTextChange(event.target.value, event.target.selectionStart)}
               onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
