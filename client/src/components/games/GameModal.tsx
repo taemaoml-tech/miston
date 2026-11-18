@@ -94,6 +94,13 @@ export function GameModal() {
     setRolls([]); setRolling(false); setQuizIndex(0); setQuizAnswers([]);
   }, [game?.id, game?.status]);
 
+  const steer = useCallback((next: Point) => {
+    const current = direction.current;
+    if (current.x === -next.x && current.y === -next.y) return;
+    direction.current = next;
+    setSnakeRunning(true);
+  }, []);
+
   const finish = useCallback(async (score: number, details: Record<string, unknown> = {}) => {
     if (!game || submitted.current) return;
     submitted.current = true;
@@ -158,13 +165,11 @@ export function GameModal() {
               : null;
       if (!next) return;
       event.preventDefault();
-      const current = direction.current;
-      if (current.x === -next.x && current.y === -next.y) return;
-      direction.current = next;
+      steer(next);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game?.id, game?.kind, game?.status, snakeRunning]);
+  }, [game?.id, game?.kind, game?.status, snakeRunning, steer]);
 
   // --- Костики ---
   useEffect(() => {
@@ -258,11 +263,11 @@ export function GameModal() {
           </div>
           <div className="mx-auto mt-3 grid w-36 grid-cols-3 gap-1">
             <span />
-            <button type="button" aria-label="Вгору" onClick={() => { direction.current = { x: 0, y: -1 }; setSnakeRunning(true); }} className="secondary-btn justify-center p-2"><ArrowUp size={18} /></button>
+            <button type="button" aria-label="Вгору" onClick={() => steer({ x: 0, y: -1 })} className="secondary-btn justify-center p-2"><ArrowUp size={18} /></button>
             <span />
-            <button type="button" aria-label="Ліворуч" onClick={() => { direction.current = { x: -1, y: 0 }; setSnakeRunning(true); }} className="secondary-btn justify-center p-2"><ArrowLeft size={18} /></button>
-            <button type="button" aria-label="Вниз" onClick={() => { direction.current = { x: 0, y: 1 }; setSnakeRunning(true); }} className="secondary-btn justify-center p-2"><ArrowDown size={18} /></button>
-            <button type="button" aria-label="Праворуч" onClick={() => { direction.current = { x: 1, y: 0 }; setSnakeRunning(true); }} className="secondary-btn justify-center p-2"><ArrowRight size={18} /></button>
+            <button type="button" aria-label="Ліворуч" onClick={() => steer({ x: -1, y: 0 })} className="secondary-btn justify-center p-2"><ArrowLeft size={18} /></button>
+            <button type="button" aria-label="Вниз" onClick={() => steer({ x: 0, y: 1 })} className="secondary-btn justify-center p-2"><ArrowDown size={18} /></button>
+            <button type="button" aria-label="Праворуч" onClick={() => steer({ x: 1, y: 0 })} className="secondary-btn justify-center p-2"><ArrowRight size={18} /></button>
           </div>
           <p className="mt-3 text-center text-xs text-ios-secondary">Таймер запускається першим натисканням напрямку.</p>
         </div>
