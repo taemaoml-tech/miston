@@ -98,8 +98,9 @@ export function createApp(): express.Express {
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/mist-inbox', mistInboxRoutes);
   app.use('/api/mist-qr', rateLimit({
+    // Сторінка входу опитує статус кожні 2 с протягом 5 хв — це ~150 запитів.
     windowMs: 15 * 60 * 1000,
-    limit: 120,
+    limit: 600,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: { error: { code: 'RATE_LIMITED', message: 'Забагато QR-запитів. Спробуйте пізніше.' } },
