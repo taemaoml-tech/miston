@@ -192,8 +192,8 @@ export function StarShop({ open, onClose, initialTab = 'shop' }: { open: boolean
   const refreshFailed = overviewError && !overview;
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex bg-slate-950/60 backdrop-blur-sm animate-fade-in sm:items-center sm:justify-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="star-shop-title" className="relative flex h-dvh w-full max-w-[1180px] flex-col overflow-hidden bg-white shadow-2xl outline-none animate-slide-up dark:bg-slate-900 sm:h-[min(92vh,900px)] sm:rounded-[28px] sm:border">
+    <div className="overlay-safe fixed inset-0 z-[80] flex bg-slate-950/60 backdrop-blur-sm animate-fade-in sm:items-center sm:justify-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="star-shop-title" className="relative flex h-full w-full max-w-[1180px] flex-col overflow-hidden bg-white shadow-2xl outline-none animate-slide-up dark:bg-slate-900 sm:h-[min(92vh,900px)] sm:rounded-[28px] sm:border">
         <header className="relative shrink-0 overflow-hidden bg-slate-950 text-white">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_12%,rgba(129,140,248,.4),transparent_36%),radial-gradient(circle_at_84%_82%,rgba(245,158,11,.22),transparent_34%)]" />
           <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:26px_26px]" />

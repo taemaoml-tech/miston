@@ -90,13 +90,13 @@ export function AuthPage() {
   ) : null;
 
   return (
-    <main className="relative min-h-full overflow-hidden bg-ios-bg">
+    <main className="auth-viewport subtle-scrollbar relative overflow-y-auto bg-ios-bg">
       <div className="pointer-events-none absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/[.07] blur-3xl" />
       <button type="button" onClick={toggleTheme} className="icon-btn ios-glass absolute right-5 top-5 z-10 border shadow-sm" aria-label={`Перемкнути на ${theme === 'dark' ? 'світлу' : 'темну'} тему`}>
         {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
       </button>
-      <div className="relative mx-auto grid min-h-screen max-w-6xl lg:grid-cols-[1.05fr_.95fr]">
+      <div className="relative mx-auto grid min-h-full max-w-6xl lg:grid-cols-[1.05fr_.95fr]">
         <section className="hidden flex-col justify-between p-12 lg:flex xl:p-16">
           <Logo size={40} />
           <div className="max-w-lg">

@@ -239,7 +239,7 @@ export function VideoNoteRecorder({ conversationId, onSent, onClose, replyToId =
   const ringTone = stage === 'recording' ? 'stroke-rose-500' : 'stroke-accent-500';
 
   return createPortal(
-    <div className="fixed inset-0 z-[90] flex flex-col bg-slate-950/95 p-4 text-white backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Відеокружечок">
+    <div className="overlay-safe fixed inset-0 z-[90] flex flex-col bg-slate-950/95 p-4 text-white backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Відеокружечок">
       <header className="flex shrink-0 items-center justify-between gap-3 pb-2">
         <button type="button" onClick={cancel} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20" aria-label="Закрити запис відеокружечка">
           <X size={20} />

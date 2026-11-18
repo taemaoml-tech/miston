@@ -26,6 +26,19 @@ if (nativeSafeArea) {
   }
 }
 
+// Коли Android відкриває клавіатуру, layout viewport лишається повним, а
+// видимий — меншим. Без цього поля входу опиняються під клавіатурою й
+// залишається порожня область угорі.
+function syncVisualViewport() {
+  const visual = window.visualViewport;
+  const height = visual?.height || window.innerHeight;
+  document.documentElement.style.setProperty('--miston-visual-height', `${height}px`);
+}
+syncVisualViewport();
+window.visualViewport?.addEventListener('resize', syncVisualViewport);
+window.visualViewport?.addEventListener('scroll', syncVisualViewport);
+window.addEventListener('resize', syncVisualViewport);
+
 function removeBootSplash() {
   const boot = document.getElementById('boot-splash');
   if (!boot) return;

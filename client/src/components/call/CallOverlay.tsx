@@ -132,7 +132,7 @@ function RingingCard() {
     : `Вхідний ${call.kind === 'video' ? 'відео' : 'аудіо'}дзвінок`;
 
   return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Вхідний дзвінок">
+    <div className="overlay-safe fixed inset-0 z-[85] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Вхідний дзвінок">
       <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900 p-7 text-center text-white shadow-2xl animate-slide-up">
         <div className="relative mx-auto mb-5 flex h-24 w-24 items-center justify-center">
           <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/25" />
@@ -202,7 +202,7 @@ function ActiveCall({ call }: { call: CallInfo }) {
   const localPreview = screenOn ? screenStream : localStream;
 
   return (
-    <div className="fixed inset-0 z-[80] flex h-dvh flex-col bg-slate-950 text-white" role="dialog" aria-modal="true" aria-label={`${call.kind === 'video' ? 'Відеодзвінок' : 'Аудіодзвінок'} з ${title}`}>
+    <div className="overlay-safe fixed inset-0 z-[80] flex h-full flex-col bg-slate-950 text-white" role="dialog" aria-modal="true" aria-label={`${call.kind === 'video' ? 'Відеодзвінок' : 'Аудіодзвінок'} з ${title}`}>
       <header className="safe-call-top flex shrink-0 items-center gap-3 px-4 pb-2 sm:px-6">
         <Avatar name={title} src={avatar} size="md" square={call.conversation.kind !== 'direct'} />
         <div className="min-w-0 flex-1">

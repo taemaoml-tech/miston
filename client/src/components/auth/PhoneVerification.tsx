@@ -96,7 +96,7 @@ export function PhoneVerification() {
   }
 
   return (
-    <main className="relative flex min-h-full items-center justify-center overflow-hidden bg-ios-bg p-5">
+    <main className="auth-viewport subtle-scrollbar relative flex items-center justify-center overflow-y-auto bg-ios-bg p-5">
       <div className="pointer-events-none absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-ios-blue/[.07] blur-3xl" />
 

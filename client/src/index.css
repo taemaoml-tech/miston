@@ -88,6 +88,26 @@
   .subtle-scrollbar { scrollbar-width: thin; scrollbar-color: rgb(var(--ios-fill) / .35) transparent; }
   .subtle-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
   .subtle-scrollbar::-webkit-scrollbar-thumb { @apply rounded-full bg-ios-fill/30; }
+
+  /* Повноекранні оверлеї не отримують padding від body, тому камера/home bar
+     перекривають їх окремо. */
+  .overlay-safe {
+    padding-top: var(--miston-safe-top-adjusted) !important;
+    padding-bottom: var(--miston-safe-bottom-adjusted) !important;
+  }
+
+  /* Екрани входу мусять підлаштовуватися під видиму область, коли Android
+     показує клавіатуру. --miston-visual-height оновлює main.tsx. */
+  .auth-viewport {
+    height: calc(var(--miston-visual-height, 100%) - var(--miston-safe-top-adjusted) - var(--miston-safe-bottom-adjusted));
+    min-height: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Telegram-like: scrollbar на телефоні не показуємо. */
+  .subtle-scrollbar { scrollbar-width: none; }
+  .subtle-scrollbar::-webkit-scrollbar { display: none; }
 }
 
 /* Android System WebView 153/154 іноді малює backdrop-filter суцільною плямою.

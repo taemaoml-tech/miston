@@ -55,7 +55,7 @@ export function InfoShell({ route, variant, children }: InfoShellProps) {
   const leave = () => goHome();
 
   return (
-    <div id="info-scroll" className={`${variant === 'overlay' ? 'fixed inset-0 z-[60]' : 'min-h-full'} overflow-y-auto bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100`}>
+    <div id="info-scroll" className={`${variant === 'overlay' ? 'overlay-safe fixed inset-0 z-[60]' : 'min-h-full'} overflow-y-auto bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100`}>
       <header className="sticky top-0 z-10 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <button type="button" onClick={() => openInfo('about')} className="flex items-center gap-2.5 rounded-xl" aria-label="Miston — на головну сторінку">

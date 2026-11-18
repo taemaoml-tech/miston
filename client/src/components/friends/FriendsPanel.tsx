@@ -1,4 +1,4 @@
-import { Check, MessageCircle, Pencil, Search, UserRoundPlus, UserRoundX, Users, X } from 'lucide-react';
+import { Check, MessageCircle, Pencil, QrCode, Search, UserRoundPlus, UserRoundX, Users, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,9 +7,11 @@ import { useMessenger } from '../../contexts/MessengerContext';
 import { useUserSearch } from '../../hooks/useUserSearch';
 import type { FriendProfile, FriendshipState } from '../../types/models';
 import { errorMessage } from '../../utils/format';
+import { useAndroidBack } from '../../utils/androidBack';
 import { Avatar } from '../common/Avatar';
 import { Spinner } from '../common/Spinner';
 import { StarDisplayName } from '../star/StarDisplayName';
+import { FriendsQrModal } from './FriendsQrModal';
 
 type FriendsView = 'friends' | 'requests' | 'search';
 
@@ -28,6 +30,7 @@ export function FriendsPanel({ onOpenUser, onChatStarted }: { onOpenUser: (id: s
     setAlias, removeAlias,
   } = useFriends();
   const [view, setView] = useState<FriendsView>('friends');
+  const [qrOpen, setQrOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [friendFilter, setFriendFilter] = useState('');
   const [renameTarget, setRenameTarget] = useState<FriendProfile | null>(null);
@@ -36,6 +39,12 @@ export function FriendsPanel({ onOpenUser, onChatStarted }: { onOpenUser: (id: s
   const [actionError, setActionError] = useState('');
   const [overrides, setOverrides] = useState<Record<string, FriendshipState>>({});
   const { users: searchResults, loading: searching, error: searchError } = useUserSearch(query, view === 'search');
+
+  useAndroidBack(() => {
+    if (qrOpen) { setQrOpen(false); return true; }
+    if (renameTarget) { setRenameTarget(null); setAliasDraft(''); return true; }
+    return false;
+  }, 120);
 
   const results = useMemo(
     () => searchResults.filter((candidate) => candidate.id !== user?.id),
@@ -130,22 +139,33 @@ export function FriendsPanel({ onOpenUser, onChatStarted }: { onOpenUser: (id: s
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="grid grid-cols-3 gap-1 px-3 pb-2" role="tablist" aria-label="Розділи друзів">
-        {viewTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={view === tab.id}
-            onClick={() => setView(tab.id)}
-            className={`relative rounded-lg py-1.5 text-xs font-semibold transition ${view === tab.id ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
-          >
-            {tab.label}
-            {tab.id === 'requests' && incomingCount > 0 && (
-              <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-600 px-1 text-[9px] font-bold text-white">{incomingCount}</span>
-            )}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 px-3 pb-2">
+        <div className="grid min-w-0 flex-1 grid-cols-3 gap-1" role="tablist" aria-label="Розділи друзів">
+          {viewTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={view === tab.id}
+              onClick={() => setView(tab.id)}
+              className={`relative rounded-lg py-1.5 text-xs font-semibold transition ${view === tab.id ? 'bg-ios-bg text-ios-label shadow-sm' : 'text-ios-secondary hover:text-ios-label'}`}
+            >
+              {tab.label}
+              {tab.id === 'requests' && incomingCount > 0 && (
+                <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-600 px-1 text-[9px] font-bold text-white">{incomingCount}</span>
+              )}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="icon-btn h-8 w-8 shrink-0 rounded-xl bg-ios-fill/10 text-ios-secondary hover:bg-ios-fill/20 hover:text-ios-blue"
+          onClick={() => setQrOpen(true)}
+          aria-label="Моя QR-картка та сканер"
+          title="Моя картка / сканер QR"
+        >
+          <QrCode size={16} />
+        </button>
       </div>
 
       {view === 'search' && (
@@ -306,9 +326,15 @@ export function FriendsPanel({ onOpenUser, onChatStarted }: { onOpenUser: (id: s
         )}
       </div>
 
+      <FriendsQrModal
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        onOpenUser={(id) => { setQrOpen(false); onOpenUser(id); }}
+      />
+
       {renameTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+          className="overlay-safe fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => { if (event.target === event.currentTarget) setRenameTarget(null); }}
         >

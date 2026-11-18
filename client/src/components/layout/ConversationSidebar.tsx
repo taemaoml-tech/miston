@@ -99,11 +99,11 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           <button type="button" className={`icon-btn relative ${tab === 'friends' ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={() => setTab((current) => current === 'friends' ? 'chats' : 'friends')} aria-label="Друзі" aria-pressed={tab === 'friends'}>
-            <Users size={19} />
+            <Users size={20} />
             {incomingCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{incomingCount > 9 ? '9+' : incomingCount}</span>}
           </button>
           <button type="button" className="icon-btn relative" onClick={() => setInboxOpen((value) => !value)} aria-label="Системні сповіщення" aria-expanded={inboxOpen}>
-            <Bell size={19} />
+            <Bell size={20} />
             {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
           </button>
           <button type="button" className="icon-btn text-ios-blue hover:bg-ios-blue hover:text-white" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
@@ -137,7 +137,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
             </button>
             {savedNotes && <button type="button" onClick={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); openMenu(savedNotes, bounds.right - MENU_WIDTH, bounds.bottom + 4); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-ios-secondary opacity-100 transition hover:bg-ios-fill/10 hover:text-ios-label md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100" aria-label="Дії з нотатками"><MoreVertical size={15} /></button>}
           </div>
-          <div className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+          <div className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
             {loading ? <Spinner label="Завантаження розмов…" className="py-12" /> : error ? <EmptyState icon={Users} title="Не вдалося підключитися" description={error} action={<button type="button" className="secondary-btn" onClick={() => void reload()}>Спробувати ще раз</button>} /> : filtered.length === 0 ? <EmptyState icon={MessageSquarePlus} title={query ? 'Немає збігів' : 'Розмов ще немає'} description={query ? 'Спробуйте інше ім\'я або ключове слово.' : 'Знайдіть знайому людину й почніть нову розмову.'} action={!query ? <button type="button" className="primary-btn" onClick={onNewChat}>Почати чат</button> : undefined} /> : <ul className="space-y-0.5">{filtered.map((conversation) => {
               const active = activeConversation?.id === conversation.id;
               const other = conversation.kind === 'direct' ? conversation.members.find((member) => member.id !== user?.id) : undefined;
