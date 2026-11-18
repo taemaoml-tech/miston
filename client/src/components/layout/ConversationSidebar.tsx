@@ -1,10 +1,9 @@
-import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, Menu, MessageSquarePlus, MoreVertical, Search, Trash2, Users, Video, X } from 'lucide-react';
+import { Bell, Bookmark, Eraser, Flag, LoaderCircle, LogOut, Menu, MessageSquarePlus, MoreVertical, Search, Trash2, Users, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFriends } from '../../contexts/FriendsContext';
 import { useMessenger } from '../../contexts/MessengerContext';
-import { api } from '../../api';
 import type { Conversation } from '../../types/models';
 import { formatConversationTime } from '../../utils/format';
 import { useAndroidBack } from '../../utils/androidBack';
@@ -44,13 +43,10 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<RowMenu | null>(null);
   const [openingNotes, setOpeningNotes] = useState(false);
-  const [meetingLink, setMeetingLink] = useState<string | null>(null);
-  const [creatingMeeting, setCreatingMeeting] = useState(false);
 
   useAndroidBack(() => {
     if (menu) { setMenu(null); return true; }
     if (inboxOpen) { setInboxOpen(false); return true; }
-    if (meetingLink) { setMeetingLink(null); return true; }
     if (tab === 'friends') { setTab('chats'); return true; }
     return false;
   }, 110);
@@ -59,20 +55,6 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
     if (savedNotes) { selectConversation(savedNotes.id); return; }
     setOpeningNotes(true);
     try { await openSavedNotes(); } finally { setOpeningNotes(false); }
-  }
-
-  async function createMeeting() {
-    setCreatingMeeting(true);
-    try {
-      const { meeting } = await api.meetings.create('Зустріч');
-      const fullLink = `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}${meeting.link}`;
-      setMeetingLink(fullLink);
-      try { await navigator.clipboard.writeText(fullLink); } catch { /* ignore */ }
-    } catch {
-      setMeetingLink(null);
-    } finally {
-      setCreatingMeeting(false);
-    }
   }
 
   function openMenu(conversation: Conversation, x: number, y: number) {
@@ -107,21 +89,9 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
             {systemUnread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{systemUnread > 9 ? '9+' : systemUnread}</span>}
           </button>
           <button type="button" className="icon-btn text-ios-blue hover:bg-ios-blue hover:text-white" onClick={onNewChat} aria-label="Нова розмова"><MessageSquarePlus size={20} /></button>
-          <button type="button" className="icon-btn text-[#34C759] hover:bg-[#34C759] hover:text-white" onClick={() => void createMeeting()} disabled={creatingMeeting} aria-label="Створити зустріч"><Video size={20} /></button>
         </div>
       </div>
       {inboxOpen && <SystemInboxPanel onClose={() => setInboxOpen(false)} />}
-      {meetingLink && (
-        <div className="mx-3 mb-2 rounded-2xl border border-[#34C759]/25 bg-[#34C759]/10 p-3 text-xs text-[#248A3D] dark:text-[#30D158]">
-          <p className="font-semibold">Зустріч створено</p>
-          <div className="mt-1.5 flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-lg bg-ios-bg/70 px-2 py-1 font-mono text-[11px] text-ios-label">{meetingLink}</code>
-            <button type="button" className="secondary-btn px-2 py-1 text-[11px]" onClick={() => void navigator.clipboard.writeText(meetingLink)}>Копіювати</button>
-            <button type="button" className="secondary-btn px-2 py-1 text-[11px]" onClick={() => setMeetingLink(null)}>✕</button>
-          </div>
-          <p className="mt-1.5 text-[10px] opacity-80">Надішліть посилання учасникам — вони приєднаються до зустрічі.</p>
-        </div>
-      )}
       {tab === 'chats' ? (
         <>
           <div className="px-3 pb-2 pt-0.5"><label className="relative block"><Search size={17} className="absolute left-3.5 top-2.5 text-ios-secondary" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="text-input rounded-full border-transparent bg-ios-fill/10 py-2 pl-10 pr-9 placeholder:text-ios-secondary focus:border-ios-blue focus:bg-ios-bg" placeholder="Пошук" aria-label="Пошук розмов" />{query && <button type="button" className="absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-ios-secondary hover:text-ios-label" onClick={() => setQuery('')} aria-label="Очистити пошук"><X size={15} /></button>}</label></div>

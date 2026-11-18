@@ -42,6 +42,8 @@ export async function listConversations(userId: string, onlyId?: string): Promis
     `SELECT c.*, cm.last_read_message_id, cm.cleared_after_id, cm.hidden_at
      FROM conversations c JOIN conversation_members cm ON cm.conversation_id = c.id
      WHERE cm.user_id = $1 AND ($2::uuid IS NULL OR c.id = $2)
+       -- Зустрічі (Google Meet-подібні кімнати) більше не показуємо в чатах.
+       AND c.kind <> 'meeting'
        -- Схований чат повертається у список, коли після водоїми з'явилося хоч одне повідомлення.
        AND (cm.hidden_at IS NULL OR EXISTS (
          SELECT 1 FROM messages m

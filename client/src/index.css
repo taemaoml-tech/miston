@@ -28,8 +28,9 @@
   --ios-blue: 0 122 255;
 
   /* Коригуємо нативні встави під фактичний вигляд: користувацький запит —
-     зверху на ~1 см менше, знизу на ~5 мм менше, але не нижче нуля. */
-  --miston-safe-top-adjusted: max(0px, calc(var(--miston-safe-top, env(safe-area-inset-top, 0px)) - 1cm));
+     зверху ще на 5 мм вище (разом 1 см + 5 мм), знизу на ~5 мм менше,
+     але не нижче нуля. */
+  --miston-safe-top-adjusted: max(0px, calc(var(--miston-safe-top, env(safe-area-inset-top, 0px)) - 1cm - 5mm));
   --miston-safe-bottom-adjusted: max(0px, calc(var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px)) - 5mm));
 }
 
@@ -92,6 +93,10 @@
   /* Повноекранні оверлеї не отримують padding від body, тому камера/home bar
      перекривають їх окремо. */
   .overlay-safe {
+    /* Fixed-оверлеї живуть у layout viewport; коли Android показує клавіатуру,
+       тримаємо їх у межах видимої області, інакше панель ховається під нею. */
+    top: var(--miston-visual-top, 0px) !important;
+    height: var(--miston-visual-height, 100%) !important;
     padding-top: var(--miston-safe-top-adjusted) !important;
     padding-bottom: var(--miston-safe-bottom-adjusted) !important;
   }

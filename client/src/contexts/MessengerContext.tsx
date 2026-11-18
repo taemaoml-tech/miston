@@ -371,33 +371,6 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(OPEN_CONVERSATION_EVENT, openFromNotification);
   }, [selectChannel, selectConversation]);
 
-  // Приєднання до зустрічі за посиланням ?meeting=<id>.
-  useEffect(() => {
-    if (!user) return;
-    const params = new URLSearchParams(window.location.search);
-    const meetingId = params.get('meeting');
-    if (!meetingId) return;
-    params.delete('meeting');
-    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
-    window.history.replaceState({}, '', newUrl);
-
-    let cancelled = false;
-    void (async () => {
-      try {
-        const { conversation } = await api.meetings.join(meetingId);
-        if (cancelled) return;
-        if (conversation) {
-          setConversations((current) => [conversation, ...current.filter((item) => item.id !== conversation.id)]);
-          selectConversation(conversation.id);
-        }
-        await reload();
-      } catch {
-        // Зустріч не знайдено або недоступна.
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user, selectConversation, reload]);
-
   const createDirect = useCallback(async (userId: string) => {
     const { conversation } = await api.conversations.create({ kind: 'direct', userId });
     setConversations((current) => [conversation, ...current.filter((item) => item.id !== conversation.id)]);

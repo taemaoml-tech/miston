@@ -32,7 +32,9 @@ if (nativeSafeArea) {
 function syncVisualViewport() {
   const visual = window.visualViewport;
   const height = visual?.height || window.innerHeight;
+  const top = visual?.offsetTop || 0;
   document.documentElement.style.setProperty('--miston-visual-height', `${height}px`);
+  document.documentElement.style.setProperty('--miston-visual-top', `${top}px`);
 }
 syncVisualViewport();
 window.visualViewport?.addEventListener('resize', syncVisualViewport);
