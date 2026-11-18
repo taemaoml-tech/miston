@@ -25,8 +25,8 @@
         justify-content: center;
         gap: 22px;
         box-sizing: border-box;
-        padding-top: var(--miston-safe-top, env(safe-area-inset-top, 0px));
-        padding-bottom: var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px));
+        padding-top: max(0px, calc(var(--miston-safe-top, env(safe-area-inset-top, 0px)) - 1cm));
+        padding-bottom: max(0px, calc(var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px)) - 5mm));
         background: #ffffff;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
         color: #000000;

@@ -37,8 +37,8 @@ export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onA
   if (!open || !user) return null;
 
   const safeStyle = {
-    paddingTop: 'calc(var(--miston-safe-top, env(safe-area-inset-top, 0px)) + 12px)',
-    paddingBottom: 'calc(var(--miston-safe-bottom, env(safe-area-inset-bottom, 0px)) + 12px)',
+    paddingTop: 'calc(var(--miston-safe-top-adjusted) + 12px)',
+    paddingBottom: 'calc(var(--miston-safe-bottom-adjusted) + 12px)',
   } as CSSProperties;
 
   const run = (action: () => void) => {
