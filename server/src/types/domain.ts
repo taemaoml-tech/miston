@@ -1,6 +1,6 @@
 export type UserRole = 'user' | 'moderator' | 'owner';
 export type ConversationKind = 'direct' | 'saved' | 'group' | 'channel' | 'meeting';
-export type MessageKind = 'text' | 'image' | 'video' | 'video_note' | 'document' | 'voice' | 'sticker';
+export type MessageKind = 'text' | 'image' | 'video' | 'video_note' | 'document' | 'voice' | 'sticker' | 'game';
 export type FriendshipState = 'self' | 'none' | 'incoming' | 'outgoing' | 'friends';
 export type FriendshipEventType = 'request' | 'accepted' | 'declined' | 'cancelled' | 'removed';
 
@@ -274,6 +274,7 @@ export interface Message {
   sender: Sender;
   readBy: string[];
   sticker: MessageSticker | null;
+  gameId: string | null;
   replyTo: MessageReply | null;
   forwardedFrom: MessageForward | null;
   mentions: string[];

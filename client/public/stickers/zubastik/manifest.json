@@ -1,0 +1,246 @@
+{
+  "id": "zubastik",
+  "title": "Крокодил Зубастик",
+  "stickers": [
+    {
+      "file": "01.svg",
+      "name": "Привіт!",
+      "category": "joy",
+      "animation": "bounce"
+    },
+    {
+      "file": "02.svg",
+      "name": "Ха-ха-ха",
+      "category": "joy",
+      "animation": "shake"
+    },
+    {
+      "file": "03.svg",
+      "name": "Крокодилячі сльози",
+      "category": "sad",
+      "animation": "tremble"
+    },
+    {
+      "file": "04.svg",
+      "name": "Закоханий",
+      "category": "love",
+      "animation": "pulse"
+    },
+    {
+      "file": "05.svg",
+      "name": "Крутий",
+      "category": "joy",
+      "animation": "wiggle"
+    },
+    {
+      "file": "06.svg",
+      "name": "Кусь!",
+      "category": "angry",
+      "animation": "snap"
+    },
+    {
+      "file": "07.svg",
+      "name": "Сплю",
+      "category": "mood",
+      "animation": "float"
+    },
+    {
+      "file": "08.svg",
+      "name": "Шок",
+      "category": "mood",
+      "animation": "jump"
+    },
+    {
+      "file": "09.svg",
+      "name": "Чортик",
+      "category": "angry",
+      "animation": "wiggle"
+    },
+    {
+      "file": "10.svg",
+      "name": "Свято!",
+      "category": "joy",
+      "animation": "jump"
+    },
+    {
+      "file": "11.svg",
+      "name": "Король болота",
+      "category": "swamp",
+      "animation": "float"
+    },
+    {
+      "file": "12.svg",
+      "name": "Ковбой",
+      "category": "joy",
+      "animation": "wiggle"
+    },
+    {
+      "file": "13.svg",
+      "name": "Дощ",
+      "category": "sad",
+      "animation": "float"
+    },
+    {
+      "file": "14.svg",
+      "name": "Кава",
+      "category": "mood",
+      "animation": "float"
+    },
+    {
+      "file": "15.svg",
+      "name": "Чищу зуби",
+      "category": "swamp",
+      "animation": "bounce"
+    },
+    {
+      "file": "16.svg",
+      "name": "Хм?",
+      "category": "mood",
+      "animation": "float"
+    },
+    {
+      "file": "17.svg",
+      "name": "Нудить",
+      "category": "sad",
+      "animation": "tremble"
+    },
+    {
+      "file": "18.svg",
+      "name": "Музика",
+      "category": "joy",
+      "animation": "wiggle"
+    },
+    {
+      "file": "19.svg",
+      "name": "Плаваю",
+      "category": "swamp",
+      "animation": "float"
+    },
+    {
+      "file": "20.svg",
+      "name": "Ні.",
+      "category": "angry",
+      "animation": "shake"
+    },
+    {
+      "file": "21.svg",
+      "name": "Запаморочення",
+      "category": "mood",
+      "animation": "wobble"
+    },
+    {
+      "file": "22.svg",
+      "name": "Гр-р-р!",
+      "category": "angry",
+      "animation": "squash"
+    },
+    {
+      "file": "23.svg",
+      "name": "Соромно",
+      "category": "love",
+      "animation": "wiggle"
+    },
+    {
+      "file": "24.svg",
+      "name": "Холодно",
+      "category": "mood",
+      "animation": "tremble"
+    },
+    {
+      "file": "25.svg",
+      "name": "Цьом",
+      "category": "love",
+      "animation": "pulse"
+    },
+    {
+      "file": "26.svg",
+      "name": "Класика",
+      "category": "joy",
+      "animation": "float"
+    },
+    {
+      "file": "27.svg",
+      "name": "Сумую",
+      "category": "sad",
+      "animation": "float"
+    },
+    {
+      "file": "28.svg",
+      "name": "Неприйнятно",
+      "category": "angry",
+      "animation": "shake"
+    },
+    {
+      "file": "29.svg",
+      "name": "Латаття",
+      "category": "swamp",
+      "animation": "bounce"
+    },
+    {
+      "file": "30.svg",
+      "name": "Обіймашки",
+      "category": "love",
+      "animation": "squash"
+    },
+    {
+      "file": "31.svg",
+      "name": "Добраніч",
+      "category": "mood",
+      "animation": "float"
+    },
+    {
+      "file": "32.svg",
+      "name": "Джентльмен",
+      "category": "mood",
+      "animation": "wiggle"
+    },
+    {
+      "file": "33.svg",
+      "name": "Голодний",
+      "category": "swamp",
+      "animation": "bounce"
+    },
+    {
+      "file": "34.svg",
+      "name": "Образився",
+      "category": "sad",
+      "animation": "tremble"
+    },
+    {
+      "file": "35.svg",
+      "name": "Ура!",
+      "category": "joy",
+      "animation": "jump"
+    },
+    {
+      "file": "36.svg",
+      "name": "Вилупився",
+      "category": "swamp",
+      "animation": "wiggle"
+    },
+    {
+      "file": "37.svg",
+      "name": "Засмагаю",
+      "category": "swamp",
+      "animation": "float"
+    },
+    {
+      "file": "38.svg",
+      "name": "Ого-го",
+      "category": "mood",
+      "animation": "pulse"
+    },
+    {
+      "file": "39.svg",
+      "name": "Окей",
+      "category": "joy",
+      "animation": "bounce"
+    },
+    {
+      "file": "40.svg",
+      "name": "Сміливий",
+      "category": "joy",
+      "animation": "snap"
+    }
+  ]
+}

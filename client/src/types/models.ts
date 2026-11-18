@@ -227,7 +227,7 @@ export interface IceServerConfig {
 
 export type ConversationKind = 'direct' | 'saved' | 'group' | 'channel' | 'meeting';
 export type CleanupScope = 'me' | 'everyone';
-export type MessageKind = 'text' | 'image' | 'video' | 'video_note' | 'document' | 'voice' | 'sticker';
+export type MessageKind = 'text' | 'image' | 'video' | 'video_note' | 'document' | 'voice' | 'sticker' | 'game';
 
 export type StickerCategory =
   | 'emotions' | 'memes' | 'animals' | 'games' | 'holidays' | 'anime' | 'reactions' | 'custom';
@@ -322,9 +322,45 @@ export interface Message {
   reactions?: MessageReaction[];
   readBy?: string[];
   sticker?: MessageSticker | null;
+  gameId?: string | null;
   replyTo?: MessageReply | null;
   forwardedFrom?: MessageForward | null;
   mentions?: string[];
+}
+
+export type GameKind = 'snake' | 'dice' | 'quiz';
+export type GameStatus = 'inviting' | 'active' | 'finished' | 'cancelled' | 'expired';
+
+export interface GamePlayer {
+  userId: string;
+  displayName: string;
+  username: string;
+  score: number;
+  submittedAt: string | null;
+}
+
+export interface Game {
+  id: string;
+  conversationId: string;
+  kind: GameKind;
+  status: GameStatus;
+  creatorId: string;
+  opponentId: string;
+  winnerId: string | null;
+  state: Record<string, unknown>;
+  players: GamePlayer[];
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface GameCatalogEntry {
+  kind: GameKind;
+  title: string;
+  emoji: string;
+  command: string;
+  description: string;
+  rule: string;
 }
 
 export interface ConversationMember extends MessageSender {

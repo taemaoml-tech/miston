@@ -1,9 +1,10 @@
-import { ArrowLeft, Bookmark, ChevronDown, Flag, Hash, Info, LoaderCircle, MessageSquareText, Phone, Pin, PinOff, Users, Video, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, ChevronDown, Flag, Gamepad2, Hash, Info, LoaderCircle, MessageSquareText, Phone, Pin, PinOff, Users, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCall } from '../../contexts/CallContext';
+import { useGame } from '../../contexts/GameContext';
 import { useMessenger } from '../../contexts/MessengerContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useStar } from '../../contexts/StarContext';
@@ -27,6 +28,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
   const { activeConversation, closeMobileChat, markReadLocal, presence, activeServer, notify, conversations, reloadToken, savedNotes, ensureSavedNotes } = useMessenger();
   const { socket, connected } = useSocket();
   const { phase: callPhase, startCall } = useCall();
+  const { openHistory } = useGame();
   const { overview, messageEffect } = useStar();
   const [messages, setMessages] = useState<Message[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -334,6 +336,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
             </>
           )}
           <button type="button" className="icon-btn relative hidden sm:inline-flex" onClick={() => setPinsOpen(true)} aria-label={`Закріплені повідомлення${pins.length ? `: ${pins.length}` : ''}`}><Pin size={19} />{pins.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-ios-blue px-1 text-[9px] font-bold leading-4 text-white">{pins.length > 9 ? '9+' : pins.length}</span>}</button>
+          <button type="button" className="icon-btn" onClick={() => openHistory(id)} aria-label="Історія ігор"><Gamepad2 size={19} /></button>
           <button type="button" className={`icon-btn ${showInfo ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={() => setShowInfo((value) => !value)} aria-label="Деталі розмови" aria-expanded={showInfo}><Info size={20} /></button>
         </div>
       </header>
@@ -350,7 +353,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
               return <div key={message.id}>{newDay && <div className="sticky top-1 z-[5] my-3 flex justify-center"><span className="ios-glass rounded-full px-3 py-1 text-[11px] font-medium text-ios-secondary shadow-sm">{formatDay(message.createdAt)}</span></div>}<MessageBubble
                 message={message}
                 showSender={showSender}
-                canEdit={message.senderId === user?.id && message.kind !== 'voice' && message.kind !== 'video_note' && message.kind !== 'sticker'}
+                canEdit={message.senderId === user?.id && message.kind !== 'voice' && message.kind !== 'video_note' && message.kind !== 'sticker' && message.kind !== 'game'}
                 canDelete={message.senderId === user?.id || isManager}
                 canPin={canPinHere}
                 highlight={highlightId === message.id}

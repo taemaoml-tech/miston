@@ -1,0 +1,87 @@
+<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><style>/* sticker animations */
+  .root{transform-origin:100px 205px}
+  .head{transform-origin:100px 150px}
+  .fb{transform-box:fill-box;transform-origin:center}
+  .a-bounce{animation:bounce 1.2s ease-in-out infinite}
+  .a-shake{animation:shake .45s ease-in-out infinite}
+  .a-wiggle{animation:wiggle 1.4s ease-in-out infinite}
+  .a-float{animation:float 3s ease-in-out infinite}
+  .a-jump{animation:jump 1s cubic-bezier(.3,.7,.4,1) infinite}
+  .a-tremble{animation:tremble .14s linear infinite}
+  .a-pulse{animation:pulse .9s ease-in-out infinite}
+  .a-squash{animation:squash 1.1s ease-in-out infinite}
+  .a-wobble{animation:wobble 1.8s ease-in-out infinite}
+  .h-tilt{animation:tilt 2.4s ease-in-out infinite}
+
+  @keyframes bounce{0%,100%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-12px) scale(.97,1.03)}60%{transform:translateY(0) scale(1.05,.95)}}
+  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+  @keyframes wiggle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes jump{0%,100%{transform:translateY(0) scale(1.06,.94)}20%{transform:translateY(0) scale(.95,1.05)}50%{transform:translateY(-22px) scale(1,1)}80%{transform:translateY(0) scale(1.04,.96)}}
+  @keyframes tremble{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.6px)}75%{transform:translateX(1.6px)}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  @keyframes squash{0%,100%{transform:scale(1,1)}40%{transform:scale(1.1,.88)}70%{transform:scale(.96,1.05)}}
+  @keyframes wobble{0%,100%{transform:rotate(0) translateX(0)}25%{transform:rotate(-10deg) translateX(-6px)}75%{transform:rotate(10deg) translateX(6px)}}
+  @keyframes tilt{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+
+  .blink{animation:blink 4.2s infinite}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+  .flap{transform-box:fill-box;transform-origin:50% 100%;animation:flap 1.6s ease-in-out infinite}
+  @keyframes flap{0%,100%{transform:rotate(0)}50%{transform:rotate(-12deg)}}
+  .wave{transform-box:fill-box;transform-origin:50% 100%;animation:wave .8s ease-in-out infinite}
+  @keyframes wave{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(16deg)}}
+  .drip{animation:drip 1.1s ease-in infinite}
+  @keyframes drip{0%{transform:translateY(0);opacity:1}100%{transform:translateY(28px);opacity:0}}
+  .jl{animation:jl .8s ease-out infinite}.jr{animation:jr .8s ease-out infinite}
+  @keyframes jl{0%{transform:translate(0,0);opacity:1}100%{transform:translate(-22px,16px);opacity:0}}
+  @keyframes jr{0%{transform:translate(0,0);opacity:1}100%{transform:translate(22px,16px);opacity:0}}
+  .rise{animation:rise 2.4s ease-out infinite}
+  @keyframes rise{0%{transform:translateY(10px) scale(.5);opacity:0}20%{opacity:1}100%{transform:translateY(-38px) scale(1.1);opacity:0}}
+  .twinkle{animation:twinkle 1.6s ease-in-out infinite}
+  @keyframes twinkle{0%,100%{transform:scale(0) rotate(0);opacity:0}50%{transform:scale(1) rotate(45deg);opacity:1}}
+  .fall{animation:fall 1.8s linear infinite}
+  @keyframes fall{0%{transform:translateY(-24px) rotate(0);opacity:0}15%{opacity:1}100%{transform:translateY(70px) rotate(300deg);opacity:0}}
+  .rain{animation:rain .8s linear infinite}
+  @keyframes rain{0%{transform:translateY(-10px);opacity:0}20%{opacity:.9}100%{transform:translateY(46px);opacity:0}}
+  .steam{animation:steam 1.8s ease-out infinite}
+  @keyframes steam{0%{transform:translateY(4px) scaleX(1);opacity:0}30%{opacity:.85}100%{transform:translateY(-18px) scaleX(1.3);opacity:0}}
+  .beat{animation:beat .8s ease-in-out infinite}
+  @keyframes beat{0%,100%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}}
+  .spin{animation:spin 2.4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .glint{animation:glint 2.2s ease-in-out infinite}
+  @keyframes glint{0%,60%,100%{opacity:0;transform:translateX(-6px)}75%{opacity:1;transform:translateX(6px)}}
+  .chatter{animation:tremble .1s linear infinite}
+  .pop{animation:pop 1s ease-in-out infinite}
+  @keyframes pop{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.1) rotate(-3deg)}}
+  .bubble{animation:bubble 2.6s ease-in-out infinite}
+  @keyframes bubble{0%,100%{transform:scale(.35)}60%{transform:scale(1.05)}70%{transform:scale(1.15);opacity:1}72%{opacity:0;transform:scale(1.3)}}
+  .hat{transform-box:fill-box;transform-origin:50% 100%;animation:hat 1.4s ease-in-out infinite}
+  @keyframes hat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-5px) rotate(-6deg)}}
+
+  .paused *{animation-play-state:paused !important}
+  @media (prefers-reduced-motion:reduce){ .grid *, .avatar *{animation:none !important} }
+</style>
+  <g class="root a-shake" style="animation-delay:-1.19s">
+    
+    <ellipse cx="100" cy="178" rx="50" ry="26" fill="#E8B07A"/>
+    <ellipse cx="100" cy="182" rx="26" ry="17" fill="#FAE6CE"/>
+    <ellipse cx="80" cy="199" rx="13" ry="8" fill="#FAE6CE" stroke="#C48A52" stroke-width="2"/>
+    <ellipse cx="120" cy="199" rx="13" ry="8" fill="#FAE6CE" stroke="#C48A52" stroke-width="2"/>
+    <g class="head ">
+      <g class=""><path d="M46 96C30 64 30 26 44 14C64 20 86 44 90 66Z" fill="#E8B07A" stroke="#C48A52" stroke-width="2.5" stroke-linejoin="round"/><path d="M52 84C42 60 42 38 48 27C62 35 76 50 81 64Z" fill="#F2A39B"/></g>
+      <g transform="matrix(-1 0 0 1 200 0)"><g class="" style="animation-delay:0.3s"><path d="M46 96C30 64 30 26 44 14C64 20 86 44 90 66Z" fill="#E8B07A" stroke="#C48A52" stroke-width="2.5" stroke-linejoin="round"/><path d="M52 84C42 60 42 38 48 27C62 35 76 50 81 64Z" fill="#F2A39B"/></g></g>
+      <ellipse cx="100" cy="110" rx="66" ry="55" fill="#E8B07A"/>
+      <ellipse cx="74" cy="104" rx="20" ry="18" fill="#D49B63" opacity=".55"/>
+      <ellipse cx="126" cy="104" rx="20" ry="18" fill="#D49B63" opacity=".55"/>
+      <path d="M90 76Q100 72 110 76M93 84Q100 81 107 84" stroke="#C48A52" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="87" cy="136" rx="20" ry="17" fill="#FAE6CE"/><ellipse cx="113" cy="136" rx="20" ry="17" fill="#FAE6CE"/><ellipse cx="100" cy="128" rx="24" ry="17" fill="#FAE6CE"/>
+      <path d="M86 120Q100 112 114 120Q114 129 100 131Q86 129 86 120Z" fill="#2A1E22"/>
+      <ellipse cx="95" cy="118" rx="4.5" ry="2.2" fill="#fff" opacity=".5"/>
+      <ellipse cx="100" cy="151" rx="18" ry="16" fill="#6B1E2E" stroke="#3A2A22" stroke-width="3.5"/><ellipse cx="100" cy="160" rx="10" ry="5" fill="#FF7A93"/>
+      <g class="fb blink"><circle cx="74" cy="104" r="14" fill="#1E1719"/><circle cx="78" cy="99" r="5" fill="#fff"/><circle cx="70" cy="109" r="2.2" fill="#fff"/><circle cx="126" cy="104" r="14" fill="#1E1719"/><circle cx="130" cy="99" r="5" fill="#fff"/><circle cx="122" cy="109" r="2.2" fill="#fff"/></g>
+      <path d="M58 83L86 94M142 83L114 94" stroke="#3A2A22" stroke-width="6.5" stroke-linecap="round"/>
+      <g transform="translate(150 66) scale(1)"><path class="fb beat" d="M-9 -2Q-2 -2 -2 -9M2 -9Q2 -2 9 -2M9 2Q2 2 2 9M-2 9Q-2 2 -9 2" stroke="#E53935" stroke-width="4.5" fill="none" stroke-linecap="round"/></g>
+    </g>
+    <g transform="translate(100 30) scale(1)"><g transform="rotate(-4)"><text class="fb pop" text-anchor="middle" font-family="Rubik" font-weight="900" font-size="22" fill="#FF7A5C" stroke="#1B1B22" stroke-width="6" stroke-linejoin="round" paint-order="stroke">НЕПРИЙНЯТНО</text></g></g>
+  </g></svg>

@@ -23,6 +23,7 @@ import starRoutes from './routes/star';
 import stickerRoutes from './routes/stickers';
 import botRoutes from './routes/bots';
 import chatFolderRoutes from './routes/chatFolders';
+import gameRoutes from './routes/games';
 import pushRoutes from './routes/push';
 import supportRoutes from './routes/support';
 import { AppError } from './utils/errors';
@@ -101,6 +102,7 @@ export function createApp(): express.Express {
   });
   app.use('/api', botRoutes);
   app.use('/api/chat-folders', folderLimiter, chatFolderRoutes);
+  app.use('/api/games', gameRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/push', pushRoutes);
   app.use('/api/admin', adminRoutes);

@@ -1,4 +1,4 @@
-import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, BotAccount, CallInfo, ChatFolder, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
+import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, BotAccount, CallInfo, ChatFolder, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, Game, GameCatalogEntry, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
 import { request, tokenStore } from './client';
 
 export const api = {
@@ -64,6 +64,14 @@ export const api = {
     addConversation: (id: string, conversationId: string) => request<{ ok: true }>(`/chat-folders/${id}/conversations`, { method: 'POST', body: { conversationId } }),
     removeConversation: (id: string, conversationId: string) => request<{ ok: true }>(`/chat-folders/${id}/conversations/${conversationId}`, { method: 'DELETE' }),
     setConversations: (id: string, conversationIds: string[]) => request<{ ok: true }>(`/chat-folders/${id}/conversations`, { method: 'PUT', body: { conversationIds } }),
+  },
+  games: {
+    catalog: () => request<{ games: GameCatalogEntry[] }>('/games/catalog'),
+    history: (conversationId?: string, limit = 30) => request<{ games: Game[] }>(`/games/history?${new URLSearchParams({ ...(conversationId ? { conversationId } : {}), limit: String(limit) })}`),
+    get: (id: string) => request<{ game: Game }>(`/games/${id}`),
+    accept: (id: string) => request<{ game: Game }>(`/games/${id}/accept`, { method: 'POST' }),
+    cancel: (id: string) => request<{ game: Game }>(`/games/${id}/cancel`, { method: 'POST' }),
+    submit: (id: string, score: number, details?: Record<string, unknown>) => request<{ game: Game }>(`/games/${id}/submit`, { method: 'POST', body: { score, details } }),
   },
   push: {
     register: (token: string, platform: string) => request<void>('/push/register', { method: 'POST', body: { token, platform } }),

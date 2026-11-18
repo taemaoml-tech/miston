@@ -14,6 +14,7 @@ import { emitMessageDeleted, emitMessageNew, emitMessageReactions, emitMessageRe
 import { recordMessageReward } from '../star/service';
 import { notifyRecipientsBySms, notifyRecipientsByPush } from '../services/messageSms';
 import { handleBotInteraction } from '../services/bots';
+import { handleGameCommand } from '../services/games';
 import { asyncHandler } from '../utils/http';
 import { AppError, forbidden, notFound } from '../utils/errors';
 import { REACTION_EMOJIS } from '../utils/reactions';
@@ -217,6 +218,7 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
     void notifyRecipientsBySms(message, recipients);
     void notifyRecipientsByPush(message, recipients);
     void handleBotInteraction(message.conversationId, message, req.auth!.userId);
+    void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
     // Star rewards are best-effort: a wallet hiccup must never lose the message.
     // Нотатки не рахуються: інакше ⭐ і рівень фармляться одним пакетом «на собі».
     const star = conversationKind === 'saved' ? null : await recordMessageReward(req.auth!.userId).catch((error) => {
@@ -272,6 +274,7 @@ router.post('/:id/stickers', asyncHandler(async (req, res) => {
   void notifyRecipientsBySms(message, recipients);
     void notifyRecipientsByPush(message, recipients);
     void handleBotInteraction(message.conversationId, message, req.auth!.userId);
+    void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
   const star = conversationKind === 'saved' ? null : await recordMessageReward(userId).catch((error) => {
     console.error('Failed to record Star activity', error);
     return null;
@@ -333,6 +336,7 @@ router.post('/:id/messages/:messageId/forward', asyncHandler(async (req, res) =>
   void notifyRecipientsBySms(message, recipients);
     void notifyRecipientsByPush(message, recipients);
     void handleBotInteraction(message.conversationId, message, req.auth!.userId);
+    void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
   res.status(201).json({ message });
 }));
 
