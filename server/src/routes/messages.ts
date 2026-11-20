@@ -31,21 +31,42 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 const messageBody = z.object({
-  content: z.string().max(10_000).default(''),
+  // Шифротекст E2EE (base64) може бути вдвічі довшим за plaintext, тому ліміт
+  // збільшено; сервер усе одно не інтерпретує вміст зашифрованих повідомлень.
+  content: z.string().max(64_000).default(''),
   kind: z.enum(['text', 'image', 'video', 'video_note', 'document', 'voice']).optional(),
   durationSeconds: z.preprocess(
     (value) => value === '' || value == null ? undefined : value,
     z.coerce.number().int().min(0).max(86_400).optional(),
   ),
   replyToId: messageId.optional(),
+  encrypted: z.preprocess(
+    (value) => value === 'true' || value === true || value === 1 || value === '1'
+      ? true
+      : value === 'false' || value === false || value === 0 || value === '0'
+        ? false
+        : value,
+    z.boolean().optional().default(false),
+  ),
+  encryptionVersion: z.coerce.number().int().min(1).max(100).optional().nullable(),
 });
 const readBody = z.object({ messageId });
 const stickerBody = z.object({ stickerId: uuid, replyToId: messageId.optional() });
 const paramsSchema = z.object({ id: uuid });
 const actionParams = z.object({ id: uuid, messageId });
-const editBody = z.object({ content: z.string().max(10_000) });
+const editBody = z.object({
+  content: z.string().max(64_000),
+  encrypted: z.boolean().optional().default(false),
+  encryptionVersion: z.number().int().min(1).max(100).optional().nullable(),
+});
 const reactionBody = z.object({ emoji: z.enum(REACTION_EMOJIS) });
-const forwardBody = z.object({ targetConversationId: uuid });
+const forwardBody = z.object({
+  targetConversationId: uuid,
+  // Для E2EE клієнт перешифровує повідомлення ключем цільової розмови.
+  content: z.string().max(64_000).optional(),
+  encrypted: z.boolean().optional(),
+  encryptionVersion: z.number().int().min(1).max(100).optional().nullable(),
+});
 
 const mentionPattern = /(?:^|[\s(])@([a-zA-Z0-9_]{3,32})/g;
 
@@ -180,9 +201,13 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
       }
 
       const inserted = await client.query<{ id: string }>(
-        `INSERT INTO messages (conversation_id, sender_id, kind, content, duration_seconds, reply_to_id)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [id, req.auth!.userId, kind, input.content, input.durationSeconds ?? null, replyToId],
+        `INSERT INTO messages (conversation_id, sender_id, kind, content, duration_seconds, reply_to_id,
+                               encrypted, encryption_version)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+        [
+          id, req.auth!.userId, kind, input.content, input.durationSeconds ?? null, replyToId,
+          input.encrypted, input.encrypted ? input.encryptionVersion ?? 1 : null,
+        ],
       );
       const newId = inserted.rows[0]?.id;
       if (!newId) throw new Error('Message insert returned no row');
@@ -194,7 +219,10 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
           [newId, attachmentUrl, safeOriginalName(req.file.originalname), req.file.mimetype, req.file.size],
         );
       }
-      const mentioned = await resolveMentionedMembers(client, id, input.content, req.auth!.userId);
+      // Вміст зашифрованого повідомлення нерозбірливий для сервера — згадки з нього не дістаємо.
+      const mentioned = input.encrypted
+        ? []
+        : await resolveMentionedMembers(client, id, input.content, req.auth!.userId);
       if (mentioned.length > 0) {
         await client.query(
           `INSERT INTO message_mentions (message_id, user_id)
@@ -213,12 +241,17 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
     });
 
     emitMessageNew(message, recipients);
-    emitMention(message, mentioned);
-    // SMS про нове повідомлення надсилається тим, хто офлайн (best-effort).
-    void notifyRecipientsBySms(message, recipients);
-    void notifyRecipientsByPush(message, recipients);
-    void handleBotInteraction(message.conversationId, message, req.auth!.userId);
-    void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
+    if (!message.encrypted) {
+      emitMention(message, mentioned);
+      // SMS про нове повідомлення надсилається тим, хто офлайн (best-effort).
+      void notifyRecipientsBySms(message, recipients);
+      void notifyRecipientsByPush(message, recipients);
+      void handleBotInteraction(message.conversationId, message, req.auth!.userId);
+      void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
+    } else {
+      // Навіть для шифрованих повідомлень потрібно розбудити пристрій, але без тексту.
+      void notifyRecipientsByPush(message, recipients);
+    }
     // Star rewards are best-effort: a wallet hiccup must never lose the message.
     // Нотатки не рахуються: інакше ⭐ і рівень фармляться одним пакетом «на собі».
     const star = conversationKind === 'saved' ? null : await recordMessageReward(req.auth!.userId).catch((error) => {
@@ -286,7 +319,7 @@ router.post('/:id/stickers', asyncHandler(async (req, res) => {
 router.post('/:id/messages/:messageId/forward', asyncHandler(async (req, res) => {
   const { id, messageId: rawMessageId } = actionParams.parse(req.params);
   const sourceId = rawMessageId.toString();
-  const { targetConversationId } = forwardBody.parse(req.body);
+  const { targetConversationId, content: overrideContent, encrypted: overrideEncrypted, encryptionVersion } = forwardBody.parse(req.body);
   const context = await loadMessageContext(id, sourceId, req.auth!.userId);
   if (context.deleted_at) throw notFound('Повідомлення вже видалено');
 
@@ -303,12 +336,16 @@ router.post('/:id/messages/:messageId/forward', asyncHandler(async (req, res) =>
     const inserted = await client.query<{ id: string }>(
       `INSERT INTO messages (
          conversation_id, sender_id, kind, content, duration_seconds, sticker_id,
-         forwarded_from_user_id, forwarded_from_conversation_id, forwarded_from_message_id
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+         forwarded_from_user_id, forwarded_from_conversation_id, forwarded_from_message_id,
+         encrypted, encryption_version
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
       [
-        targetConversationId, req.auth!.userId, source.kind, source.content, source.durationSeconds,
+        targetConversationId, req.auth!.userId, source.kind,
+        overrideContent ?? source.content, source.durationSeconds,
         source.sticker?.id ?? null,
         source.senderId, id, sourceId,
+        overrideEncrypted ?? source.encrypted,
+        (overrideEncrypted ?? source.encrypted) ? encryptionVersion ?? source.encryptionVersion ?? 1 : null,
       ],
     );
     const newId = inserted.rows[0]?.id;
@@ -333,10 +370,12 @@ router.post('/:id/messages/:messageId/forward', asyncHandler(async (req, res) =>
   });
 
   emitMessageNew(message, recipients);
-  void notifyRecipientsBySms(message, recipients);
-    void notifyRecipientsByPush(message, recipients);
+  if (!message.encrypted) {
+    void notifyRecipientsBySms(message, recipients);
     void handleBotInteraction(message.conversationId, message, req.auth!.userId);
     void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
+  }
+  void notifyRecipientsByPush(message, recipients);
   res.status(201).json({ message });
 }));
 
@@ -363,7 +402,7 @@ router.post('/:id/read', asyncHandler(async (req, res) => {
 router.patch('/:id/messages/:messageId', asyncHandler(async (req, res) => {
   const { id, messageId: rawMessageId } = actionParams.parse(req.params);
   const messageIdValue = rawMessageId.toString();
-  const { content } = editBody.parse(req.body);
+  const { content, encrypted, encryptionVersion } = editBody.parse(req.body);
   const context = await loadMessageContext(id, messageIdValue, req.auth!.userId);
 
   if (context.deleted_at) throw notFound('Повідомлення вже видалено');
@@ -380,11 +419,12 @@ router.patch('/:id/messages/:messageId', asyncHandler(async (req, res) => {
 
   const mentioned = await withTransaction(async (client) => {
     await client.query(
-      'UPDATE messages SET content = $2, edited_at = now() WHERE id = $1',
-      [messageIdValue, normalized],
+      `UPDATE messages SET content = $2, encrypted = $3, encryption_version = $4, edited_at = now()
+       WHERE id = $1`,
+      [messageIdValue, normalized, encrypted, encrypted ? encryptionVersion ?? 1 : null],
     );
     await client.query('DELETE FROM message_mentions WHERE message_id = $1', [messageIdValue]);
-    const ids = await resolveMentionedMembers(client, id, normalized, req.auth!.userId);
+    const ids = encrypted ? [] : await resolveMentionedMembers(client, id, normalized, req.auth!.userId);
     if (ids.length > 0) {
       await client.query(
         'INSERT INTO message_mentions (message_id, user_id) SELECT $1, unnest($2::uuid[])',

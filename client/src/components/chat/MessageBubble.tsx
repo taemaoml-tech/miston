@@ -73,7 +73,9 @@ export function MessageBubble({
   };
 
   const mentionSet = new Set(mentionedUsernames.map((name) => name.toLocaleLowerCase('uk-UA')));
-  const content: ReactNode = message.content
+  const content: ReactNode = message.decryptionFailed
+    ? <span className="italic opacity-75">🔒 Зашифроване повідомлення. Відновіть ключ у налаштуваннях E2EE.</span>
+    : message.content
     ? message.content.split(/(@[a-zA-Z0-9_]{3,32})/g).map((part, index) => {
       if (!part.startsWith('@') || !mentionSet.has(part.slice(1).toLocaleLowerCase('uk-UA'))) return part;
       return (
@@ -101,7 +103,7 @@ export function MessageBubble({
     >
       <span className={`block truncate font-semibold ${own ? 'text-white' : 'text-ios-blue'}`}>{message.replyTo.senderName}</span>
       <span className={`block truncate ${own ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
-        {message.replyTo.deleted ? 'Повідомлення видалено' : message.replyTo.content || 'Вкладення'}
+        {message.replyTo.deleted ? 'Повідомлення видалено' : message.replyTo.encrypted && !message.replyTo.content ? 'Зашифроване повідомлення' : message.replyTo.content || 'Вкладення'}
       </span>
     </button>
   ) : null;

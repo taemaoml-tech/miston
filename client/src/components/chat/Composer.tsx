@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import type { ConversationMember, Message, MessageKind, Sticker } from '../../types/models';
+import { encryptForConversation, isE2eeReady } from '../../utils/e2ee';
 import { errorMessage, formatBytes, formatDuration } from '../../utils/format';
 import { Avatar } from '../common/Avatar';
 import { PickerPanel } from './PickerPanel';
@@ -32,6 +33,12 @@ export function Composer({
 }: ComposerProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
+  const encryptionReady = Boolean(user?.id && isE2eeReady(user.id));
+  const memberIds = members.map((member) => member.id);
+  const encryptText = async (value: string) => {
+    if (!value || !encryptionReady || !user) return undefined;
+    return encryptForConversation(user.id, conversationId, memberIds, value);
+  };
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -162,7 +169,8 @@ export function Composer({
       if (!content) return;
       setSending(true); setError(''); emitTyping(false);
       try {
-        const result = await api.conversations.editMessage(conversationId, editing.id, content);
+        const encryption = await encryptText(content);
+        const result = await api.conversations.editMessage(conversationId, editing.id, encryption?.content ?? content, encryption);
         onEdited?.(result.message);
         onCancelEdit?.();
         setText('');
@@ -174,9 +182,11 @@ export function Composer({
     if (!text.trim() && !file) return;
     setSending(true); setError(''); emitTyping(false);
     try {
+      const caption = text.trim();
+      const encryption = await encryptText(caption);
       const result = file
-        ? await api.conversations.sendFile(conversationId, file, text.trim(), kind, undefined, replyTo?.id)
-        : await api.conversations.sendText(conversationId, text.trim(), replyTo?.id);
+        ? await api.conversations.sendFile(conversationId, file, encryption?.content ?? caption, kind, undefined, replyTo?.id, encryption)
+        : await api.conversations.sendText(conversationId, encryption?.content ?? caption, replyTo?.id, encryption);
       onSent(result.message); setText(''); setFile(null); onCancelReply?.();
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (cause) { setError(errorMessage(cause)); }

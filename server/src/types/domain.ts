@@ -140,6 +140,8 @@ export interface MessageReply {
   content: string;
   kind: MessageKind;
   deleted: boolean;
+  /** Чи є `content` шифротекстом E2EE (потребує розшифрування на клієнті). */
+  encrypted: boolean;
 }
 
 export interface MessageForward {
@@ -278,6 +280,9 @@ export interface Message {
   replyTo: MessageReply | null;
   forwardedFrom: MessageForward | null;
   mentions: string[];
+  /** E2EE: `content` містить шифротекст, який розшифровується лише на пристроях. */
+  encrypted: boolean;
+  encryptionVersion: number | null;
 }
 
 export type ComplaintCategory = 'spam' | 'harassment' | 'nsfw' | 'scam' | 'copyright' | 'other';

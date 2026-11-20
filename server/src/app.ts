@@ -12,6 +12,7 @@ import friendRoutes from './routes/friends';
 import callRoutes from './routes/calls';
 import conversationRoutes from './routes/conversations';
 import messageRoutes from './routes/messages';
+import e2eeRoutes from './routes/e2ee';
 import serverRoutes from './routes/servers';
 import adminRoutes from './routes/admin';
 import complaintRoutes from './routes/complaints';
@@ -88,6 +89,7 @@ export function createApp(): express.Express {
   app.use('/api/calls', callRoutes);
   app.use('/api/conversations', conversationRoutes);
   app.use('/api/conversations', messageRoutes);
+  app.use('/api/e2ee', e2eeRoutes);
   app.use('/api/servers', serverRoutes);
   app.use('/api/star', starRoutes);
   app.use('/api/stickers', stickerRoutes);

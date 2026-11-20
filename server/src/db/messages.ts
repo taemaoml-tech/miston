@@ -39,7 +39,8 @@ export const messageProjection = `
       'senderName', ru.display_name,
       'content', CASE WHEN r.deleted_at IS NULL THEN r.content ELSE '' END,
       'kind', r.kind,
-      'deleted', r.deleted_at IS NOT NULL
+      'deleted', r.deleted_at IS NOT NULL,
+      'encrypted', COALESCE(r.encrypted, false)
     )
     FROM messages r JOIN users ru ON ru.id = r.sender_id
     WHERE r.id = m.reply_to_id

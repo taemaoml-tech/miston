@@ -10,6 +10,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import { useStar } from '../../contexts/StarContext';
 import type { Message, TypingEvent } from '../../types/models';
 import type { Conversation } from '../../types/models';
+import { decryptMessages, encryptForConversation, isE2eeReady } from '../../utils/e2ee';
 import { errorMessage, formatDay, formatTime } from '../../utils/format';
 import { configString } from '../../utils/star';
 import { useAndroidBack } from '../../utils/androidBack';
@@ -61,22 +62,36 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousId = useRef<string | null>(null);
   const lastReadId = useRef<string | null>(null);
+  const memberIdsRef = useRef<string[]>([]);
+  memberIdsRef.current = activeConversation?.members.map((member) => member.id) ?? [];
   const id = activeConversation?.id;
+
+  /** Розшифровує шифротекст E2EE перед тим, як повідомлення потрапить у стан UI. */
+  const prepare = useCallback(async (items: Message[]): Promise<Message[]> => {
+    if (!id || !user?.id) return items;
+    try {
+      return await decryptMessages(user.id, id, items, memberIdsRef.current);
+    } catch {
+      return items;
+    }
+  }, [id, user?.id]);
 
   const appendMessage = useCallback((message: Message) => {
     setMessages((current) => current.some((item) => item.id === message.id) ? current.map((item) => item.id === message.id ? message : item) : [...current, message]);
   }, []);
 
-  const applyMessage = useCallback((message: Message) => {
-    setMessages((current) => current.map((item) => item.id === message.id ? message : item));
+  const applyMessage = useCallback(async (message: Message) => {
+    const [ready] = await prepare([message]);
+    const next = ready ?? message;
+    setMessages((current) => current.map((item) => item.id === next.id ? next : item));
     setPins((current) => {
-      const rest = current.filter((item) => item.id !== message.id);
-      return message.pinnedAt
-        ? [message, ...rest].sort((a, b) => new Date(b.pinnedAt || 0).getTime() - new Date(a.pinnedAt || 0).getTime())
+      const rest = current.filter((item) => item.id !== next.id);
+      return next.pinnedAt
+        ? [next, ...rest].sort((a, b) => new Date(b.pinnedAt || 0).getTime() - new Date(a.pinnedAt || 0).getTime())
         : rest;
     });
-    setEditing((current) => current && current.id === message.id ? message : current);
-  }, []);
+    setEditing((current) => current && current.id === next.id ? next : current);
+  }, [prepare]);
 
   const removeLocalMessage = useCallback((messageId: string) => {
     setMessages((current) => current.filter((message) => message.id !== messageId));
@@ -90,24 +105,28 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
     setLoading(true); setError(''); setMessages([]); setTyping({}); setShowInfo(false); lastReadId.current = null;
     setEditing(null); setPins([]); setPinsOpen(false); setHighlightId(null); setPendingDelete(null);
     setReplyTo(null); setForwarding(null); setForwardingTo('');
-    void api.conversations.messages(id).then((page) => {
+    void api.conversations.messages(id).then(async (page) => {
+      const items = await prepare(page.items);
       if (!active) return;
-      setMessages(page.items); setCursor(page.nextCursor);
+      setMessages(items); setCursor(page.nextCursor);
       previousId.current = id;
     }).catch((cause) => { if (active) setError(errorMessage(cause)); }).finally(() => { if (active) setLoading(false); });
     setPinsLoading(true);
-    void api.conversations.pins(id).then((result) => {
-      if (active) setPins(result.items);
+    void api.conversations.pins(id).then(async (result) => {
+      const items = await prepare(result.items);
+      if (active) setPins(items);
     }).catch(() => undefined).finally(() => { if (active) setPinsLoading(false); });
     return () => { active = false; };
-  }, [id, reloadToken]);
+  }, [id, reloadToken, prepare]);
 
   useEffect(() => {
     if (!socket || !id) return;
     socket.emit('conversation:join', { conversationId: id });
-    const onMessage = (payload: Message | { message: Message }) => {
+    const onMessage = async (payload: Message | { message: Message }) => {
       const message = 'message' in payload ? payload.message : payload;
-      if (message.conversationId === id) appendMessage(message);
+      if (message.conversationId !== id) return;
+      const [ready] = await prepare([message]);
+      if (message.conversationId === id && ready) appendMessage(ready);
     };
     const onTyping = (event: TypingEvent) => {
       if (event.conversationId !== id || event.userId === user?.id) return;
@@ -129,10 +148,10 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
       }));
     };
     const onUpdated = (payload: { message?: Message }) => {
-      if (payload.message?.conversationId === id) applyMessage(payload.message);
+      if (payload.message?.conversationId === id) void applyMessage(payload.message);
     };
     const onReactions = (payload: { message?: Message }) => {
-      if (payload.message?.conversationId === id) applyMessage(payload.message);
+      if (payload.message?.conversationId === id) void applyMessage(payload.message);
     };
     const onDeleted = (payload: { conversationId?: string; messageId?: string }) => {
       if (payload.conversationId === id && payload.messageId) removeLocalMessage(payload.messageId);
@@ -143,7 +162,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
       socket.off('message:new', onMessage); socket.off('typing', onTyping); socket.off('message:read', onRead);
       socket.off('message:updated', onUpdated); socket.off('message:reactions', onReactions); socket.off('message:deleted', onDeleted);
     };
-  }, [socket, id, user?.id, appendMessage, activeConversation?.members, applyMessage, removeLocalMessage]);
+  }, [socket, id, user?.id, appendMessage, activeConversation?.members, applyMessage, removeLocalMessage, prepare]);
 
   useLayoutEffect(() => {
     if (!loading && previousId.current === id && scrollRef.current) {
@@ -175,7 +194,8 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
     setLoadingOlder(true);
     try {
       const page = await api.conversations.messages(id, cursor);
-      setMessages((current) => [...page.items, ...current]); setCursor(page.nextCursor);
+      const items = await prepare(page.items);
+      setMessages((current) => [...items, ...current]); setCursor(page.nextCursor);
       requestAnimationFrame(() => { if (element) element.scrollTop = element.scrollHeight - oldHeight; });
     } catch (cause) { setError(errorMessage(cause)); }
     finally { setLoadingOlder(false); }
@@ -233,7 +253,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
     try {
       for (let attempt = 0; attempt < 8 && next; attempt += 1) {
         const page = await api.conversations.messages(id, next);
-        accumulated = [...page.items, ...accumulated];
+        accumulated = [...(await prepare(page.items)), ...accumulated];
         next = page.nextCursor;
         if (accumulated.some((message) => message.id === messageId)) break;
       }
@@ -247,8 +267,17 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
     if (!id || !forwarding || forwardingTo) return;
     setForwardingTo(targetId);
     try {
-      const result = await api.conversations.forward(id, forwarding.id, targetId);
-      if (targetId === id) appendMessage(result.message);
+      let encryption: { content: string; encrypted: boolean; encryptionVersion?: number | null } | undefined;
+      if (forwarding.encrypted) {
+        if (!forwarding.decrypted || !user?.id || !isE2eeReady(user.id)) {
+          throw new Error('Увімкніть шифрування, щоб переслати це повідомлення');
+        }
+        const targetMembers = conversations.find((conversation) => conversation.id === targetId)?.members.map((member) => member.id);
+        encryption = await encryptForConversation(user.id, targetId, targetMembers, forwarding.content);
+      }
+      const result = await api.conversations.forward(id, forwarding.id, targetId, encryption);
+      const [ready] = await prepare([result.message]);
+      if (targetId === id && ready) appendMessage(ready);
       const title = targetLabel ?? conversations.find((conversation) => conversation.id === targetId)?.title;
       notify('Переслано', title ? `Повідомлення надіслано в «${title}»` : undefined);
       setForwarding(null);
@@ -372,7 +401,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
           </div>
         )}
       </div>
-      <Composer conversationId={activeConversation.id} onSent={(message) => { appendMessage(message); if (message.senderId === user?.id) setEffectBurst((value) => value + 1); }} editing={editing} onCancelEdit={() => setEditing(null)} onEdited={applyMessage} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} members={isSaved ? [] : activeConversation.members} />
+      <Composer conversationId={activeConversation.id} onSent={(message) => { void prepare([message]).then(([ready]) => appendMessage(ready ?? message)); if (message.senderId === user?.id) setEffectBurst((value) => value + 1); }} editing={editing} onCancelEdit={() => setEditing(null)} onEdited={(message) => { void applyMessage(message); }} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} members={isSaved ? [] : activeConversation.members} />
 
       {showInfo && <aside className="ios-glass absolute bottom-0 right-0 top-14 z-20 w-80 max-w-[90%] overflow-y-auto border-l p-5 shadow-soft animate-fade-in"><div className="flex items-center justify-between"><h2 className="font-semibold">Деталі розмови</h2><button type="button" className="icon-btn h-8 w-8" onClick={() => setShowInfo(false)} aria-label="Закрити деталі"><X size={18} /></button></div><div className="flex flex-col items-center border-b py-6 text-center"><Avatar name={activeConversation.title} src={activeConversation.avatarUrl} size="xl" online={online} square={!isSaved && activeConversation.kind !== 'direct'} cosmetics={directCosmetics} /><h3 className="mt-3 font-semibold">{activeConversation.kind === 'direct' ? <StarDisplayName name={activeConversation.title} cosmetics={directCosmetics} verified={other?.isVerified} /> : activeConversation.title}</h3><p className="mt-1 text-sm text-slate-500">{subtitle}</p>{other?.bio && <p className="mt-3 text-sm leading-6 text-slate-500">{other.bio}</p>}{other && <button type="button" className="secondary-btn mt-4" onClick={() => { setShowInfo(false); onOpenUser(other.id); }}>Переглянути профіль</button>}<div className="mt-4 grid w-full gap-2"><button type="button" className="secondary-btn" onClick={() => onAction(activeConversation, 'clear')}>{isSaved ? 'Очистити нотатки' : 'Очистити історію'}</button>{activeConversation.kind !== 'channel' && <button type="button" className="secondary-btn text-rose-600 hover:text-rose-700 dark:text-rose-400" onClick={() => onAction(activeConversation, 'delete')}>{deleteLabel}</button>}{other && <button type="button" className="secondary-btn flex items-center justify-center gap-2" onClick={() => { setShowInfo(false); onReport({ userId: other.id }); }}><Flag size={15} /> Скаржитися на співрозмовника</button>}</div></div>{!isSaved && activeConversation.kind !== 'direct' && <div className="pt-5"><h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><Users size={14} /> Учасники</h3>{activeConversation.members.length ? <ul className="space-y-1">{activeConversation.members.map((member) => <li key={member.id}><button type="button" disabled={member.id === user?.id} onClick={() => { setShowInfo(false); onOpenUser(member.id); }} className="flex w-full items-center gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-slate-800"><Avatar name={member.displayName} src={member.avatarUrl} size="sm" online={presence[member.id] ?? member.online} cosmetics={member.cosmetics} /><div className="min-w-0"><p className="truncate text-sm font-medium"><StarDisplayName name={member.displayName} cosmetics={member.cosmetics} verified={member.isVerified} /></p><p className="truncate text-xs text-slate-400">@{member.username}</p></div></button></li>)}</ul> : <p className="text-sm text-slate-400">Деталі учасників недоступні.</p>}</div>}</aside>}
 
@@ -390,7 +419,7 @@ export function ChatWindow({ onOpenUser, onReport, onAction }: { onOpenUser: (id
                       <time dateTime={pin.createdAt}>{formatTime(pin.createdAt)}</time>
                       {pin.pinnedAt && <span className="flex items-center gap-1"><Pin size={11} /> закріплено</span>}
                     </p>
-                    <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-200">{pin.content || (pin.kind === 'image' ? 'Фото' : pin.kind === 'video' ? 'Відео' : pin.kind === 'video_note' ? 'Відеокружечок' : pin.kind === 'voice' ? 'Голосове повідомлення' : pin.kind === 'sticker' ? 'Стікер' : 'Документ')}</p>
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-200">{pin.decryptionFailed ? '🔒 Зашифроване повідомлення' : pin.content || (pin.kind === 'image' ? 'Фото' : pin.kind === 'video' ? 'Відео' : pin.kind === 'video_note' ? 'Відеокружечок' : pin.kind === 'voice' ? 'Голосове повідомлення' : pin.kind === 'sticker' ? 'Стікер' : 'Документ')}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <button type="button" className="secondary-btn min-h-8 px-2.5 py-1 text-xs" onClick={() => void jumpToMessage(pin.id)}>Перейти</button>

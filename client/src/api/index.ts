@@ -1,4 +1,4 @@
-import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, BotAccount, CallInfo, ChatFolder, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, FriendsOverview, Game, GameCatalogEntry, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
+import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, BotAccount, CallInfo, ChatFolder, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, E2eeBackup, E2eeStatus, FriendsOverview, Game, GameCatalogEntry, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
 import { request, tokenStore } from './client';
 
 export const api = {
@@ -87,20 +87,32 @@ export const api = {
       if (before) params.set('before', before);
       return request<MessagePage>(`/conversations/${id}/messages?${params}`);
     },
-    sendText: (id: string, content: string, replyToId?: string | null) => request<{ message: Message }>(`/conversations/${id}/messages`, { method: 'POST', body: { content, ...(replyToId ? { replyToId } : {}) } }),
-    sendFile: (id: string, file: File, content: string, kind: MessageKind, durationSeconds?: number, replyToId?: string | null) => {
+    sendText: (id: string, content: string, replyToId?: string | null, encryption?: { encrypted: boolean; encryptionVersion?: number | null }) => request<{ message: Message }>(`/conversations/${id}/messages`, { method: 'POST', body: { content, ...(replyToId ? { replyToId } : {}), ...(encryption?.encrypted ? { encrypted: true, encryptionVersion: encryption.encryptionVersion ?? 1 } : {}) } }),
+    sendFile: (id: string, file: File, content: string, kind: MessageKind, durationSeconds?: number, replyToId?: string | null, encryption?: { encrypted: boolean; encryptionVersion?: number | null }) => {
       const body = new FormData();
       body.append('file', file);
       body.append('content', content);
       body.append('kind', kind);
       if (durationSeconds !== undefined) body.append('durationSeconds', String(durationSeconds));
       if (replyToId) body.append('replyToId', replyToId);
+      if (encryption?.encrypted) {
+        body.append('encrypted', 'true');
+        body.append('encryptionVersion', String(encryption.encryptionVersion ?? 1));
+      }
       return request<{ message: Message }>(`/conversations/${id}/messages`, { method: 'POST', body });
     },
-    forward: (id: string, messageId: string, targetConversationId: string) => request<{ message: Message }>(`/conversations/${id}/messages/${messageId}/forward`, { method: 'POST', body: { targetConversationId } }),
+    forward: (id: string, messageId: string, targetConversationId: string, encryption?: { content: string; encrypted: boolean; encryptionVersion?: number | null }) => request<{ message: Message }>(`/conversations/${id}/messages/${messageId}/forward`, {
+      method: 'POST',
+      body: encryption?.encrypted
+        ? { targetConversationId, content: encryption.content, encrypted: true, encryptionVersion: encryption.encryptionVersion ?? 1 }
+        : { targetConversationId },
+    }),
     sendSticker: (id: string, stickerId: string, replyToId?: string | null) => request<{ message: Message }>(`/conversations/${id}/stickers`, { method: 'POST', body: { stickerId, ...(replyToId ? { replyToId } : {}) } }),
     read: (id: string, messageId: string) => request<void>(`/conversations/${id}/read`, { method: 'POST', body: { messageId } }),
-    editMessage: (id: string, messageId: string, content: string) => request<{ message: Message }>(`/conversations/${id}/messages/${messageId}`, { method: 'PATCH', body: { content } }),
+    editMessage: (id: string, messageId: string, content: string, encryption?: { encrypted: boolean; encryptionVersion?: number | null }) => request<{ message: Message }>(`/conversations/${id}/messages/${messageId}`, {
+      method: 'PATCH',
+      body: { content, ...(encryption?.encrypted ? { encrypted: true, encryptionVersion: encryption.encryptionVersion ?? 1 } : {}) },
+    }),
     deleteMessage: (id: string, messageId: string) => request<{ messageId: string }>(`/conversations/${id}/messages/${messageId}`, { method: 'DELETE' }),
     toggleReaction: (id: string, messageId: string, emoji: string) => request<{ message: Message }>(`/conversations/${id}/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } }),
     pins: (id: string) => request<{ items: Message[] }>(`/conversations/${id}/pins`),
@@ -108,6 +120,18 @@ export const api = {
     unpin: (id: string, messageId: string) => request<{ message: Message }>(`/conversations/${id}/pins/${messageId}`, { method: 'DELETE' }),
     clearHistory: (id: string, scope: CleanupScope) => request<{ conversationId: string; scope: CleanupScope }>(`/conversations/${id}/clear`, { method: 'POST', body: { scope } }),
     remove: (id: string, scope: CleanupScope) => request<{ conversationId: string; scope: CleanupScope; left: boolean }>(`/conversations/${id}`, { method: 'DELETE', body: { scope } }),
+  },
+  e2ee: {
+    status: () => request<E2eeStatus>('/e2ee/me'),
+    publicKeys: (ids: string[]) => request<{ keys: Record<string, string> }>(`/e2ee/public-keys?ids=${encodeURIComponent(ids.join(','))}`),
+    publishPublicKey: (publicKey: string) => request<{ ok: true }>('/e2ee/public-key', { method: 'PUT', body: { publicKey } }),
+    disable: () => request<{ ok: true }>('/e2ee/public-key', { method: 'DELETE' }),
+    conversationKey: (conversationId: string) => request<{ wrappedKey: string | null; keyVersion: number | null }>(`/e2ee/conversations/${conversationId}/key`),
+    conversationKeyMembers: (conversationId: string) => request<{ userIds: string[] }>(`/e2ee/conversations/${conversationId}/key/members`),
+    saveConversationKeys: (conversationId: string, keys: Array<{ userId: string; wrappedKey: string }>) => request<{ ok: true }>(`/e2ee/conversations/${conversationId}/keys`, { method: 'POST', body: { keys } }),
+    backup: () => request<{ backup: E2eeBackup | null }>('/e2ee/backup'),
+    saveBackup: (backup: Omit<E2eeBackup, 'updatedAt'>) => request<{ ok: true }>('/e2ee/backup', { method: 'PUT', body: backup }),
+    deleteBackup: () => request<{ ok: true }>('/e2ee/backup', { method: 'DELETE' }),
   },
   servers: {
     list: () => request<{ servers: CommunityServer[] }>('/servers'),

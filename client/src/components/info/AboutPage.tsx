@@ -76,7 +76,7 @@ export function AboutPage({ variant }: { variant: 'public' | 'overlay' }) {
         </div>
         <p className="mt-6 flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Waypoints size={17} className="mt-0.5 shrink-0 text-accent-500" />
-          Наступні кроки: двофакторна автентифікація, встановлення як додатка, боти та наскрізне шифрування.
+          Наступні кроки: шифрування вкладень і групові дзвінки. Наскрізне шифрування текстів уже доступне в налаштуваннях.
         </p>
       </InfoSection>
 

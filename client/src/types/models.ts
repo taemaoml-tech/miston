@@ -296,6 +296,8 @@ export interface MessageReply {
   content: string;
   kind: MessageKind;
   deleted: boolean;
+  /** Чи потребує `content` локального розшифрування. */
+  encrypted?: boolean;
 }
 
 export interface MessageForward {
@@ -326,6 +328,26 @@ export interface Message {
   replyTo?: MessageReply | null;
   forwardedFrom?: MessageForward | null;
   mentions?: string[];
+  /** E2EE: вміст є шифротекстом, розшифрованим локально перед показом. */
+  encrypted?: boolean;
+  encryptionVersion?: number | null;
+  /** Клієнтські прагці стану розшифрування (не зберігаються на сервері). */
+  decrypted?: boolean;
+  decryptionFailed?: boolean;
+}
+
+export interface E2eeStatus {
+  enabled: boolean;
+  publicKey: string | null;
+  hasBackup: boolean;
+}
+
+export interface E2eeBackup {
+  salt: string;
+  iv: string;
+  ciphertext: string;
+  iterations: number;
+  updatedAt?: string;
 }
 
 export type GameKind = 'snake' | 'dice' | 'quiz';

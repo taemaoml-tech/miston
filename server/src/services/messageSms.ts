@@ -31,6 +31,9 @@ interface ConversationRow {
 
 /** Скорочений опис вмісту повідомлення: «фото», «кружок» або частина тексту. */
 export function describeMessage(message: Message): string {
+  // Шифротекст не можна показувати в SMS/push — навіть сам сервер не знає,
+  // що саме написав користувач.
+  if (message.encrypted) return 'шифроване повідомлення';
   if (message.kind === 'text') {
     const text = message.content.trim().replace(/\s+/g, ' ');
     if (!text) return 'нове повідомлення';

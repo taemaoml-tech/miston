@@ -20,6 +20,7 @@ import type { BotAccount, LoginSession } from '../../types/models';
 import { Avatar } from '../common/Avatar';
 import { INFO_LINKS } from '../info/infoLinks';
 import { Modal } from '../common/Modal';
+import { E2eeSettings } from './E2eeSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { ProfileCustomization } from './ProfileCustomization';
 import { MistIdCard } from './MistIdCard';
@@ -28,7 +29,7 @@ import { QrLoginScanner } from './QrLoginScanner';
 import { StarDisplayName } from '../star/StarDisplayName';
 
 type Section =
-  | 'root' | 'account' | 'appearance' | 'chats' | 'privacy' | 'notifications'
+  | 'root' | 'account' | 'appearance' | 'chats' | 'privacy' | 'encryption' | 'notifications'
   | 'data' | 'folders' | 'devices' | 'energy' | 'language' | 'bots' | 'mistInbox' | 'qrLogin';
 
 const SECTION_TITLES: Record<Section, string> = {
@@ -37,6 +38,7 @@ const SECTION_TITLES: Record<Section, string> = {
   appearance: 'Кастомізація профілю',
   chats: 'Налаштування чатів',
   privacy: 'Приватність і безпека',
+  encryption: 'Наскрізне шифрування',
   notifications: 'Сповіщення',
   data: 'Дані та сховище',
   folders: 'Папки для чатів',
@@ -50,7 +52,7 @@ const SECTION_TITLES: Record<Section, string> = {
 
 const SECTION_I18N_KEYS: Record<Section, string> = {
   root: 'settings', account: 'account', appearance: 'appearance', chats: 'chats',
-  privacy: 'privacy', notifications: 'notifications', data: 'data', folders: 'folders',
+  privacy: 'privacy', encryption: 'encryption', notifications: 'notifications', data: 'data', folders: 'folders',
   devices: 'devices', energy: 'energy', language: 'language', bots: 'bots',
   mistInbox: 'mistInbox', qrLogin: 'qrLogin',
 };
@@ -311,6 +313,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             <SettingsRow icon={<Palette size={19} />} color="bg-pink-500" title={t('appearance', 'Кастомізація профілю')} subtitle={t('appearanceSub', 'Рамки, колір імені, значки — безкоштовно')} onClick={() => setSection('appearance')} />
             <SettingsRow icon={<MessageSquare size={19} />} color="bg-orange-500" title={t('chats', 'Налаштування чатів')} subtitle={t('chatsSub', 'Тема, анімації, вигляд повідомлень')} onClick={() => setSection('chats')} />
             <SettingsRow icon={<LockKeyhole size={19} />} color="bg-emerald-500" title={t('privacy', 'Приватність і безпека')} subtitle={t('privacySub', 'Підтвердження входу, номер телефону, сесії')} onClick={() => setSection('privacy')} />
+            <SettingsRow icon={<ShieldCheck size={19} />} color="bg-teal-500" title={t('encryption', 'Наскрізне шифрування')} subtitle={t('encryptionSub', 'Ключі, резервна копія, відновлення')} onClick={() => setSection('encryption')} />
             <SettingsRow icon={<BellRing size={19} />} color="bg-rose-500" title={t('notifications', 'Сповіщення')} subtitle={t('notificationsSub', 'SMS про нові повідомлення')} onClick={() => setSection('notifications')} />
             <SettingsRow icon={<Database size={19} />} color="bg-indigo-500" title={t('data', 'Дані та сховище')} subtitle={t('dataSub', 'Кеш застосунку та медіа')} onClick={() => setSection('data')} />
             <SettingsRow icon={<Folder size={19} />} color="bg-blue-500" title={t('folders', 'Папки для чатів')} subtitle={t('foldersSub', 'Сортування чатів по папках')} onClick={() => setSection('folders')} />
@@ -501,6 +504,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             </div>
           )}
 
+          {section === 'encryption' && <E2eeSettings />}
           {section === 'notifications' && <NotificationSettings />}
           {section === 'mistInbox' && <MistIdInbox />}
           {section === 'qrLogin' && <QrLoginScanner />}

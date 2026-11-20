@@ -88,7 +88,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
     if (!folder) return directConversations;
     return directConversations.filter((conversation) => folder.conversationIds.includes(conversation.id));
   }, [directConversations, activeFolderId, folders]);
-  const filtered = useMemo(() => folderConversations.filter((conversation) => `${conversation.title} ${conversation.lastMessage?.content || ''}`.toLowerCase().includes(query.toLowerCase())), [folderConversations, query]);
+  const filtered = useMemo(() => folderConversations.filter((conversation) => `${conversation.title} ${conversation.lastMessage?.encrypted ? '' : conversation.lastMessage?.content || ''}`.toLowerCase().includes(query.toLowerCase())), [folderConversations, query]);
 
   return (
     <aside className="relative flex h-full min-w-0 flex-1 flex-col border-r border-ios-separator/10 bg-ios-glass/80 backdrop-blur-xl md:w-80 md:flex-none lg:w-[340px]" aria-label="Розмови та друзі">
@@ -132,7 +132,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
               <span className="min-w-0 flex-1 pr-5">
                 <span className="block truncate text-sm font-semibold">Збережені нотатки</span>
                 <span className="block truncate text-xs text-ios-secondary">{savedNotes?.lastMessage
-                  ? savedNotes.lastMessage.content || kindLabels[savedNotes.lastMessage.kind] || 'Повідомлення'
+                  ? savedNotes.lastMessage.encrypted ? '🔒 Шифроване повідомлення' : savedNotes.lastMessage.content || kindLabels[savedNotes.lastMessage.kind] || 'Повідомлення'
                   : 'Тут лишається лише ваше — ніхто не побачить'}</span>
               </span>
             </button>
@@ -143,7 +143,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
               const active = activeConversation?.id === conversation.id;
               const other = conversation.kind === 'direct' ? conversation.members.find((member) => member.id !== user?.id) : undefined;
               const last = conversation.lastMessage;
-              const preview = last ? `${last.senderId === user?.id ? 'Ви: ' : conversation.kind !== 'direct' ? `${last.sender?.displayName?.split(' ')[0] || 'Учасник'}: ` : ''}${last.content || (last.kind === 'text' ? 'Повідомлення' : kindLabels[last.kind] || 'Вкладення')}` : 'Повідомлень ще немає';
+              const preview = last ? `${last.senderId === user?.id ? 'Ви: ' : conversation.kind !== 'direct' ? `${last.sender?.displayName?.split(' ')[0] || 'Учасник'}: ` : ''}${last.encrypted && !last.decrypted ? '🔒 Шифроване повідомлення' : last.content || (last.kind === 'text' ? 'Повідомлення' : kindLabels[last.kind] || 'Вкладення')}` : 'Повідомлень ще немає';
               return <li key={conversation.id} className="group relative" onContextMenu={(event) => { event.preventDefault(); openMenu(conversation, event.clientX, event.clientY); }}>
                 <button type="button" onClick={() => selectConversation(conversation.id)} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition ${active ? 'bg-ios-blue/10' : 'hover:bg-ios-fill/10'}`} aria-current={active ? 'page' : undefined}>
                   <Avatar name={conversation.title} src={conversation.avatarUrl} online={other ? presence[other.id] ?? other.online : undefined} cosmetics={other?.cosmetics} />
