@@ -45,6 +45,11 @@ function createDefaultState(): Record<string, unknown> {
   return { subjects: [], lessons: [], grades: [], attendance: [], students: [] };
 }
 
+function normalizeState(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return createDefaultState();
+  return value as Record<string, unknown>;
+}
+
 function generateInviteCode(): string {
   let code = '';
   for (let i = 0; i < INVITE_CODE_LENGTH; i += 1) {
@@ -87,6 +92,16 @@ const noteBodySchema = z.object({
 });
 
 const notePatchSchema = noteBodySchema.partial();
+
+const diaryRoleSchema = z.enum(['student', 'teacher', 'parent']);
+const roleBodySchema = z.object({
+  role: diaryRoleSchema,
+  childId: uuid.nullable().optional(),
+});
+const homeworkSchema = z.object({
+  lessonId: z.string().trim().min(1).max(200),
+  done: z.boolean(),
+});
 
 function serializeNote(row: NoteRow | undefined) {
   if (!row) throw notFound('Нотатку не знайдено');
@@ -158,6 +173,33 @@ async function requireClassSummary(classId: string, userId: string) {
   if (!summary) throw notFound('Клас не знайдено');
   return summary;
 }
+
+async function loadDiaryRole(userId: string) {
+  const result = await query<{ role: string; child_id: string | null }>(
+    'SELECT role, child_id FROM diary_roles WHERE user_id = $1',
+    [userId],
+  );
+  const row = result.rows[0];
+  return {
+    role: row ? String(row.role) : null,
+    childId: row?.child_id ? String(row.child_id) : null,
+  };
+}
+
+router.get('/me', asyncHandler(async (req, res) => {
+  res.json(await loadDiaryRole(req.auth!.userId));
+}));
+
+router.put('/me/role', asyncHandler(async (req, res) => {
+  const input = roleBodySchema.parse(req.body);
+  const childId = input.role === 'parent' ? (input.childId ?? null) : null;
+  await query(
+    `INSERT INTO diary_roles (user_id, role, child_id) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role, child_id = EXCLUDED.child_id, updated_at = now()`,
+    [req.auth!.userId, input.role, childId],
+  );
+  res.json({ role: input.role, childId });
+}));
 
 router.get('/classes', asyncHandler(async (req, res) => {
   res.json({ classes: await loadClassSummaries(req.auth!.userId) });
@@ -239,6 +281,55 @@ router.put('/classes/:id/state', asyncHandler(async (req, res) => {
   if (!updatedAt) throw new AppError(500, 'STATE_SAVE_FAILED', 'Не вдалося зберегти стан класу');
 
   res.json({ ok: true, updatedAt: toIso(updatedAt) });
+}));
+
+/**
+ * Учні можуть позначати домашнє завдання виконаним, не маючи права
+ * змінювати решту стану класу. Батьки — лише спостерігачі.
+ */
+router.patch('/classes/:id/homework', asyncHandler(async (req, res) => {
+  const classId = uuid.parse(req.params.id);
+  const { lessonId, done } = homeworkSchema.parse(req.body);
+  const userId = req.auth!.userId;
+
+  const access = await query<{ class_role: string | null; diary_role: string | null }>(
+    `SELECT m.role AS class_role, dr.role AS diary_role
+     FROM diary_classes c
+     LEFT JOIN diary_class_members m ON m.class_id = c.id AND m.user_id = $2
+     LEFT JOIN diary_roles dr ON dr.user_id = $2
+     WHERE c.id = $1`,
+    [classId, userId],
+  );
+  const accessRow = access.rows[0];
+  if (!accessRow) throw notFound('Клас не знайдено');
+  if (!accessRow.class_role) throw forbidden('Ви не є учасником цього класу');
+  if (accessRow.diary_role === 'parent') throw forbidden('Батьки не позначають домашні завдання');
+
+  const stored = await query<{ data: Record<string, unknown> }>(
+    'SELECT data FROM diary_state WHERE class_id = $1',
+    [classId],
+  );
+  const data = normalizeState(stored.rows[0]?.data);
+  const lessons = Array.isArray(data.lessons) ? data.lessons.slice() : [];
+  const index = lessons.findIndex((lesson) => lesson
+    && typeof lesson === 'object'
+    && String((lesson as Record<string, unknown>).id) === lessonId);
+  if (index < 0) throw notFound('Урок не знайдено');
+
+  const lesson = lessons[index] as Record<string, unknown>;
+  const homework = lesson.homework && typeof lesson.homework === 'object' && !Array.isArray(lesson.homework)
+    ? lesson.homework as Record<string, unknown>
+    : {};
+  lessons[index] = { ...lesson, homework: { ...homework, done } };
+  const state = { ...data, lessons };
+
+  const updated = await query<{ updated_at: Date | string }>(
+    `INSERT INTO diary_state (class_id, data, updated_at) VALUES ($1, $2::jsonb, now())
+     ON CONFLICT (class_id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+     RETURNING updated_at`,
+    [classId, JSON.stringify(state)],
+  );
+  res.json({ ok: true, updatedAt: toIso(updated.rows[0]!.updated_at), state });
 }));
 
 router.get('/notes', asyncHandler(async (req, res) => {
