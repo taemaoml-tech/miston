@@ -4,6 +4,7 @@ import type { AuthResponse, LoginChallenge, User } from '../types/models';
 import { api } from '../api';
 import { tokenStore } from '../api/client';
 import { getFcmToken, getNativeFcmToken, watchNativeFcmToken } from '../utils/firebase';
+import { enableE2ee, isE2eeOptedOut } from '../utils/e2ee';
 
 interface AuthContextValue {
   user: User | null;
@@ -64,6 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('auth:expired', expire);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    if (isE2eeOptedOut(user.id)) return;
+    // Автоматично вмикаємо E2EE: генеруємо ключі на цьому пристрої та публікуємо публічний ключ.
+    // Якщо ключ уже є на сервері, але на пристрої немає відповідного приватного — потрібне відновлення з резервної копії.
+    void enableE2ee(user.id).catch(() => undefined);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;

@@ -13,6 +13,7 @@ import type { Message } from '../types/models';
 export const E2EE_VERSION = 1;
 
 const STORAGE_PREFIX = 'miston.e2ee.identity.';
+const OPTOUT_PREFIX = 'miston.e2ee.optout.';
 const BACKUP_ITERATIONS = 210_000;
 const keyCache = new Map<string, Uint8Array>();
 
@@ -70,6 +71,18 @@ function clearLocalIdentity(userId: string): void {
   keyCache.clear();
 }
 
+export function isE2eeOptedOut(userId: string): boolean {
+  try { return localStorage.getItem(OPTOUT_PREFIX + userId) === '1'; } catch { return false; }
+}
+
+function setE2eeOptOut(userId: string, value: boolean): void {
+  try {
+    const key = OPTOUT_PREFIX + userId;
+    if (value) localStorage.setItem(key, '1');
+    else localStorage.removeItem(key);
+  } catch { /* ignore */ }
+}
+
 function rsaAlgorithm(): RsaHashedImportParams {
   return { name: 'RSA-OAEP', hash: 'SHA-256' };
 }
@@ -122,11 +135,13 @@ export async function enableE2ee(userId: string): Promise<void> {
     saveIdentity(userId, identity);
   }
   if (status.publicKey !== identity.publicKey) await api.e2ee.publishPublicKey(identity.publicKey);
+  setE2eeOptOut(userId, false);
 }
 
 export async function disableE2ee(userId: string): Promise<void> {
   await api.e2ee.disable();
   clearLocalIdentity(userId);
+  setE2eeOptOut(userId, true);
 }
 
 /** Зашифрувати приватний ключ паролем і зберегти резервну копію на сервері. */
