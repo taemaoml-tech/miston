@@ -1,6 +1,5 @@
 import type { Server } from 'socket.io';
 import type { FriendshipEvent, Message, StarUpdate, SystemNotification } from '../types/domain';
-import type { Game } from '../types/games';
 
 let io: Server | undefined;
 
@@ -48,26 +47,6 @@ export function emitMessageReactions(message: Message): void {
 
 export function emitMessageDeleted(conversationId: string, messageId: string): void {
   io?.to(`conversation:${conversationId}`).emit('message:deleted', { conversationId, messageId });
-}
-
-/** Нове запрошення — сповіщає суперника особисто, навіть якщо він не у кімнаті чату. */
-export function emitGameInvite(game: Game, opponentId: string): void {
-  io?.to(`user:${opponentId}`).emit('game:invite', { game });
-  io?.to(`user:${opponentId}`).emit('notification', {
-    type: 'game',
-    game,
-    title: 'Гра запрошує вас',
-    body: `${game.kind === 'snake' ? 'Змійка' : game.kind === 'dice' ? 'Костики' : 'Вікторина'}: прийміть запрошення`,
-    conversationId: game.conversationId,
-  });
-}
-
-/** Стан гри змінився: прийнято, подано рахунок, завершено. */
-export function emitGameUpdate(game: Game, playerIds: string[]): void {
-  io?.to(`conversation:${game.conversationId}`).emit('game:updated', { game });
-  for (const userId of playerIds) {
-    io?.to(`user:${userId}`).emit('game:updated', { game });
-  }
 }
 
 export function emitConversationCreated(conversation: { id: string }, memberIds: string[]): void {

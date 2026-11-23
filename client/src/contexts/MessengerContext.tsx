@@ -56,7 +56,6 @@ const attachmentLabels: Record<string, string> = {
   voice: 'голосове повідомлення',
   video_note: 'відеокружечок',
   sticker: 'стікер',
-  game: 'гра',
 };
 
 export function MessengerProvider({ children }: { children: ReactNode }) {

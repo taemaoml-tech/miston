@@ -14,7 +14,6 @@ import { emitMessageDeleted, emitMessageNew, emitMessageReactions, emitMessageRe
 import { recordMessageReward } from '../star/service';
 import { notifyRecipientsBySms, notifyRecipientsByPush } from '../services/messageSms';
 import { handleBotInteraction } from '../services/bots';
-import { handleGameCommand } from '../services/games';
 import { asyncHandler } from '../utils/http';
 import { AppError, forbidden, notFound } from '../utils/errors';
 import { REACTION_EMOJIS } from '../utils/reactions';
@@ -247,7 +246,6 @@ router.post('/:id/messages', upload.single('file'), asyncHandler(async (req, res
       void notifyRecipientsBySms(message, recipients);
       void notifyRecipientsByPush(message, recipients);
       void handleBotInteraction(message.conversationId, message, req.auth!.userId);
-      void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
     } else {
       // Навіть для шифрованих повідомлень потрібно розбудити пристрій, але без тексту.
       void notifyRecipientsByPush(message, recipients);
@@ -307,7 +305,6 @@ router.post('/:id/stickers', asyncHandler(async (req, res) => {
   void notifyRecipientsBySms(message, recipients);
     void notifyRecipientsByPush(message, recipients);
     void handleBotInteraction(message.conversationId, message, req.auth!.userId);
-    void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
   const star = conversationKind === 'saved' ? null : await recordMessageReward(userId).catch((error) => {
     console.error('Failed to record Star activity', error);
     return null;
@@ -373,7 +370,6 @@ router.post('/:id/messages/:messageId/forward', asyncHandler(async (req, res) =>
   if (!message.encrypted) {
     void notifyRecipientsBySms(message, recipients);
     void handleBotInteraction(message.conversationId, message, req.auth!.userId);
-    void handleGameCommand(message.conversationId, message, req.auth!.userId).catch((error) => console.error('Failed to handle game command', error));
   }
   void notifyRecipientsByPush(message, recipients);
   res.status(201).json({ message });

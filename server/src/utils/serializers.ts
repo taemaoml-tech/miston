@@ -175,7 +175,6 @@ export function serializeMessage(row: Record<string, unknown>): Message {
       packSlug: String(rawSticker.packSlug ?? ''),
       category: rawSticker.category as StickerCategory,
     } : null,
-    gameId: row.game_id == null ? null : String(row.game_id),
     encrypted: Boolean(row.encrypted),
     encryptionVersion: row.encryption_version == null ? null : Number(row.encryption_version),
   };

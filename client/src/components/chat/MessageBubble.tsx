@@ -9,7 +9,6 @@ import { REACTION_EMOJIS, REACTION_LABELS } from '../../utils/reactions';
 import { Avatar } from '../common/Avatar';
 import { StarDisplayName } from '../star/StarDisplayName';
 import { VideoNote } from './VideoNote';
-import { GameCard } from './GameCard';
 
 interface MessageBubbleProps {
   message: Message;
@@ -148,17 +147,7 @@ export function MessageBubble({
               </div>
             </>
           )}
-          {message.kind === 'game' && message.gameId ? (
-            <div className={`flex flex-col ${own ? 'items-end' : 'items-start'} ${highlight ? 'rounded-3xl ring-2 ring-amber-400 ring-offset-4 ring-offset-white dark:ring-offset-slate-900' : ''}`}>
-              {(replyQuote || forwardLabel) && <div className="mb-1 w-64 max-w-full">{replyQuote}{forwardLabel}</div>}
-              <GameCard message={message} />
-              <div className="mt-1 flex items-center gap-1 px-1 text-[10px] text-slate-400 dark:text-slate-500">
-                {pinned && <Pin size={11} aria-label="Закріплено" />}
-                <time className="message-time" dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-                {own && <span className="inline-flex items-center gap-1" title={isRead ? 'Прочитано' : 'Доставлено'}>{isRead ? <CheckCheck size={13} aria-label="Прочитано" /> : <Check size={13} aria-label="Доставлено" />}<span>{isRead ? 'Прочитано' : 'Доставлено'}</span></span>}
-              </div>
-            </div>
-          ) : message.kind === 'sticker' ? (
+          {message.kind === 'sticker' ? (
             <div className={`flex flex-col ${own ? 'items-end' : 'items-start'} ${highlight ? 'rounded-3xl ring-2 ring-amber-400 ring-offset-4 ring-offset-white dark:ring-offset-slate-900' : ''}`}>
               {(replyQuote || forwardLabel) && <div className="mb-1 w-64 max-w-full">{replyQuote}{forwardLabel}</div>}
               {message.sticker ? (

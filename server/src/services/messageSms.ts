@@ -14,7 +14,6 @@ const KIND_LABELS: Record<MessageKind, string> = {
   document: 'файл',
   voice: 'голосове повідомлення',
   sticker: 'стікер',
-  game: 'гра',
 };
 
 interface RecipientRow {

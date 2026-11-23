@@ -1,17 +1,13 @@
 import { lazy, Suspense, useState } from 'react';
 import type { Conversation } from '../../types/models';
 import { CallProvider } from '../../contexts/CallContext';
-import { GameProvider } from '../../contexts/GameContext';
 import { FriendsProvider } from '../../contexts/FriendsContext';
-import { useGame } from '../../contexts/GameContext';
 import { MessengerProvider, useMessenger } from '../../contexts/MessengerContext';
 import { useAndroidBack } from '../../utils/androidBack';
 import { StarProvider } from '../../contexts/StarContext';
 import { CallOverlay } from '../call/CallOverlay';
 import { ChatPlaceholder } from '../chat/ChatPlaceholder';
 import { ChatWindow } from '../chat/ChatWindow';
-import { GameModal } from '../games/GameModal';
-import { GameHistoryModal } from '../games/GameHistoryModal';
 import type { ConversationAction, ConversationTarget } from '../chat/ConversationActionModal';
 import { ConversationActionModal } from '../chat/ConversationActionModal';
 import { NewChatModal } from '../chat/NewChatModal';
@@ -46,12 +42,6 @@ function MessengerLayout() {
 
   // Пріоритети: спочатку закриваємо модалки, потім повертаємося з чату/сервера
   // на головне меню. Порожній headroom означає, що ми вже на головній.
-  const { activeGame, historyOpen, closeGame, setHistoryOpen } = useGame();
-  useAndroidBack(() => {
-    if (historyOpen) { setHistoryOpen(false); return true; }
-    if (activeGame) { closeGame(); return true; }
-    return false;
-  }, 200);
   useAndroidBack(() => {
     if (chatAction) { setChatAction(null); return true; }
     if (report) { setReport(null); return true; }
@@ -101,8 +91,6 @@ function MessengerLayout() {
         </Suspense>
       )}
       <ToastStack notifications={notifications} onDismiss={dismissNotification} onOpen={openNotification} />
-      <GameModal />
-      <GameHistoryModal />
       <CallOverlay />
     </div>
   );
@@ -114,9 +102,7 @@ export function MessengerApp() {
       <MessengerProvider>
         <FriendsProvider>
           <CallProvider>
-            <GameProvider>
-              <MessengerLayout />
-            </GameProvider>
+            <MessengerLayout />
           </CallProvider>
         </FriendsProvider>
       </MessengerProvider>
