@@ -12,15 +12,15 @@ interface StickerGridProps {
 
 type View = 'favorites' | 'recents' | StickerCategory;
 
-const BUILTIN_TABS: { key: View; label: string }[] = [
-  { key: 'emotions', label: 'Емоції' },
-  { key: 'memes', label: 'Меми' },
-  { key: 'animals', label: 'Тварини' },
-  { key: 'games', label: 'Ігри' },
-  { key: 'holidays', label: 'Свята' },
-  { key: 'anime', label: 'Аніме' },
-  { key: 'reactions', label: 'Реакції' },
-];
+function categoryHasStickers(library: StickerLibrary, key: StickerCategory): boolean {
+  return library.packs.some((pack) => pack.category === key && pack.stickers.length > 0);
+}
+
+function firstAvailableView(library: StickerLibrary): View {
+  if (library.favorites.length) return 'favorites';
+  const firstCategory = library.categories.find((category) => categoryHasStickers(library, category.key));
+  return firstCategory?.key ?? 'custom';
+}
 
 export function StickerGrid({ onPick }: StickerGridProps) {
   const [library, setLibrary] = useState<StickerLibrary | null>(null);
@@ -35,7 +35,7 @@ export function StickerGrid({ onPick }: StickerGridProps) {
   useEffect(() => {
     let active = true;
     void api.stickers.library()
-      .then((result) => { if (active) { setLibrary(result); setView(result.favorites.length ? 'favorites' : 'emotions'); } })
+      .then((result) => { if (active) { setLibrary(result); setView(firstAvailableView(result)); } })
       .catch((cause) => { if (active) setError(errorMessage(cause)); });
     return () => { active = false; };
   }, []);
@@ -45,6 +45,21 @@ export function StickerGrid({ onPick }: StickerGridProps) {
     for (const pack of library?.packs ?? []) for (const sticker of pack.stickers) map.set(sticker.id, sticker);
     return map;
   }, [library]);
+
+  const categoryTabs = useMemo(() => {
+    if (!library) return [];
+    return library.categories
+      .filter((category) => categoryHasStickers(library, category.key))
+      .map((category) => ({ key: category.key as View, label: category.name }));
+  }, [library]);
+
+  useEffect(() => {
+    if (!library) return;
+    setView((current) => {
+      if (current === 'favorites' || current === 'recents' || current === 'custom') return current;
+      return categoryTabs.some((tab) => tab.key === current) ? current : (categoryTabs[0]?.key ?? 'custom');
+    });
+  }, [categoryTabs, library]);
 
   const visiblePacks: StickerPack[] = useMemo(() => {
     const packs = library?.packs ?? [];
@@ -150,7 +165,7 @@ export function StickerGrid({ onPick }: StickerGridProps) {
   const tabs: { key: View; label: string; icon?: typeof Star }[] = [
     { key: 'favorites', label: 'Улюблені', icon: Star },
     { key: 'recents', label: 'Недавні', icon: Clock },
-    ...BUILTIN_TABS,
+    ...categoryTabs,
     { key: 'custom', label: 'Мої', icon: Plus },
   ];
 
