@@ -1,5 +1,8 @@
+import crypto from 'node:crypto';
+import { v2 as cloudinary } from 'cloudinary';
 import { Router } from 'express';
 import { z } from 'zod';
+import { config } from '../config/env';
 import { query } from '../db/pool';
 import { requireAuth } from '../middleware/auth';
 import { feedUpload } from '../middleware/uploads';
@@ -17,6 +20,9 @@ type Category = (typeof categories)[number];
 
 /** Відео до хвилини — у загальній стрічці, довші — лише у вкладці «Довгі». */
 const SHORT_VIDEO_MAX_SECONDS = 60;
+/** Великі відео йдуть напряму в Cloudinary, не через пам'ять API-сервера. */
+const MAX_DIRECT_VIDEO_BYTES = 2 * 1024 * 1024 * 1024;
+const FEED_VIDEO_FOLDER = 'miston/feed';
 
 const categorySchema = z.enum(categories);
 const textSchema = z.string().trim().max(2000).optional().default('');
@@ -207,6 +213,30 @@ function parseMediaUrl(value: string | undefined, code: 'INVALID_IMAGE' | 'INVAL
   if (/^\/uploads\/[A-Za-z0-9._-]+$/.test(value) || /^https:\/\//i.test(value)) return value;
   throw new AppError(400, code, 'Некоректне посилання на медіа');
 }
+
+/** Підпис для прямого chunked-завантаження відео з браузера в Cloudinary. */
+router.post('/upload/sign', asyncHandler(async (req, res) => {
+  if (!config.CLOUDINARY_CLOUD_NAME || !config.CLOUDINARY_API_KEY || !config.CLOUDINARY_API_SECRET) {
+    throw new AppError(503, 'UPLOAD_NOT_CONFIGURED', 'Завантаження відео тимчасово недоступне');
+  }
+  z.object({ bytes: z.number().int().positive().max(MAX_DIRECT_VIDEO_BYTES) }).parse(req.body);
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const publicId = crypto.randomUUID();
+  const signature = cloudinary.utils.api_sign_request(
+    { timestamp, public_id: publicId, folder: FEED_VIDEO_FOLDER },
+    config.CLOUDINARY_API_SECRET,
+  );
+
+  res.json({
+    cloudName: config.CLOUDINARY_CLOUD_NAME,
+    apiKey: config.CLOUDINARY_API_KEY,
+    timestamp,
+    publicId,
+    folder: FEED_VIDEO_FOLDER,
+    signature,
+  });
+}));
 
 router.get('/', asyncHandler(async (req, res) => {
   const userId = req.auth!.userId;
