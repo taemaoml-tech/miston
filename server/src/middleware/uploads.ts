@@ -58,6 +58,13 @@ export const upload = multer({
   fileFilter: fileFilter((mime) => mime in extensions),
 });
 
+/** Стрічка може отримати одночасно фото й відео одним мультипартом. */
+export const feedUpload = multer({
+  storage,
+  limits: { fileSize: config.MAX_FILE_SIZE, files: 2 },
+  fileFilter: fileFilter((mime) => mime in extensions),
+});
+
 export const avatarUpload = multer({
   storage,
   limits: { fileSize: config.MAX_FILE_SIZE, files: 1 },

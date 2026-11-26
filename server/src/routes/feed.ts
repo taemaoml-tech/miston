@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../db/pool';
 import { requireAuth } from '../middleware/auth';
-import { upload } from '../middleware/uploads';
+import { feedUpload } from '../middleware/uploads';
 import { uploadFile } from '../services/storage';
 import { emitFeedNew } from '../sockets/emitter';
 import { AppError, forbidden, notFound } from '../utils/errors';
@@ -12,8 +12,11 @@ import { cosmeticsFrom } from '../utils/serializers';
 const router = Router();
 router.use(requireAuth);
 
-const categories = ['general', 'polls', 'subscriptions'] as const;
+const categories = ['general', 'polls', 'subscriptions', 'shorts', 'longs'] as const;
 type Category = (typeof categories)[number];
+
+/** Відео до хвилини — у загальній стрічці, довші — лише у вкладці «Довгі». */
+const SHORT_VIDEO_MAX_SECONDS = 60;
 
 const categorySchema = z.enum(categories);
 const textSchema = z.string().trim().max(2000).optional().default('');
@@ -33,6 +36,8 @@ const createSchema = z.object({
   category: categorySchema.optional().default('general'),
   poll: optionalPoll,
   imageUrl: z.string().trim().max(2000).optional(),
+  videoUrl: z.string().trim().max(2000).optional(),
+  videoDuration: z.coerce.number().int().min(1).max(14400).optional(),
 });
 
 const emojiSchema = z.enum(['❤️', '🔥', '👏', '😂', '💡', '✨']);
@@ -53,6 +58,8 @@ interface PostRow {
   category: Category;
   text: string;
   image_url: string | null;
+  video_url: string | null;
+  video_duration: number | string | null;
   poll: unknown;
   created_at: Date | string;
   username: string;
@@ -170,6 +177,8 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
       category: row.category,
       text: String(row.text ?? ''),
       imageUrl: row.image_url == null ? null : String(row.image_url),
+      videoUrl: row.video_url == null ? null : String(row.video_url),
+      videoDuration: row.video_duration == null ? null : Number(row.video_duration),
       poll: pollFrom(row.poll, votes, String(row.id)),
       reactions: reactions.get(String(row.id)) ?? [],
       commentCount: comments.get(String(row.id)) ?? 0,
@@ -180,7 +189,7 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
 }
 
 const POST_SELECT = `
-  SELECT p.id, p.author_id, p.category, p.text, p.image_url, p.poll, p.created_at,
+  SELECT p.id, p.author_id, p.category, p.text, p.image_url, p.video_url, p.video_duration, p.poll, p.created_at,
          u.username, u.display_name, u.avatar_url, u.role, u.is_verified, u.cosmetics
   FROM feed_posts p
   JOIN users u ON u.id = p.author_id`;
@@ -201,6 +210,7 @@ async function loadFeed(
   const result = await query<PostRow>(
     `${POST_SELECT}
      WHERE ($2::text IS NULL OR p.category = $2)
+       AND ($2::text IS NOT NULL OR p.category <> 'longs')
        AND ($3::timestamptz IS NULL OR p.created_at < $3::timestamptz)
        AND (
          $4::boolean = false
@@ -226,10 +236,10 @@ async function loadFeed(
   return serializePosts(result.rows, userId);
 }
 
-function parseImageUrl(value: string | undefined): string | null {
+function parseMediaUrl(value: string | undefined, code: 'INVALID_IMAGE' | 'INVALID_VIDEO'): string | null {
   if (!value) return null;
   if (/^\/uploads\/[A-Za-z0-9._-]+$/.test(value) || /^https:\/\//i.test(value)) return value;
-  throw new AppError(400, 'INVALID_IMAGE', 'Некоректне посилання на зображення');
+  throw new AppError(400, code, 'Некоректне посилання на медіа');
 }
 
 router.get('/', asyncHandler(async (req, res) => {
@@ -266,36 +276,64 @@ router.post('/theme', asyncHandler(async (req, res) => {
 router.get('/since', asyncHandler(async (req, res) => {
   const after = z.string().min(1).parse(String(req.query.after ?? ''));
   const result = await query<{ count: string }>(
-    'SELECT COUNT(*)::text AS count FROM feed_posts WHERE author_id <> $1 AND created_at > $2::timestamptz',
+    `SELECT COUNT(*)::text AS count FROM feed_posts
+     WHERE author_id <> $1 AND created_at > $2::timestamptz AND category <> 'longs'`,
     [req.auth!.userId, after],
   );
   res.json({ count: Number(result.rows[0]?.count ?? 0) });
 }));
 
-router.post('/', upload.single('image'), asyncHandler(async (req, res) => {
+router.post('/', feedUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), asyncHandler(async (req, res) => {
   const userId = req.auth!.userId;
+  const files = (req.files ?? {}) as Record<string, Express.Multer.File[] | undefined>;
+  const imageFile = files.image?.[0];
+  const videoFile = files.video?.[0];
+  const cleanupFiles = async () => {
+    const { removeUpload } = await import('../middleware/uploads');
+    for (const file of [imageFile, videoFile]) {
+      if (file) await removeUpload(file.filename);
+    }
+  };
+
   let input: z.infer<typeof createSchema>;
   try {
-    input = createSchema.parse({ ...req.body, imageUrl: req.file ? undefined : req.body?.imageUrl });
+    input = createSchema.parse({
+      ...req.body,
+      imageUrl: imageFile ? undefined : req.body?.imageUrl,
+      videoUrl: videoFile ? undefined : req.body?.videoUrl,
+    });
   } catch (error) {
-    if (req.file) {
-      const { removeUpload } = await import('../middleware/uploads');
-      await removeUpload(req.file.filename);
-    }
+    await cleanupFiles();
     throw error;
   }
 
-  const imageUrl = req.file
-    ? await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype)
-    : parseImageUrl(input.imageUrl);
-  if (!input.text.trim() && !imageUrl && !input.poll) {
-    throw new AppError(400, 'EMPTY_POST', 'Додайте текст, зображення або опитування');
+  let imageUrl: string | null = null;
+  let videoUrl: string | null = null;
+  try {
+    imageUrl = imageFile
+      ? await uploadFile(imageFile.buffer, imageFile.originalname, imageFile.mimetype)
+      : parseMediaUrl(input.imageUrl, 'INVALID_IMAGE');
+    videoUrl = videoFile
+      ? await uploadFile(videoFile.buffer, videoFile.originalname, videoFile.mimetype)
+      : parseMediaUrl(input.videoUrl, 'INVALID_VIDEO');
+  } catch (error) {
+    await cleanupFiles();
+    throw error;
   }
 
+  if (!input.text.trim() && !imageUrl && !videoUrl && !input.poll) {
+    await cleanupFiles();
+    throw new AppError(400, 'EMPTY_POST', 'Додайте текст, зображення, відео або опитування');
+  }
+
+  const category: Category = videoUrl
+    ? (input.videoDuration && input.videoDuration > SHORT_VIDEO_MAX_SECONDS ? 'longs' : 'shorts')
+    : input.category;
+
   const inserted = await query<{ id: string }>(
-    `INSERT INTO feed_posts (author_id, category, text, image_url, poll)
-     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-    [userId, input.category, input.text, imageUrl, input.poll ? JSON.stringify(input.poll) : null],
+    `INSERT INTO feed_posts (author_id, category, text, image_url, video_url, video_duration, poll)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [userId, category, input.text, imageUrl, videoUrl, videoUrl ? (input.videoDuration ?? null) : null, input.poll ? JSON.stringify(input.poll) : null],
   );
   const post = await loadPost(String(inserted.rows[0]!.id), userId);
   emitFeedNew({ id: post.id, authorId: userId, category: post.category, createdAt: post.createdAt });
@@ -410,22 +448,21 @@ router.post('/:id/vote', asyncHandler(async (req, res) => {
 router.delete('/:id', asyncHandler(async (req, res) => {
   const postId = z.string().uuid().parse(req.params.id);
   const userId = req.auth!.userId;
-  const found = await query<{ author_id: string; image_url: string | null }>(
-    'SELECT author_id, image_url FROM feed_posts WHERE id = $1::uuid',
+  const found = await query<{ author_id: string; image_url: string | null; video_url: string | null }>(
+    'SELECT author_id, image_url, video_url FROM feed_posts WHERE id = $1::uuid',
     [postId],
   );
   const post = found.rows[0];
   if (!post) throw notFound('Пост не знайдено');
   if (String(post.author_id) !== userId) throw forbidden('Видаляти пост може лише його автор');
   await query('DELETE FROM feed_posts WHERE id = $1::uuid', [postId]);
-  if (post.image_url) {
-    const filename = String(post.image_url).startsWith('/uploads/')
-      ? String(post.image_url).slice('/uploads/'.length)
+  const { removeUpload } = await import('../middleware/uploads');
+  for (const asset of [post.image_url, post.video_url]) {
+    if (!asset) continue;
+    const filename = String(asset).startsWith('/uploads/')
+      ? String(asset).slice('/uploads/'.length)
       : undefined;
-    if (filename && /^[A-Za-z0-9._-]+$/.test(filename)) {
-      const { removeUpload } = await import('../middleware/uploads');
-      await removeUpload(filename);
-    }
+    if (filename && /^[A-Za-z0-9._-]+$/.test(filename)) await removeUpload(filename);
   }
   res.json({ ok: true });
 }));
