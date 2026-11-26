@@ -1,11 +1,9 @@
-import crypto from 'node:crypto';
-import { v2 as cloudinary } from 'cloudinary';
 import { Router } from 'express';
 import { z } from 'zod';
-import { config } from '../config/env';
 import { query } from '../db/pool';
 import { requireAuth } from '../middleware/auth';
 import { feedUpload } from '../middleware/uploads';
+import { signFeedVideoUpload } from '../services/directUpload';
 import { uploadFile } from '../services/storage';
 import { emitFeedNew } from '../sockets/emitter';
 import { AppError, forbidden, notFound } from '../utils/errors';
@@ -20,9 +18,6 @@ type Category = (typeof categories)[number];
 
 /** Відео до хвилини — у загальній стрічці, довші — лише у вкладці «Довгі». */
 const SHORT_VIDEO_MAX_SECONDS = 60;
-/** Великі відео йдуть напряму в Cloudinary, не через пам'ять API-сервера. */
-const MAX_DIRECT_VIDEO_BYTES = 2 * 1024 * 1024 * 1024;
-const FEED_VIDEO_FOLDER = 'miston/feed';
 
 const categorySchema = z.enum(categories);
 const textSchema = z.string().trim().max(2000).optional().default('');
@@ -214,28 +209,17 @@ function parseMediaUrl(value: string | undefined, code: 'INVALID_IMAGE' | 'INVAL
   throw new AppError(400, code, 'Некоректне посилання на медіа');
 }
 
-/** Підпис для прямого chunked-завантаження відео з браузера в Cloudinary. */
+/**
+ * Підпис для прямого завантаження відео з браузера.
+ * Cloudinary — шматками, S3-сумісне сховище (R2/B2) — одним PUT до 2 ГБ.
+ */
 router.post('/upload/sign', asyncHandler(async (req, res) => {
-  if (!config.CLOUDINARY_CLOUD_NAME || !config.CLOUDINARY_API_KEY || !config.CLOUDINARY_API_SECRET) {
-    throw new AppError(503, 'UPLOAD_NOT_CONFIGURED', 'Завантаження відео тимчасово недоступне');
-  }
-  z.object({ bytes: z.number().int().positive().max(MAX_DIRECT_VIDEO_BYTES) }).parse(req.body);
+  const input = z.object({
+    bytes: z.number().int().positive().max(2 * 1024 * 1024 * 1024),
+    fileName: z.string().trim().max(255).optional().default('video.mp4'),
+  }).parse(req.body);
 
-  const timestamp = Math.floor(Date.now() / 1000);
-  const publicId = crypto.randomUUID();
-  const signature = cloudinary.utils.api_sign_request(
-    { timestamp, public_id: publicId, folder: FEED_VIDEO_FOLDER },
-    config.CLOUDINARY_API_SECRET,
-  );
-
-  res.json({
-    cloudName: config.CLOUDINARY_CLOUD_NAME,
-    apiKey: config.CLOUDINARY_API_KEY,
-    timestamp,
-    publicId,
-    folder: FEED_VIDEO_FOLDER,
-    signature,
-  });
+  res.json(await signFeedVideoUpload(input.bytes, input.fileName));
 }));
 
 router.get('/', asyncHandler(async (req, res) => {

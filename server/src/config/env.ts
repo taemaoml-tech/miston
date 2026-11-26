@@ -76,6 +76,14 @@ const schema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().trim().optional(),
   CLOUDINARY_API_KEY: z.string().trim().optional(),
   CLOUDINARY_API_SECRET: z.string().trim().optional(),
+  // Пряме завантаження у S3-сумісне безкоштовне сховище (Cloudflare R2 / Backblaze B2).
+  STORAGE_PROVIDER: z.enum(['cloudinary', 's3']).default('cloudinary'),
+  S3_ENDPOINT: z.string().trim().url().optional(),
+  S3_REGION: z.string().trim().min(1).default('auto'),
+  S3_BUCKET: z.string().trim().min(1).optional(),
+  S3_ACCESS_KEY_ID: z.string().trim().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().trim().min(1).optional(),
+  S3_PUBLIC_BASE_URL: z.string().trim().url().optional(),
 });
 
 const env = schema.parse(process.env);
