@@ -42,16 +42,6 @@ const createSchema = z.object({
 
 const emojiSchema = z.enum(['❤️', '🔥', '👏', '😂', '💡', '✨']);
 
-const themeIdeas = [
-  { question: 'Що сьогодні підняло вам настрій?', hint: 'Навіть дрібниця рахується — поділіться нею зі стрічкою ✨' },
-  { question: 'Який маленький челендж візьмете на сьогодні?', hint: 'Напишіть одне речення — ми разом тримаємо темп 💪' },
-  { question: 'Чим ви пишаєтеся цього тижня?', hint: 'Розкажіть про перемогу, яку ніхто не помітив 🌱' },
-  { question: 'Що б ви порадили собі учорашньому?', hint: 'Одна порада — і день уже трохи легший 💬' },
-  { question: 'Яку ідею хочете втілити найближчим часом?', hint: 'Великі плани починаються з одного рядка 🚀' },
-  { question: 'Хто вас сьогодні надихнув?', hint: 'Тепла згадка — найкращий спосіб сказати «дякую» 💛' },
-  { question: 'Що зробило б ваш день трохи затишнішим?', hint: 'Може, музика, чай чи коротка прогулянка ☕' },
-];
-
 interface PostRow {
   id: string;
   author_id: string;
@@ -72,30 +62,6 @@ interface PostRow {
 
 function iso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : String(value);
-}
-
-function currentDay(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function themeFor(day: string) {
-  const digits = day.replace(/\D/g, '').split('').reduce((sum, digit) => sum + Number(digit), 0);
-  return themeIdeas[digits % themeIdeas.length]!;
-}
-
-async function loadTheme(userId: string, day = currentDay()) {
-  const idea = themeFor(day);
-  const [reply, participants] = await Promise.all([
-    query<{ answer: string }>('SELECT answer FROM feed_theme_replies WHERE user_id = $1 AND day = $2::date', [userId, day]),
-    query<{ count: string }>('SELECT COUNT(*)::text AS count FROM feed_theme_replies WHERE day = $1::date', [day]),
-  ]);
-  return {
-    day,
-    question: idea.question,
-    hint: idea.hint,
-    answer: reply.rows[0]?.answer ?? null,
-    participants: Number(participants.rows[0]?.count ?? 0),
-  };
 }
 
 function pollFrom(raw: unknown, counts: Map<string, Map<number, { count: number; mine: boolean }>>, postId: string) {
@@ -250,26 +216,8 @@ router.get('/', asyncHandler(async (req, res) => {
   const before = req.query.before ? String(req.query.before) : null;
   const limit = Math.min(40, Math.max(1, Number(req.query.limit) || 20));
   const savedOnly = req.query.saved === '1';
-  const [posts, theme] = await Promise.all([
-    loadFeed(userId, category, before, limit, savedOnly),
-    before ? Promise.resolve(null) : loadTheme(userId),
-  ]);
-  res.json({ posts, hasMore: posts.length === limit, theme });
-}));
-
-router.get('/theme', asyncHandler(async (req, res) => {
-  res.json({ theme: await loadTheme(req.auth!.userId) });
-}));
-
-router.post('/theme', asyncHandler(async (req, res) => {
-  const { answer } = z.object({ answer: z.string().trim().min(1).max(280) }).parse(req.body);
-  const day = currentDay();
-  await query(
-    `INSERT INTO feed_theme_replies (user_id, day, answer) VALUES ($1, $2::date, $3)
-     ON CONFLICT (user_id) DO UPDATE SET day = EXCLUDED.day, answer = EXCLUDED.answer, updated_at = now()`,
-    [req.auth!.userId, day, answer],
-  );
-  res.json({ theme: await loadTheme(req.auth!.userId, day) });
+  const posts = await loadFeed(userId, category, before, limit, savedOnly);
+  res.json({ posts, hasMore: posts.length === limit });
 }));
 
 /** Свіжі пости для плаваючої кнопки, якщо сокет був недоступний. */
