@@ -12,6 +12,7 @@ import type { ConversationAction, ConversationTarget } from '../chat/Conversatio
 import { ConversationActionModal } from '../chat/ConversationActionModal';
 import { NewChatModal } from '../chat/NewChatModal';
 import { Spinner } from '../common/Spinner';
+import { FeedPanel } from '../feed/FeedPanel';
 import { ToastStack } from '../common/ToastStack';
 import { ReportModal } from '../moderation/ReportModal';
 import type { ReportTarget } from '../moderation/ReportModal';
@@ -35,7 +36,7 @@ function MessengerLayout() {
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const [report, setReport] = useState<ReportTarget | null>(null);
   const [chatAction, setChatAction] = useState<ConversationTarget | null>(null);
-  const { activeServer, activeConversation, mobileChatOpen, selectHome, notifications, dismissNotification, openNotification } = useMessenger();
+  const { activeServer, activeConversation, mobileChatOpen, view, selectHome, notifications, dismissNotification, openNotification } = useMessenger();
   const close = () => setModal(null);
   const openUser = (id: string) => setPreviewUserId(id);
   const openChatAction = (conversation: Conversation, action: ConversationAction) => setChatAction({ conversation, action });
@@ -55,7 +56,7 @@ function MessengerLayout() {
     return true;
   }, 120);
   useAndroidBack(() => {
-    if (!activeConversation && !activeServer && !mobileChatOpen) return false;
+    if (!activeConversation && !activeServer && !mobileChatOpen && view !== 'feed') return false;
     selectHome();
     return true;
   }, 0);
@@ -63,11 +64,13 @@ function MessengerLayout() {
   return (
     <div className="flex h-full min-h-0 overflow-hidden bg-ios-bg text-ios-label">
       <div className="hidden h-full md:flex"><ServerRail onCreateServer={() => setModal('server')} onProfile={() => setModal('profile')} onAdmin={() => setModal('admin')} /></div>
-      <div className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} min-w-0 flex-1 md:flex-none`}>
-        {activeServer ? <ChannelSidebar onCreateChannel={() => setModal('channel')} onAddMember={() => setModal('member')} onProfile={() => setModal('profile')} /> : <ConversationSidebar onNewChat={() => setModal('newChat')} onProfile={() => setModal('profile')} onOpenMenu={() => setMenuOpen(true)} onOpenUser={openUser} onAction={openChatAction} onReportUser={(userId) => setReport({ userId })} />}
+      <div className={`${mobileChatOpen || view === 'feed' ? 'hidden md:flex' : 'flex'} min-w-0 flex-1 md:flex-none`}>
+        {activeServer && view !== 'feed' ? <ChannelSidebar onCreateChannel={() => setModal('channel')} onAddMember={() => setModal('member')} onProfile={() => setModal('profile')} /> : <ConversationSidebar onNewChat={() => setModal('newChat')} onProfile={() => setModal('profile')} onOpenMenu={() => setMenuOpen(true)} onOpenUser={openUser} onAction={openChatAction} onReportUser={(userId) => setReport({ userId })} />}
       </div>
-      <main className={`${mobileChatOpen ? 'flex' : 'hidden md:flex'} min-w-0 flex-1`}>
-        {activeConversation ? <ChatWindow onOpenUser={openUser} onReport={setReport} onAction={openChatAction} /> : <ChatPlaceholder onNewChat={() => setModal('newChat')} onCreateChannel={() => setModal('channel')} />}
+      <main className={`${mobileChatOpen || view === 'feed' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1`}>
+        {view === 'feed'
+          ? <FeedPanel onOpenUser={openUser} />
+          : activeConversation ? <ChatWindow onOpenUser={openUser} onReport={setReport} onAction={openChatAction} /> : <ChatPlaceholder onNewChat={() => setModal('newChat')} onCreateChannel={() => setModal('channel')} />}
       </main>
       <MobileMenuDrawer
         open={menuOpen}

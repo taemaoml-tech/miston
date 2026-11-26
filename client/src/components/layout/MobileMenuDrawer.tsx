@@ -1,4 +1,4 @@
-import { LifeBuoy, MessageCircle, Moon, Plus, ShieldCheck, Sun, X } from 'lucide-react';
+import { LayoutGrid, LifeBuoy, MessageCircle, Moon, Plus, ShieldCheck, Sun, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,7 +20,7 @@ interface MobileMenuDrawerProps {
 
 export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onAdmin }: MobileMenuDrawerProps) {
   const { user } = useAuth();
-  const { servers, activeServerId, selectHome, selectServer } = useMessenger();
+  const { servers, activeServerId, view, selectHome, selectFeed, selectServer } = useMessenger();
   const { theme, toggleTheme } = useTheme();
 
   useAndroidBack(() => {
@@ -51,7 +51,8 @@ export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onA
         </div>
 
         <div className="px-2">
-          <DrawerRow icon={MessageCircle} label="Повідомлення" active={!activeServerId} onClick={() => run(selectHome)} />
+          <DrawerRow icon={MessageCircle} label="Повідомлення" active={view === 'chats' && !activeServerId} onClick={() => run(selectHome)} />
+          <DrawerRow icon={LayoutGrid} label="Стрічка" active={view === 'feed'} onClick={() => run(selectFeed)} />
         </div>
 
         <div className="subtle-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto px-2 pb-2">

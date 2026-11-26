@@ -94,6 +94,11 @@ export function emitSystemNotification(notification: SystemNotification): void {
   io?.emit('system:notification', { notification });
 }
 
+/** Нова публікація у стрічці — клієнти показують кнопку «Нові пости». */
+export function emitFeedNew(payload: { id: string; authorId: string; category: string; createdAt: string }): void {
+  io?.emit('feed:new', payload);
+}
+
 /** Розриває сесії користувача й пояснює причину — для блокування та видалення акаунта. */
 export async function forceUserLogout(userId: string, event: 'account:blocked' | 'account:deleted'): Promise<void> {
   if (!io) return;

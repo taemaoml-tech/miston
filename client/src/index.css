@@ -288,6 +288,38 @@ html.android.dark .ios-glass {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Стрічка: легкі скляні картки без візуального шуму. */
+.feed-card {
+  background-color: rgb(var(--ios-glass) / .66);
+  border-color: rgb(var(--ios-separator) / .12);
+  box-shadow: 0 10px 36px -22px rgb(0 0 0 / .35), 0 2px 10px -6px rgb(0 122 255 / .25);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+.dark .feed-card {
+  background-color: rgb(var(--ios-glass) / .62);
+  border-color: rgb(var(--ios-separator) / .28);
+}
+.feed-card:hover { border-color: rgb(var(--ios-blue) / .22); }
+.feed-card--theme {
+  background-image: radial-gradient(120% 120% at 0% 0%, rgb(var(--accent-400) / .16), transparent 60%),
+    radial-gradient(100% 100% at 100% 100%, rgb(var(--ios-blue) / .14), transparent 55%);
+}
+.feed-chip { @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition; }
+.feed-chip--active { @apply bg-ios-blue text-white shadow-glow; }
+.feed-chip--idle { @apply bg-ios-fill/10 text-ios-secondary hover:bg-ios-fill/20 hover:text-ios-label; }
+.feed-fresh-pill { animation: feed-pill-in 320ms cubic-bezier(.22,1,.36,1) both; }
+@keyframes feed-pill-in {
+  from { opacity: 0; transform: translate(-50%, -10px) scale(.94); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+.feed-post-enter { animation: miston-rise 340ms cubic-bezier(.22,1,.36,1) both; }
+.feed-image { @apply block w-full rounded-2xl border border-ios-separator/10 object-cover; max-height: 26rem; }
+.feed-poll-track { @apply h-2 overflow-hidden rounded-full bg-ios-fill/15; }
+.feed-poll-fill { @apply h-full rounded-full bg-ios-blue transition-[width] duration-500 ease-out; }
+.miston-mascot { animation: miston-float 3.4s ease-in-out infinite; }
+.miston-halo { animation: miston-halo 3.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

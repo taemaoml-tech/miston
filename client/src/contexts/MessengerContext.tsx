@@ -20,10 +20,13 @@ interface MessengerContextValue {
   notifications: AppNotification[];
   systemNotifications: SystemNotification[];
   systemUnread: number;
+  /** Головний екран месенджера: чати або стрічка. */
+  view: 'chats' | 'feed';
   refreshInbox: () => Promise<void>;
   markSystemRead: (id: string) => Promise<void>;
   markAllSystemRead: () => Promise<void>;
   selectHome: () => void;
+  selectFeed: () => void;
   selectServer: (id: string) => void;
   selectConversation: (id: string) => void;
   selectChannel: (serverId: string, channel: Channel) => void;
@@ -68,6 +71,7 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [view, setView] = useState<'chats' | 'feed'>('chats');
   const [presence, setPresence] = useState<Record<string, boolean>>({});
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [systemNotifications, setSystemNotifications] = useState<SystemNotification[]>([]);
@@ -320,21 +324,31 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
   }
 
   const selectHome = useCallback(() => {
+    setView('chats');
+    setActiveServerId(null);
+    setActiveConversationId(null);
+    setMobileChatOpen(false);
+  }, []);
+  const selectFeed = useCallback(() => {
+    setView('feed');
     setActiveServerId(null);
     setActiveConversationId(null);
     setMobileChatOpen(false);
   }, []);
   const selectServer = useCallback((id: string) => {
+    setView('chats');
     setActiveServerId(id);
     setActiveConversationId(null);
     setMobileChatOpen(false);
   }, []);
   const selectConversation = useCallback((id: string) => {
+    setView('chats');
     setActiveServerId(null);
     setActiveConversationId(id);
     setMobileChatOpen(true);
   }, []);
   const selectChannel = useCallback((serverId: string, channel: Channel) => {
+    setView('chats');
     setActiveServerId(serverId);
     setActiveConversationId(channel.id);
     setMobileChatOpen(true);
@@ -439,14 +453,14 @@ export function MessengerProvider({ children }: { children: ReactNode }) {
   }, [selectConversation, dismissNotification]);
 
   const value = useMemo<MessengerContextValue>(() => ({
-    conversations, servers, activeConversation, activeServer, activeServerId, loading, error, mobileChatOpen,
+    conversations, servers, activeConversation, activeServer, activeServerId, loading, error, mobileChatOpen, view,
     presence, notifications, systemNotifications, systemUnread, refreshInbox, markSystemRead, markAllSystemRead,
-    selectHome, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken,
+    selectHome, selectFeed, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken,
     clearHistory, deleteConversation,
     createDirect, createGroup, createServer, createChannel, addServerMember, markReadLocal, dismissNotification,
     savedNotes, ensureSavedNotes, openSavedNotes,
     openNotification, notify: (title, body) => notify(title, body),
-  }), [conversations, servers, activeConversation, activeServer, activeServerId, loading, error, mobileChatOpen, presence, notifications, systemNotifications, systemUnread, refreshInbox, markSystemRead, markAllSystemRead, selectHome, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken, clearHistory, deleteConversation, createDirect, createGroup, createServer, createChannel, addServerMember, dismissNotification, savedNotes, ensureSavedNotes, openSavedNotes, openNotification, notify]);
+  }), [conversations, servers, activeConversation, activeServer, activeServerId, loading, error, mobileChatOpen, view, presence, notifications, systemNotifications, systemUnread, refreshInbox, markSystemRead, markAllSystemRead, selectHome, selectFeed, selectServer, selectConversation, selectChannel, closeMobileChat, reload, reloadToken, clearHistory, deleteConversation, createDirect, createGroup, createServer, createChannel, addServerMember, dismissNotification, savedNotes, ensureSavedNotes, openSavedNotes, openNotification, notify]);
 
   return <MessengerContext.Provider value={value}>{children}</MessengerContext.Provider>;
 }
