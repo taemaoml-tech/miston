@@ -19,6 +19,8 @@ import { StarDisplayName } from '../star/StarDisplayName';
 
 const kindLabels: Record<string, string> = { image: 'Фото', video: 'Відео', video_note: 'Відеокружечок', document: 'Документ', voice: 'Голосове повідомлення', sticker: 'Стікер' };
 
+const FEED_URL = 'https://taemaoml-tech.github.io/miston-feed/';
+
 const MENU_WIDTH = 224;
 const MENU_HEIGHT = 208;
 const FOLDER_COLORS: Record<string, string> = {
@@ -41,7 +43,7 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
   onReportUser: (userId: string) => void;
 }) {
   const { user } = useAuth();
-  const { conversations, activeConversation, selectHome, selectConversation, view, selectFeed, loading, error, reload, presence, systemUnread, savedNotes, openSavedNotes } = useMessenger();
+  const { conversations, activeConversation, selectConversation, loading, error, reload, presence, systemUnread, savedNotes, openSavedNotes } = useMessenger();
   const { incomingCount } = useFriends();
   const { folders, activeFolderId, setActiveFolderId, addConversation, removeConversation } = useFolders();
   const [tab, setTab] = useState<'chats' | 'friends'>('chats');
@@ -99,10 +101,10 @@ export function ConversationSidebar({ onNewChat, onProfile, onOpenMenu, onOpenUs
           <span className="hidden sm:block"><Logo size={32} /></span>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button type="button" className={`icon-btn relative ${view === 'feed' ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={selectFeed} aria-label="Стрічка" aria-pressed={view === 'feed'}>
+          <a href={FEED_URL} target="_blank" rel="noreferrer" className="icon-btn relative" aria-label="Стрічка (окремий сайт)" title="Стрічка">
             <LayoutGrid size={20} />
-          </button>
-          <button type="button" className={`icon-btn relative ${tab === 'friends' ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={() => { if (view === 'feed') selectHome(); setTab((current) => current === 'friends' ? 'chats' : 'friends'); }} aria-label="Друзі" aria-pressed={tab === 'friends'}>
+          </a>
+          <button type="button" className={`icon-btn relative ${tab === 'friends' ? 'bg-ios-blue/10 text-ios-blue' : ''}`} onClick={() => setTab((current) => current === 'friends' ? 'chats' : 'friends')} aria-label="Друзі" aria-pressed={tab === 'friends'}>
             <Users size={20} />
             {incomingCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ios-blue px-1 text-[9px] font-bold text-white">{incomingCount > 9 ? '9+' : incomingCount}</span>}
           </button>

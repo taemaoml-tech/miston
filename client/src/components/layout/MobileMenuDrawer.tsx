@@ -10,6 +10,8 @@ import { openInfo } from '../../router/infoRoute';
 import { Avatar } from '../common/Avatar';
 import { Logo } from '../common/Logo';
 
+const FEED_URL = 'https://taemaoml-tech.github.io/miston-feed/';
+
 interface MobileMenuDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -20,7 +22,7 @@ interface MobileMenuDrawerProps {
 
 export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onAdmin }: MobileMenuDrawerProps) {
   const { user } = useAuth();
-  const { servers, activeServerId, view, selectHome, selectFeed, selectServer } = useMessenger();
+  const { servers, activeServerId, selectHome, selectServer } = useMessenger();
   const { theme, toggleTheme } = useTheme();
 
   useAndroidBack(() => {
@@ -51,8 +53,8 @@ export function MobileMenuDrawer({ open, onClose, onCreateServer, onProfile, onA
         </div>
 
         <div className="px-2">
-          <DrawerRow icon={MessageCircle} label="Повідомлення" active={view === 'chats' && !activeServerId} onClick={() => run(selectHome)} />
-          <DrawerRow icon={LayoutGrid} label="Стрічка" active={view === 'feed'} onClick={() => run(selectFeed)} />
+          <DrawerRow icon={MessageCircle} label="Повідомлення" active={!activeServerId} onClick={() => run(selectHome)} />
+          <DrawerRow icon={LayoutGrid} label="Стрічка" href={FEED_URL} onClick={onClose} />
         </div>
 
         <div className="subtle-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
@@ -93,19 +95,24 @@ function DrawerSection({ title }: { title: string }) {
   return <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-ios-secondary">{title}</p>;
 }
 
-function DrawerRow({ icon: Icon, label, active = false, onClick, avatar }: {
+function DrawerRow({ icon: Icon, label, active = false, onClick, href, avatar }: {
   icon?: LucideIcon;
   label: string;
   active?: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  href?: string;
   avatar?: { name: string; src?: string | null; square?: boolean };
 }) {
-  return (
-    <button type="button" onClick={onClick} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-left text-sm transition ${active ? 'bg-ios-blue/10 text-ios-blue' : 'hover:bg-ios-fill/10 text-ios-label'}`} aria-current={active ? 'page' : undefined}>
+  const className = `flex w-full items-center gap-3 rounded-2xl p-2.5 text-left text-sm transition ${active ? 'bg-ios-blue/10 text-ios-blue' : 'hover:bg-ios-fill/10 text-ios-label'}`;
+  const content = (
+    <>
       {avatar
         ? <Avatar name={avatar.name} src={avatar.src} square={avatar.square} />
         : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ios-fill/10">{Icon && <Icon size={19} />}</span>}
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
-    </button>
+    </>
   );
+  return href
+    ? <a href={href} target="_blank" rel="noreferrer" className={className} aria-current={active ? 'page' : undefined}>{content}</a>
+    : <button type="button" onClick={onClick} className={className} aria-current={active ? 'page' : undefined}>{content}</button>;
 }

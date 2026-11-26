@@ -1,5 +1,4 @@
 import type { AdminAction, AdminActionLog, AdminOverview, AdminStats, AuthResponse, BotAccount, CallInfo, ChatFolder, CleanupScope, CommunityServer, Complaint, ComplaintCategory, ComplaintStatus, Conversation, ConversationKind, E2eeBackup, E2eeStatus, FriendsOverview, IceServerConfig, LoginChallenge, LoginResult, LoginSession, Message, MessageKind, MessagePage, ModerationUser, StarCategory, StarEquipResponse, StarHistoryEntry, StarInventoryResponse, StarOverview, StarPurchaseResponse, StarRarity, StarShopResponse, SentNotification, Sticker, StickerLibrary, StickerPack, SupportRequest, SupportStatus, SupportTopic, SystemNotification, TwoFactorChallenge, User, UserProfile, UserRole } from '../types/models';
-import type { FeedComment, FeedDraft, FeedFilter, FeedPost, FeedTheme } from '../types/feed';
 import { request, tokenStore } from './client';
 
 export const api = {
@@ -65,41 +64,6 @@ export const api = {
     addConversation: (id: string, conversationId: string) => request<{ ok: true }>(`/chat-folders/${id}/conversations`, { method: 'POST', body: { conversationId } }),
     removeConversation: (id: string, conversationId: string) => request<{ ok: true }>(`/chat-folders/${id}/conversations/${conversationId}`, { method: 'DELETE' }),
     setConversations: (id: string, conversationIds: string[]) => request<{ ok: true }>(`/chat-folders/${id}/conversations`, { method: 'PUT', body: { conversationIds } }),
-  },
-  feed: {
-    list: (filter: FeedFilter = 'all', before?: string | null, limit = 20) => {
-      const params = new URLSearchParams({ limit: String(limit) });
-      if (filter !== 'all') params.set('category', filter);
-      if (before) params.set('before', before);
-      return request<{ posts: FeedPost[]; hasMore: boolean; theme: FeedTheme | null }>(`/feed?${params}`);
-    },
-    theme: () => request<{ theme: FeedTheme }>('/feed/theme'),
-    answerTheme: (answer: string) => request<{ theme: FeedTheme }>('/feed/theme', { method: 'POST', body: { answer } }),
-    since: (after: string) => request<{ count: number }>(`/feed/since?after=${encodeURIComponent(after)}`),
-    create: (draft: FeedDraft) => {
-      if (draft.image) {
-        const body = new FormData();
-        body.append('text', draft.text);
-        body.append('category', draft.category);
-        body.append('image', draft.image);
-        if (draft.poll) body.append('poll', JSON.stringify(draft.poll));
-        return request<{ post: FeedPost }>('/feed', { method: 'POST', body });
-      }
-      return request<{ post: FeedPost }>('/feed', {
-        method: 'POST',
-        body: {
-          text: draft.text,
-          category: draft.category,
-          ...(draft.imageUrl ? { imageUrl: draft.imageUrl } : {}),
-          ...(draft.poll ? { poll: draft.poll } : {}),
-        },
-      });
-    },
-    react: (postId: string, emoji: string) => request<{ post: FeedPost }>(`/feed/${postId}/reactions`, { method: 'POST', body: { emoji } }),
-    vote: (postId: string, optionIndex: number) => request<{ post: FeedPost }>(`/feed/${postId}/vote`, { method: 'POST', body: { optionIndex } }),
-    comments: (postId: string, limit = 50) => request<{ comments: FeedComment[] }>(`/feed/${postId}/comments?limit=${limit}`),
-    addComment: (postId: string, text: string) => request<{ commentId: string; commentCount: number }>(`/feed/${postId}/comments`, { method: 'POST', body: { text } }),
-    remove: (postId: string) => request<{ ok: true }>(`/feed/${postId}`, { method: 'DELETE' }),
   },
   push: {
     register: (token: string, platform: string) => request<void>('/push/register', { method: 'POST', body: { token, platform } }),

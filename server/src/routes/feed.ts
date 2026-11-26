@@ -12,7 +12,7 @@ import { cosmeticsFrom } from '../utils/serializers';
 const router = Router();
 router.use(requireAuth);
 
-const categories = ['projects', 'polls', 'subscriptions'] as const;
+const categories = ['general', 'polls', 'subscriptions'] as const;
 type Category = (typeof categories)[number];
 
 const categorySchema = z.enum(categories);
@@ -30,7 +30,7 @@ const optionalPoll = z.preprocess((value) => {
 
 const createSchema = z.object({
   text: textSchema,
-  category: categorySchema.optional().default('projects'),
+  category: categorySchema.optional().default('general'),
   poll: optionalPoll,
   imageUrl: z.string().trim().max(2000).optional(),
 });
@@ -114,7 +114,7 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
   const ids = rows.map((row) => String(row.id));
   if (ids.length === 0) return [];
 
-  const [reactionRows, commentRows, voteRows] = await Promise.all([
+  const [reactionRows, commentRows, voteRows, savedRows] = await Promise.all([
     query<{ post_id: string; emoji: string; count: string; mine: boolean }>(
       `SELECT post_id, emoji, COUNT(*)::text AS count, BOOL_OR(user_id = $2) AS mine
        FROM feed_reactions WHERE post_id = ANY($1::uuid[])
@@ -129,6 +129,10 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
       `SELECT post_id, option_index, COUNT(*)::text AS count, BOOL_OR(user_id = $2) AS mine
        FROM feed_poll_votes WHERE post_id = ANY($1::uuid[])
        GROUP BY post_id, option_index`,
+      [ids, viewerId],
+    ),
+    query<{ post_id: string }>(
+      'SELECT post_id FROM feed_saved_posts WHERE user_id = $2 AND post_id = ANY($1::uuid[])',
       [ids, viewerId],
     ),
   ]);
@@ -146,6 +150,7 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
     postVotes.set(Number(row.option_index), { count: Number(row.count), mine: Boolean(row.mine) });
     votes.set(String(row.post_id), postVotes);
   }
+  const saved = new Set(savedRows.rows.map((row) => String(row.post_id)));
 
   return rows.map((row) => {
     const authorId = String(row.author_id);
@@ -168,6 +173,7 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
       poll: pollFrom(row.poll, votes, String(row.id)),
       reactions: reactions.get(String(row.id)) ?? [],
       commentCount: comments.get(String(row.id)) ?? 0,
+      saved: saved.has(String(row.id)),
       createdAt: iso(row.created_at),
     };
   });
@@ -185,7 +191,13 @@ async function loadPost(id: string, viewerId: string) {
   return (await serializePosts([found.rows[0]!], viewerId))[0]!;
 }
 
-async function loadFeed(userId: string, category: Category | null, before: string | null, limit: number) {
+async function loadFeed(
+  userId: string,
+  category: Category | null,
+  before: string | null,
+  limit: number,
+  savedOnly = false,
+) {
   const result = await query<PostRow>(
     `${POST_SELECT}
      WHERE ($2::text IS NULL OR p.category = $2)
@@ -200,9 +212,16 @@ async function loadFeed(userId: string, category: Category | null, before: strin
                OR (f.addressee_id = $1::uuid AND f.requester_id = p.author_id))
          )
        )
+       AND (
+         $6::boolean = false
+         OR EXISTS (
+           SELECT 1 FROM feed_saved_posts s
+           WHERE s.post_id = p.id AND s.user_id = $1::uuid
+         )
+       )
      ORDER BY p.created_at DESC, p.id DESC
      LIMIT $5`,
-    [userId, category, before, category === 'subscriptions', limit],
+    [userId, category, before, category === 'subscriptions', limit, savedOnly],
   );
   return serializePosts(result.rows, userId);
 }
@@ -220,8 +239,9 @@ router.get('/', asyncHandler(async (req, res) => {
     : categorySchema.parse(String(req.query.category));
   const before = req.query.before ? String(req.query.before) : null;
   const limit = Math.min(40, Math.max(1, Number(req.query.limit) || 20));
+  const savedOnly = req.query.saved === '1';
   const [posts, theme] = await Promise.all([
-    loadFeed(userId, category, before, limit),
+    loadFeed(userId, category, before, limit, savedOnly),
     before ? Promise.resolve(null) : loadTheme(userId),
   ]);
   res.json({ posts, hasMore: posts.length === limit, theme });
@@ -294,6 +314,24 @@ router.post('/:id/reactions', asyncHandler(async (req, res) => {
     await query('INSERT INTO feed_reactions (post_id, user_id, emoji) VALUES ($1::uuid, $2, $3) ON CONFLICT DO NOTHING', [postId, userId, emoji]);
   }
   res.json({ post: await loadPost(String(postId), userId) });
+}));
+
+/** Закладки приватні: бачить тільки їх власник. Повторний виклик знімає збереження. */
+router.post('/:id/save', asyncHandler(async (req, res) => {
+  const postId = z.string().uuid().parse(req.params.id);
+  const userId = req.auth!.userId;
+  const removed = await query(
+    'DELETE FROM feed_saved_posts WHERE post_id = $1::uuid AND user_id = $2',
+    [postId, userId],
+  );
+  const saved = removed.rowCount === 0;
+  if (saved) {
+    await query(
+      'INSERT INTO feed_saved_posts (post_id, user_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING',
+      [postId, userId],
+    );
+  }
+  res.json({ saved, post: await loadPost(String(postId), userId) });
 }));
 
 router.get('/:id/comments', asyncHandler(async (req, res) => {
