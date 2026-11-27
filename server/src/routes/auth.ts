@@ -25,6 +25,7 @@ import {
   verifyTwoFactorToken,
 } from '../services/twoFactor';
 import { sendSms, smsConfigured } from '../services/sms';
+import { verifyGoogleIdToken } from '../services/googleAuth';
 import {
   issueLoginChallenge,
   requestLoginEmail,
@@ -46,6 +47,7 @@ const loginSchema = z.object({
   identifier: z.string().trim().min(1).max(254),
   password: z.string().min(1).max(128),
 });
+const googleSchema = z.object({ idToken: z.string().min(10).max(4096) });
 const refreshSchema = z.object({ refreshToken: z.string().min(32).max(512) });
 const challengeSchema = z.object({ challengeId: z.string().uuid() });
 const challengeConfirmSchema = challengeSchema.extend({ code: z.string().trim().regex(/^\d{8}$/) });
@@ -196,6 +198,73 @@ router.post('/register', asyncHandler(async (req, res) => {
     ...(phone ? { user: { ...payload.user, phoneNumber: phone, phoneVerified: false }, phoneVerificationSent } : {}),
     ...(phoneDebugCode ? { phoneDebugCode } : {}),
   });
+}));
+
+/** Google-вхід не обходить блокування й не змінює правила QR/підтвердження входу. */
+type TxClient = Parameters<Parameters<typeof withTransaction>[0]>[0];
+
+async function uniqueGoogleUsername(client: TxClient, email: string): Promise<string> {
+  const base = email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'user';
+  const padded = base.length < 3 ? `${base}user`.slice(0, 3) : base;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = attempt === 0 ? padded : `${padded.slice(0, 24)}_${crypto.randomBytes(2).toString('hex')}`.slice(0, 30);
+    const taken = await client.query('SELECT 1 FROM users WHERE username = $1', [candidate]);
+    if (!taken.rowCount) return candidate;
+  }
+  throw new AppError(409, 'USERNAME_TAKEN', 'Не вдалося обрати вільний логін. Спробуйте ще раз.');
+}
+
+router.post('/google', asyncHandler(async (req, res) => {
+  const { idToken } = googleSchema.parse(req.body);
+  const identity = await verifyGoogleIdToken(idToken);
+  const device = deviceInfo(req);
+
+  const payload = await withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('relay:google:' || $1))", [identity.sub]);
+    const bySub = await client.query<Record<string, unknown>>('SELECT * FROM users WHERE google_sub = $1', [identity.sub]);
+    let user = bySub.rows[0];
+    if (!user) {
+      const byEmail = await client.query<Record<string, unknown>>('SELECT * FROM users WHERE email = $1', [identity.email]);
+      user = byEmail.rows[0];
+    }
+    if (user) {
+      assertNotBlocked(user);
+      if (!user.google_sub) {
+        const linked = await client.query<Record<string, unknown>>(
+          `UPDATE users SET google_sub = $1, avatar_url = COALESCE(avatar_url, $2), updated_at = now()
+           WHERE id = $3 AND google_sub IS NULL RETURNING *`,
+          [identity.sub, identity.avatarUrl, user.id],
+        );
+        user = linked.rows[0] ?? user;
+      }
+    } else {
+      const username = await uniqueGoogleUsername(client, identity.email);
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(48).toString('base64url'), config.BCRYPT_ROUNDS);
+      const inserted = await client.query<Record<string, unknown>>(
+        `INSERT INTO users (email, username, display_name, password_hash, avatar_url, google_sub, mist_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [identity.email, username, identity.displayName.slice(0, 80), passwordHash, identity.avatarUrl, identity.sub, `${username}@mist.id`],
+      );
+      user = inserted.rows[0];
+      if (!user) throw new AppError(500, 'GOOGLE_USER_FAILED', 'Не вдалося створити акаунт.');
+      await client.query('INSERT INTO user_wallets (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [user.id]);
+      await client.query(
+        `INSERT INTO mist_id_inbox (user_id, title, body, kind)
+         VALUES ($1, $2, $3, 'welcome')`,
+        [user.id, 'Ласкаво просимо до Mist!', `Ваш Mist ID: ${user.mist_id}\n\nЗберігайте цей ідентифікатор — він потрібен для входу та додавання друзів.`],
+      );
+    }
+
+    const refresh = createRefreshToken();
+    await client.query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, user_agent, ip_address)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [user.id, refresh.hash, refresh.expiresAt, device.userAgent, device.ip],
+    );
+    return authPayload(user, refresh.token);
+  });
+
+  res.json(payload);
 }));
 
 router.post('/login', asyncHandler(async (req, res) => {

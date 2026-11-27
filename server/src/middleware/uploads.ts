@@ -58,10 +58,10 @@ export const upload = multer({
   fileFilter: fileFilter((mime) => mime in extensions),
 });
 
-/** Стрічка може отримати одночасно фото й відео одним мультипартом. */
+/** Стрічка може отримати до 10 медіа (плюс legacy image/video) одним мультипартом. */
 export const feedUpload = multer({
   storage,
-  limits: { fileSize: config.MAX_FILE_SIZE, files: 2 },
+  limits: { fileSize: config.MAX_FILE_SIZE, files: 12 },
   fileFilter: fileFilter((mime) => mime in extensions),
 });
 

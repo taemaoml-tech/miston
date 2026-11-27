@@ -18,6 +18,7 @@ type Category = (typeof categories)[number];
 
 /** Відео до хвилини — у загальній стрічці, довші — лише у вкладці «Довгі». */
 const SHORT_VIDEO_MAX_SECONDS = 60;
+const MAX_MEDIA = 10;
 
 const categorySchema = z.enum(categories);
 const textSchema = z.string().trim().max(2000).optional().default('');
@@ -32,14 +33,35 @@ const optionalPoll = z.preprocess((value) => {
   try { return JSON.parse(value); } catch { return value; }
 }, pollSchema.optional());
 
+const mediaItemSchema = z.object({
+  type: z.enum(['image', 'video']),
+  url: z.string().trim().max(2000),
+  duration: z.coerce.number().int().min(1).max(14400).optional().nullable(),
+});
+const optionalMedia = z.preprocess((value) => {
+  const raw = value == null ? [] : Array.isArray(value) ? value : [value];
+  return raw.map((item) => {
+    if (typeof item !== 'string') return item;
+    try { return JSON.parse(item); } catch { return item; }
+  });
+}, z.array(mediaItemSchema).max(MAX_MEDIA).optional().default([]));
+
 const createSchema = z.object({
   text: textSchema,
   category: categorySchema.optional().default('general'),
   poll: optionalPoll,
+  media: optionalMedia,
   imageUrl: z.string().trim().max(2000).optional(),
   videoUrl: z.string().trim().max(2000).optional(),
   videoDuration: z.coerce.number().int().min(1).max(14400).optional(),
 });
+
+interface FeedMediaItem {
+  type: 'image' | 'video';
+  url: string;
+  duration: number | null;
+}
+
 
 const emojiSchema = z.enum(['❤️', '🔥', '👏', '😂', '💡', '✨']);
 
@@ -51,6 +73,7 @@ interface PostRow {
   image_url: string | null;
   video_url: string | null;
   video_duration: number | string | null;
+  media: unknown;
   poll: unknown;
   created_at: Date | string;
   username: string;
@@ -63,6 +86,28 @@ interface PostRow {
 
 function iso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : String(value);
+}
+
+/** Старі пости мають порожній media — підстраховуємоlegacy-колонками. */
+function mediaFrom(raw: unknown, row?: Pick<PostRow, 'image_url' | 'video_url' | 'video_duration'>): FeedMediaItem[] {
+  const items: FeedMediaItem[] = [];
+  if (Array.isArray(raw)) {
+    for (const value of raw) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+      const item = value as Record<string, unknown>;
+      if ((item.type !== 'image' && item.type !== 'video') || typeof item.url !== 'string' || !item.url) continue;
+      items.push({
+        type: item.type,
+        url: item.url,
+        duration: item.duration == null ? null : Number(item.duration),
+      });
+    }
+  }
+  if (items.length === 0 && row) {
+    if (row.image_url) items.push({ type: 'image', url: String(row.image_url), duration: null });
+    if (row.video_url) items.push({ type: 'video', url: String(row.video_url), duration: row.video_duration == null ? null : Number(row.video_duration) });
+  }
+  return items;
 }
 
 function pollFrom(raw: unknown, counts: Map<string, Map<number, { count: number; mine: boolean }>>, postId: string) {
@@ -128,6 +173,9 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
 
   return rows.map((row) => {
     const authorId = String(row.author_id);
+    const media = mediaFrom(row.media, row);
+    const firstImage = media.find((item) => item.type === 'image');
+    const firstVideo = media.find((item) => item.type === 'video');
     return {
       id: String(row.id),
       author: {
@@ -143,9 +191,10 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
       },
       category: row.category,
       text: String(row.text ?? ''),
-      imageUrl: row.image_url == null ? null : String(row.image_url),
-      videoUrl: row.video_url == null ? null : String(row.video_url),
-      videoDuration: row.video_duration == null ? null : Number(row.video_duration),
+      media,
+      imageUrl: firstImage?.url ?? (row.image_url == null ? null : String(row.image_url)),
+      videoUrl: firstVideo?.url ?? (row.video_url == null ? null : String(row.video_url)),
+      videoDuration: firstVideo?.duration ?? (row.video_duration == null ? null : Number(row.video_duration)),
       poll: pollFrom(row.poll, votes, String(row.id)),
       reactions: reactions.get(String(row.id)) ?? [],
       commentCount: comments.get(String(row.id)) ?? 0,
@@ -156,7 +205,7 @@ async function serializePosts(rows: PostRow[], viewerId: string) {
 }
 
 const POST_SELECT = `
-  SELECT p.id, p.author_id, p.category, p.text, p.image_url, p.video_url, p.video_duration, p.poll, p.created_at,
+  SELECT p.id, p.author_id, p.category, p.text, p.image_url, p.video_url, p.video_duration, p.media, p.poll, p.created_at,
          u.username, u.display_name, u.avatar_url, u.role, u.is_verified, u.cosmetics
   FROM feed_posts p
   JOIN users u ON u.id = p.author_id`;
@@ -245,61 +294,100 @@ router.get('/since', asyncHandler(async (req, res) => {
   res.json({ count: Number(result.rows[0]?.count ?? 0) });
 }));
 
-router.post('/', feedUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), asyncHandler(async (req, res) => {
+router.post('/', feedUpload.fields([
+  { name: 'mediaFile', maxCount: MAX_MEDIA },
+  { name: 'image', maxCount: 1 },
+  { name: 'video', maxCount: 1 },
+]), asyncHandler(async (req, res) => {
   const userId = req.auth!.userId;
   const files = (req.files ?? {}) as Record<string, Express.Multer.File[] | undefined>;
-  const imageFile = files.image?.[0];
-  const videoFile = files.video?.[0];
+  const allFiles = [...(files.mediaFile ?? []), ...(files.image ?? []), ...(files.video ?? [])];
   const cleanupFiles = async () => {
     const { removeUpload } = await import('../middleware/uploads');
-    for (const file of [imageFile, videoFile]) {
-      if (file) await removeUpload(file.filename);
-    }
+    for (const file of allFiles) await removeUpload(file.filename);
   };
 
   let input: z.infer<typeof createSchema>;
   try {
     input = createSchema.parse({
       ...req.body,
-      imageUrl: imageFile ? undefined : req.body?.imageUrl,
-      videoUrl: videoFile ? undefined : req.body?.videoUrl,
+      imageUrl: files.image?.length ? undefined : req.body?.imageUrl,
+      videoUrl: files.video?.length ? undefined : req.body?.videoUrl,
     });
   } catch (error) {
     await cleanupFiles();
     throw error;
   }
 
-  let imageUrl: string | null = null;
-  let videoUrl: string | null = null;
   try {
-    imageUrl = imageFile
-      ? await uploadFile(imageFile.buffer, imageFile.originalname, imageFile.mimetype)
-      : parseMediaUrl(input.imageUrl, 'INVALID_IMAGE');
-    videoUrl = videoFile
-      ? await uploadFile(videoFile.buffer, videoFile.originalname, videoFile.mimetype)
-      : parseMediaUrl(input.videoUrl, 'INVALID_VIDEO');
+    const items: Array<FeedMediaItem & { file?: Express.Multer.File; duration: number | null }> = [];
+
+    const addFile = (file: Express.Multer.File, forced?: 'image' | 'video') => {
+      const mime = file.mimetype.split(';', 1)[0]!.trim().toLowerCase();
+      const type = forced ?? (mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : null);
+      if (!type) throw new AppError(415, 'UNSUPPORTED_MEDIA_TYPE', 'В пості можна використовувати лише фото й відео');
+      items.push({ type, url: '', duration: null, file });
+    };
+    for (const file of files.mediaFile ?? []) addFile(file);
+    for (const file of files.image ?? []) addFile(file, 'image');
+    for (const file of files.video ?? []) addFile(file, 'video');
+
+    for (const item of input.media) {
+      items.push({
+        type: item.type,
+        url: parseMediaUrl(item.url, item.type === 'image' ? 'INVALID_IMAGE' : 'INVALID_VIDEO') ?? '',
+        duration: item.duration ?? null,
+      });
+    }
+    const legacyImage = parseMediaUrl(input.imageUrl, 'INVALID_IMAGE');
+    if (legacyImage && !items.some((item) => item.type === 'image' && item.url === legacyImage)) {
+      items.push({ type: 'image', url: legacyImage, duration: null });
+    }
+    const legacyVideo = parseMediaUrl(input.videoUrl, 'INVALID_VIDEO');
+    if (legacyVideo && !items.some((item) => item.type === 'video' && item.url === legacyVideo)) {
+      items.push({ type: 'video', url: legacyVideo, duration: input.videoDuration ?? null });
+    }
+
+    if (items.length > MAX_MEDIA) throw new AppError(400, 'TOO_MANY_MEDIA', `Можна додати не більше ${MAX_MEDIA} фото й відео`);
+    for (const item of items) {
+      if (!item.file) continue;
+      item.url = await uploadFile(item.file.buffer, item.file.originalname, item.file.mimetype);
+    }
+
+    if (!input.text.trim() && items.length === 0 && !input.poll) {
+      throw new AppError(400, 'EMPTY_POST', 'Додайте текст, зображення, відео або опитування');
+    }
+
+    const videos = items.filter((item) => item.type === 'video');
+    const longestVideo = videos.reduce((max, item) => Math.max(max, item.duration ?? 0), 0);
+    const category: Category = videos.length > 0
+      ? (longestVideo > SHORT_VIDEO_MAX_SECONDS ? 'longs' : 'shorts')
+      : input.category;
+    const firstImage = items.find((item) => item.type === 'image');
+    const firstVideo = videos[0];
+    const media = items.map(({ type, url, duration }) => ({ type, url, duration }));
+
+    const inserted = await query<{ id: string }>(
+      `INSERT INTO feed_posts (author_id, category, text, image_url, video_url, video_duration, media, poll)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8) RETURNING id`,
+      [
+        userId,
+        category,
+        input.text,
+        firstImage?.url ?? null,
+        firstVideo?.url ?? null,
+        firstVideo?.duration ?? null,
+        JSON.stringify(media),
+        input.poll ? JSON.stringify(input.poll) : null,
+      ],
+    );
+    const post = await loadPost(String(inserted.rows[0]!.id), userId);
+    emitFeedNew({ id: post.id, authorId: userId, category: post.category, createdAt: post.createdAt });
+    res.status(201).json({ post });
   } catch (error) {
     await cleanupFiles();
     throw error;
   }
-
-  if (!input.text.trim() && !imageUrl && !videoUrl && !input.poll) {
-    await cleanupFiles();
-    throw new AppError(400, 'EMPTY_POST', 'Додайте текст, зображення, відео або опитування');
-  }
-
-  const category: Category = videoUrl
-    ? (input.videoDuration && input.videoDuration > SHORT_VIDEO_MAX_SECONDS ? 'longs' : 'shorts')
-    : input.category;
-
-  const inserted = await query<{ id: string }>(
-    `INSERT INTO feed_posts (author_id, category, text, image_url, video_url, video_duration, poll)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [userId, category, input.text, imageUrl, videoUrl, videoUrl ? (input.videoDuration ?? null) : null, input.poll ? JSON.stringify(input.poll) : null],
-  );
-  const post = await loadPost(String(inserted.rows[0]!.id), userId);
-  emitFeedNew({ id: post.id, authorId: userId, category: post.category, createdAt: post.createdAt });
-  res.status(201).json({ post });
 }));
 
 router.post('/:id/reactions', asyncHandler(async (req, res) => {
@@ -410,8 +498,8 @@ router.post('/:id/vote', asyncHandler(async (req, res) => {
 router.delete('/:id', asyncHandler(async (req, res) => {
   const postId = z.string().uuid().parse(req.params.id);
   const userId = req.auth!.userId;
-  const found = await query<{ author_id: string; image_url: string | null; video_url: string | null }>(
-    'SELECT author_id, image_url, video_url FROM feed_posts WHERE id = $1::uuid',
+  const found = await query<{ author_id: string; image_url: string | null; video_url: string | null; video_duration: number | string | null; media: unknown }>(
+    'SELECT author_id, image_url, video_url, video_duration, media FROM feed_posts WHERE id = $1::uuid',
     [postId],
   );
   const post = found.rows[0];
@@ -419,7 +507,8 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   if (String(post.author_id) !== userId) throw forbidden('Видаляти пост може лише його автор');
   await query('DELETE FROM feed_posts WHERE id = $1::uuid', [postId]);
   const { removeUpload } = await import('../middleware/uploads');
-  for (const asset of [post.image_url, post.video_url]) {
+  const assets = mediaFrom(post.media, post).map((item) => item.url);
+  for (const asset of assets) {
     if (!asset) continue;
     const filename = String(asset).startsWith('/uploads/')
       ? String(asset).slice('/uploads/'.length)
